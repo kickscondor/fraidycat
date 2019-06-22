@@ -1,0 +1,22 @@
+{
+  "name": "fraidycat",
+  "scripts": {
+    "start": "parcel src/index.html",
+    "build": "rm -rf dist && cp -r src/root dist && parcel build src/index.html"
+  },
+  "dependencies": {
+    "@fnando/sparkline": "^0.3.10",
+    "@kickscondor/router": "^0.7.2",
+    "babel-plugin-transform-react-jsx": "^6.24.1",
+    "babel-preset-env": "^1.6.1",
+    "babel-preset-es2015": "^6.24.1",
+    "hyperapp": "^1.2.9",
+    "normalize-url": "^4.3.0",
+    "parcel-bundler": "^1.4.1",
+    "umbrellajs": "^3.1.0"
+  },
+  "devDependencies": {
+    "babel-core": "^6.26.3",
+    "node-sass": "^4.11.0"
+  }
+}

@@ -1,0 +1,232 @@
+body {
+  background-color: #FFEFD5;
+  margin: 0;
+  padding: 0;
+  font-size: 1.1rem;
+}
+
+#fraidy {
+  padding: 20px;
+  min-height: 96vh;
+  border-left: solid 24px #FC9;
+  border-right: solid 24px #FC9;
+}
+
+article {
+  max-width: 780px;
+  margin: 0 auto;
+}
+
+#menu {
+  ul {
+    margin-top: -56px;
+    float: right;
+    list-style: none;
+    padding: 0;
+  }
+
+  li {
+    display: inline;
+  }
+
+  a {
+    text-decoration: none;
+    background-color: #FF0099;
+    padding: 7px 9px;
+    margin: 5px;
+    border-radius: 18px;
+    font-weight: bold;
+    color: white;
+  }
+}
+
+#follows {
+  ol {
+    list-style: none;
+    padding: 0;
+  }
+
+  .importance {
+    display: block;
+    font-family: sans-serif;
+    font-size: 1.1rem;
+    font-variant: small-caps;
+    border-bottom: none;
+
+    span {
+      background: #FC9;
+      padding: 2px 4px;
+    }
+  }
+
+
+  h3 {
+    font-size: 1.1rem;
+    margin: 8px 0 4px 0;
+
+    a {
+      display: inline-block;
+      text-decoration: none;
+      color: #997755;
+      overflow: hidden;
+      max-width: calc(100% - 40px);
+      white-space: nowrap;
+      margin-bottom: -4px;
+      margin-top: 4px;
+    }
+  }
+
+  li {
+    border-bottom: solid 1px #FC9;
+    display: none;
+  }
+
+  li.label-Main {
+    display: block;
+  }
+
+  li.age-d h3 a,
+  li.age-w h3 a {
+    color: #667777;
+  }
+
+  li.age-m h3 a,
+  li.age-h h3 a {
+    color: #339955;
+  }
+
+  h3 a.url:hover {
+    text-decoration: underline;
+    color: #995533;
+  }
+
+  h3 img.favicon {
+    background-color: #ECA;
+    margin-bottom: -3px;
+    border-radius: 4px;
+    border: solid 2px #ECA;
+  }
+
+  .latest {
+    border-radius: 4px;
+    background-color: #888866;
+    color: #FFEFD5;
+    font-size: .9rem;
+    padding: 4px;
+    cursor: default;
+  }
+
+  li.age-d .latest,
+  li.age-w .latest {
+    background-color: #559999;
+  }
+
+  li.age-m .latest,
+  li.age-h .latest {
+    background-color: #118844;
+  }
+
+  div.extra {
+    font-size: 1.1rem;
+    margin-bottom: 6px;
+    padding-left: 30px;
+  }
+
+  div.trunc {
+    color: #975;
+    display: inline-block;
+    overflow: hidden;
+    height: 1.2rem;
+  }
+
+  div.trunc > div * {
+    display: inline;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    text-decoration: none;
+    color: #975;
+  }
+
+  div.extra p.collapse {
+    user-select: none;
+  }
+
+  div.extra p.collapse a {
+    background-color: #975;
+    border-radius: 7px;
+    color: #FED;
+    font-weight: bold;
+    font-size: 14px;
+    baseline-shift: -3px;
+    text-decoration: none;
+    padding: 0px 4px;
+  }
+
+  p.labels {
+    display: none;
+  }
+
+  .sparkline-d {
+    stroke: #FF0099;
+    fill: #FFC0CB;
+  }
+
+  .sparkline-w {
+    stroke: #9999BB;
+    fill: #ACC0CB; /* rgba(255, 192, 203, .3); */
+  }
+}
+
+@media only screen and (min-width: 600px) {
+  #follows h3 a {
+    max-width: calc(100% - 230px);
+  }
+}
+
+/* general form styles */
+form > div {
+  margin-bottom: 8px;
+}
+
+div.err {
+  color: red;
+  margin-bottom: 8px;
+}
+
+label {
+  font-family: sans-serif;
+  font-size: 0.9rem;
+  display: block;
+  margin: 4px 0;
+}
+
+input, textarea, select {
+  font: 1em sans-serif;
+  box-sizing: border-box;
+  border: 1px solid #999;
+}
+
+input, textarea {
+  padding: 4px;
+}
+
+@media only screen and (min-width: 600px) {
+  input, textarea {
+    width: 300px;
+  }
+}
+
+form p.note {
+  margin: 0;
+  font: 0.7em sans-serif;
+}
+
+form p.note span {
+  font-style: italic;
+}
+
+button.delete {
+  background-color: #F09;
+  color: white;
+}

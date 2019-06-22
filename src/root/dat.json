@@ -1,0 +1,8 @@
+{
+  "title": "Fraidycat",
+  "description": "Read the Web without it piling up.",
+  "fallback_page": "/index.html",
+  "experimental": {
+    "apis": ["globalFetch", "datPeers"]
+  }
+}
