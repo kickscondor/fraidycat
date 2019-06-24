@@ -1,5 +1,7 @@
+import { getIndexById } from './util'
 import { h } from 'hyperapp'
 import { Link, Route, Switch } from '@kickscondor/router'
+import logo from '../images/fc.png'
 
 const Importances = [
   [0,   'Real-time'],
@@ -9,7 +11,7 @@ const Importances = [
   [365, 'Year']
 ]
 
-const FeedForm = (follow) => (state, actions) =>
+const FollowForm = (follow) => (_, {follows}) =>
   <form class="follow" onsubmit={e => e.preventDefault()}>
     {!follow.url &&
       <div>
@@ -20,16 +22,17 @@ const FeedForm = (follow) => (state, actions) =>
 
     <div>
       <label for="username">Importance</label> 
-      <select id="username" name="importance" onchange={e => follow.importance = e.target.selectedIndex}>
+      <select id="username" name="importance" onchange={e => follow.importance = e.target.options[e.target.selectedIndex].value}>
       {Importances.map(imp => 
         <option value={imp[0]} selected={imp[0] == follow.importance}>{imp[1]}</option>)}
       </select>
     </div>
 
     <div>
-      <label for="keywords">Label(s) &mdash; separate with spaces</label>
-      <input type="text" id="keywords" value={follow.keywords ? follow.keywords.join(' ') : ''}
-        oninput={e => follow.keywords = e.target.value.split(/\s+/)} />
+      <label for="tags">Tag(s) &mdash; separate with spaces</label>
+      <input type="text" id="tags" value={follow.tags ? follow.tags.join(' ') : ''}
+        oninput={e => follow.tags = e.target.value.split(/\s+/)} />
+      <p class="note">(If left blank, tag is assumed to be 'main'&mdash;the main listing.)</p>
     </div>
 
     <div>
@@ -39,32 +42,33 @@ const FeedForm = (follow) => (state, actions) =>
       <p class="note">(Leave empty to use <span>{follow.actual_title}</span>)</p>
     </div>
 
-    <button onclick={_ => actions.follows.save(follow)}>Save</button>
-    {follow.url && <button class="delete" onclick={_ => actions.follows.remove(follow)}>Delete This</button>}
+    <button onclick={_ => follows.save(follow)}>Save</button>
+    {follow.url && <button class="delete" onclick={_ => follows.remove(follow)}>Delete This</button>}
   </form>
 
-const EditFeed = ({ match }) => (state, actions) => {
-  let follow = {url: "https://www.kickscondor.com", importance: 7,
-    keywords: "wiki test", actual_title: "Kicks Condor", title: "KICKS!"}
+const EditFollow = ({ match }) => ({follows}) => {
+  let index = getIndexById(follows.all, match.params.id)
+  let follow = follows.all[index]
   return <div id="edit-feed">
     <h2>Edit</h2>
     <p>URL: {follow.url}</p>
-    {FeedForm(follow)}
+    {FollowForm(follow)}
   </div>
 }
 
-const AddFeed = ({ match }) => (state, actions) => {
+const AddFollow = ({ match }) => () => {
   return <div id="add-feed">
     <h2>Follow</h2>
     <p>What blog, wiki or social account do you want to follow?</p>
-    {FeedForm({})}
+    {FollowForm({})}
   </div>
 }
 
-const Home = ({ match }) => (state, actions) => {
-  let follows = [], imp = null
+const ListFollow = ({ match }) => ({follows}, actions) => {
+  let imp = null
   return <div id="follows">
     <div id="labels"></div>
+    <ol>{follows.all.map(follow => <li><a class="url" href={follow.url}>{follow.title}</a></li>)}</ol>
   </div>
 
 //    <ol>{follows.map(follow => {
@@ -96,23 +100,30 @@ const Home = ({ match }) => (state, actions) => {
 //          <div class="note"><%= follow[:description] %></div>
 //          <a href="http://<%= follow[:latest_url] %>"></a>
 //        </div>
-//        <p class="labels"><%= follow[:keywords] %></p>
+//        <p class="labels"><%= follow[:tags] %></p>
 //    </li>
 //    })}</ol>
 }
 
 export default (state, actions) =>
-  <div>
-    <div id="menu">
-      <ul>
-        <li><a href="/add" title="Add a Follow">&#xff0b;</a></li>
-        {true ? "" : <li><a href="/logout" title="Logout">&#x1f6aa;</a></li>}
-      </ul>
-    </div>
+  (state.follows.started &&
+    <article>
+      <header>
+        <Link to="/"><img src={logo} alt="Fraidycat Logo" title="Fraidycat" /></Link>
+      </header>
+      <section>
+        <div id="menu">
+          <ul>
+            <li><Link to="/add" title="Add a Follow">&#xff0b;</Link></li>
+            {true ? "" : <li><Link to="/logout" title="Logout">&#x1f6aa;</Link></li>}
+          </ul>
+        </div>
 
-    <Switch>
-      <Route path="/" render={Home} />
-      <Route path="/add" render={AddFeed} />
-      <Route path="/edit/:id" render={EditFeed} />
-    </Switch>
-  </div>
+        <Switch>
+          <Route path="/" render={ListFollow} />
+          <Route path="/add" render={AddFollow} />
+          <Route path="/edit/:id" render={EditFollow} />
+          <Route path="/tag/:tag" render={ListFollow} />
+        </Switch>
+      </section>
+    </article>)

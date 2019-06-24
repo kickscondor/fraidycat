@@ -1,14 +1,8 @@
+import { getIndexById } from './util'
+import { jsonDateParser } from "json-date-parser"
 const normalizeUrl = require('normalize-url')
 const storage = require('./storage')
 const url = require('url')
-
-const getIndexById = (ary, id) => {
-  for (let i = 0; i < ary.length; i++) {
-    if (ary[i].id == id)
-      return i
-  }
-  return -1
-}
 
 const urlToID = link => {
   let normLink = normalizeUrl(link, {stripProtocol: true, removeDirectoryIndex: true, stripHash: true})
@@ -17,30 +11,50 @@ const urlToID = link => {
 }
 
 export default ({
-  state: {follows: []},
+  state: {all: [], started: false},
   actions: {
-    save: follow => ({follows}, {location, set}) => {
+    init: () => (_, {set}) => {
+      storage.user.readFile('/follows.json', (err, data) => {
+        if (data) {
+          let all = JSON.parse(data, jsonDateParser)
+          console.log(all)
+          set({all, started: true})
+        }
+      })
+    },
+    write: all => (_, {location, set}) => {
+      storage.user.writeFile('/follows.json', all, _ => {
+        set({all})
+        location.go("/")
+      })
+    },
+    save: follow => ({all}, {write}) => {
       let savedId = !!follow.id
       follow.id = urlToID(follow.url)
       if (!follow.createdAt) follow.createdAt = new Date()
       follow.updatedAt = new Date()
 
-      let idx = getIndexById(follows, follow.id)
+      let idx = getIndexById(all, follow.id)
       if (!savedId && idx >= 0) {
         alert('This feed already exists.')
         return
       }
 
       if (savedId)
-        follows[idx] = follow
+        all[idx] = follow
       else
-        follows.push(follow)
+        all.push(follow)
 
-      storage.user.writeFile('/follows.json', follows, _ => {
-        set({follows: follows})
-      })
+      write(all)
     },
-    remove: follow => (state, _) => {
+    remove: follow => ({all}, {write}) => {
+      if (confirm("Delete " + follow.url + "?")) {
+        let idx = getIndexById(all, follow.id)
+        if (idx >= 0)
+          all.splice(idx, 1)
+
+        write(all)
+      }
     }
   }
 })

@@ -13,5 +13,5 @@ const {state, actions, view} = hyperload({
   view: views
 })
 
-const {initialize} = app(state, actions, view, document.getElementById('hyperapp'))
+const {initialize} = app(state, actions, view, document.getElementById('fraidy'))
 initialize()

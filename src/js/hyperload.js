@@ -23,6 +23,10 @@ export const hyperload = tree => {
     if (typeof(actions.init) !== 'undefined') {
       actions.init()
     }
+    for (let name in modules) {
+      let init = actions[name].init
+      if (init) init()
+    }
   }
 
   return {state, actions, view}
