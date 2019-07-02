@@ -1,8 +1,7 @@
 import { h, app } from 'hyperapp'
 import { hyperload } from './hyperload'
+import 'babel-polyfill'
 
-import u from 'umbrellajs'
-import sparkline from '@fnando/sparkline'
 import follows from './follows'
 import views from './view'
 

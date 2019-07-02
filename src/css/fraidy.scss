@@ -1,5 +1,5 @@
 body {
-  background-color: #FFEFD5;
+  background-color: #FFFFF5;
   margin: 0;
   padding: 0;
   font-size: 1.1rem;
@@ -8,8 +8,6 @@ body {
 #fraidy {
   padding: 20px;
   min-height: 96vh;
-  border-left: solid 24px #FC9;
-  border-right: solid 24px #FC9;
 }
 
 article {
@@ -74,25 +72,43 @@ article {
       margin-bottom: -4px;
       margin-top: 4px;
     }
+
+    span, a {
+      padding: 0 3px;
+    }
   }
 
   li {
-    border-bottom: solid 1px #FC9;
-    display: none;
+    border-bottom: dotted 1px #C77;
   }
 
-  li.label-Main {
-    display: block;
+  .latest {
+    border-radius: 4px;
+    background-color: #888866;
+    color: #FFEFD5;
+    font-size: .9rem;
+    padding: 4px;
+    cursor: default;
   }
 
-  li.age-d h3 a,
-  li.age-w h3 a {
-    color: #667777;
+  li.age-d,
+  li.age-w {
+    h3 a {
+      color: #667777;
+    }
+    .latest {
+      background-color: #559999;
+    }
   }
 
-  li.age-m h3 a,
-  li.age-h h3 a {
-    color: #339955;
+  li.age-m,
+  li.age-h {
+    h3 a {
+      color: #333333;
+    }
+    .latest {
+      background-color: #118844;
+    }
   }
 
   h3 a.url:hover {
@@ -107,64 +123,36 @@ article {
     border: solid 2px #ECA;
   }
 
-  .latest {
-    border-radius: 4px;
-    background-color: #888866;
-    color: #FFEFD5;
-    font-size: .9rem;
-    padding: 4px;
-    cursor: default;
-  }
-
-  li.age-d .latest,
-  li.age-w .latest {
-    background-color: #559999;
-  }
-
-  li.age-m .latest,
-  li.age-h .latest {
-    background-color: #118844;
-  }
-
   div.extra {
     font-size: 1.1rem;
     margin-bottom: 6px;
     padding-left: 30px;
+
+    a.collapse {
+      user-select: none;
+      display: inline-block;
+      background-color: #975;
+      border-radius: 7px;
+      color: #FED;
+      font-weight: bold;
+      font-size: 14px;
+      baseline-shift: -3px;
+      text-decoration: none;
+      padding: 0px 4px;
+      overflow: hidden;
+    }
   }
 
   div.trunc {
     color: #975;
-    display: inline-block;
-    overflow: hidden;
-    height: 1.2rem;
-  }
 
-  div.trunc > div * {
-    display: inline;
-    margin: 0;
-    padding: 0;
-    border: 0;
-    text-decoration: none;
-    color: #975;
-  }
-
-  div.extra p.collapse {
-    user-select: none;
-  }
-
-  div.extra p.collapse a {
-    background-color: #975;
-    border-radius: 7px;
-    color: #FED;
-    font-weight: bold;
-    font-size: 14px;
-    baseline-shift: -3px;
-    text-decoration: none;
-    padding: 0px 4px;
-  }
-
-  p.labels {
-    display: none;
+    span.title {
+      display: inline-block;
+      padding-right: 6px;
+      overflow: hidden;
+      height: 1.5rem;
+      max-width: calc(100% - 40px);
+    }
   }
 
   .sparkline-d {

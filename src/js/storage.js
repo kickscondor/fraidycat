@@ -4,22 +4,40 @@ module.exports = storage
 
 function storage (url) {
   if (!(this instanceof storage)) return new storage (url)
-  this.dat = new DatArchive(url)
+  if (url instanceof DatArchive) this.dat = url
+  else this.dat = new DatArchive(url)
 }
 
-storage.prototype.mkdir = function (path, fn) {
-  this.dat.mkdir(path).then(fn, fn)
+storage.prototype.mkdir = async function (dest) {
+  let par = path.dirname(dest)
+  if (par.length > 1)
+    await this.mkdir(par).catch(() => {})
+  return this.dat.mkdir(dest)
 }
 
-storage.prototype.readFile = function (path, fn) {
-  this.dat.readFile(path).then(str => fn(null, str), err => fn(err, null))
+storage.prototype.readFile = async function (path) {
+  return this.dat.readFile(path)
 }
 
-storage.prototype.writeFile = function (dest, obj, fn) {
-  this.mkdir(path.dirname(dest), err => {
-    let data = typeof(obj) == "string" ? obj : JSON.stringify(obj)
-    this.dat.writeFile(dest, data).then(fn, fn)
-  })
+storage.prototype.writeFile = async function (dest, obj) {
+  await this.mkdir(path.dirname(dest)).catch(() => {})
+  let data = typeof(obj) == "string" ? obj : JSON.stringify(obj)
+  return this.dat.writeFile(dest, data)
 }
 
-storage.user = storage(window.location)
+storage.setup = function (fn) {
+  let userDat = window.localStorage.getItem('userDat')
+  if (!userDat) {
+    DatArchive.create({title: "Fraidycat Follows",
+      description: "My personal collection of Fraidycat follows.",
+      type: ["fraidycat"]}).
+    then(dat => {
+      storage.user = storage(dat)
+      window.localStorage.setItem('userDat', dat.url)
+      fn()
+    })
+  } else {
+    storage.user = storage(userDat)
+    fn()
+  }
+}

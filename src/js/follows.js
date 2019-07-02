@@ -1,37 +1,54 @@
-import { getIndexById } from './util'
+import { getIndexById, urlToID, urlToNormal } from './util'
 import { jsonDateParser } from "json-date-parser"
-const normalizeUrl = require('normalize-url')
+import feedycat from './feedycat'
 const storage = require('./storage')
 const url = require('url')
 
-const urlToID = link => {
-  let normLink = normalizeUrl(link, {stripProtocol: true, removeDirectoryIndex: true, stripHash: true})
-  let hashInt = normLink.split("").reduce(function(a,b){a=((a<<5)-a)+b.charCodeAt(0);return a&a},0)
-  return `${normLink.split('/')[0]}-${(hashInt >>> 0).toString(16)}`
+function lastPostTime(follow) {
+  let lastPost = follow.posts[0]
+  return lastPost ? lastPost.updatedAt : new Date(0)
 }
 
 export default ({
   state: {all: [], started: false},
   actions: {
     init: () => (_, {set}) => {
-      storage.user.readFile('/follows.json', (err, data) => {
-        if (data) {
+      storage.setup(() => {
+        storage.user.readFile('/follows.json').then(data => {
           let all = JSON.parse(data, jsonDateParser)
-          console.log(all)
           set({all, started: true})
-        }
+        }, err => {
+          set({started: true})
+        })
       })
     },
     write: all => (_, {location, set}) => {
-      storage.user.writeFile('/follows.json', all, _ => {
+      all.sort((a, b) => (a.importance - b.importance) || (lastPostTime(b) - lastPostTime(a)))
+      storage.user.writeFile('/follows.json', all).then(() => {
         set({all})
         location.go("/")
       })
     },
-    save: follow => ({all}, {write}) => {
+    subscribe: fc => (_, {save}) => {
+      let sel = fc.list.filter(feed => feed.selected)
+      sel.forEach(feed => {
+        let hsh = {url: url.resolve(fc.site.url, feed.href),
+          importance: fc.site.importance, tags: fc.site.tags, title: fc.site.title}
+        if (sel.length > 1) {
+          hsh['title'] = `${fc.site.title || fc.site.actualTitle} [${feed.title}]`
+        }
+        save(hsh)
+      })
+    },
+    save: follow => async ({all}, {location, set, write}) => {
       let savedId = !!follow.id
-      follow.id = urlToID(follow.url)
-      if (!follow.createdAt) follow.createdAt = new Date()
+      if (!savedId) {
+        if (!follow.url.match(/^\w+:\/\//))
+          follow.url = "http://" + follow.url
+        let normalizedUrl = urlToNormal(follow.url)
+        follow.id = urlToID(normalizedUrl)
+        follow.createdAt = new Date()
+      }
       follow.updatedAt = new Date()
 
       let idx = getIndexById(all, follow.id)
@@ -40,10 +57,24 @@ export default ({
         return
       }
 
-      if (savedId)
+      let feeds = await feedycat(storage, follow)
+      if (feeds) {
+        set({feeds: {list: feeds, site: follow}})
+        location.go("/add-feed")
+        return
+      }
+
+      idx = getIndexById(all, follow.id)
+      if (!savedId && idx >= 0) {
+        alert('This feed already exists.')
+        return
+      }
+
+      if (savedId) {
         all[idx] = follow
-      else
+      } else {
         all.push(follow)
+      }
 
       write(all)
     },

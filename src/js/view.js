@@ -1,7 +1,12 @@
 import { getIndexById } from './util'
 import { h } from 'hyperapp'
 import { Link, Route, Switch } from '@kickscondor/router'
-import logo from '../images/fc.png'
+import globe from '../images/globe.svg'
+import images from '../images/*.png'
+const url = require('url')
+
+import u from 'umbrellajs'
+import sparkline from '@fnando/sparkline'
 
 const Importances = [
   [0,   'Real-time'],
@@ -39,7 +44,7 @@ const FollowForm = (follow) => (_, {follows}) =>
       <label for="title">Title</label>
       <input type="text" id="title" value={follow.title}
         oninput={e => follow.title = e.target.value} />
-      <p class="note">(Leave empty to use <span>{follow.actual_title}</span>)</p>
+      <p class="note">(Leave empty to use <span>{follow.actualTitle || "the title loaded from the site"}</span>.)</p>
     </div>
 
     <button onclick={_ => follows.save(follow)}>Save</button>
@@ -60,56 +65,120 @@ const AddFollow = ({ match }) => () => {
   return <div id="add-feed">
     <h2>Follow</h2>
     <p>What blog, wiki or social account do you want to follow?</p>
-    {FollowForm({})}
+    {FollowForm({importance: 0})}
   </div>
+}
+
+const AddFeed = () => ({follows}, actions) => {
+  let {list, site} = follows.feeds
+  return <div id="feed-select">
+    <h2>Select a Feed</h2>
+    <p>{site.title || site.actualTitle} ({site.url}) has several feeds:</p>
+    <ul>
+    {list.map(feed =>
+      <li><input type="checkbox" onclick={e => feed.selected = e.target.checked} value={feed.href} /> {feed.title}</li>)}
+    </ul>
+    <button onclick={_ => actions.follows.subscribe(follows.feeds)}>Subscribe</button>
+  </div>
+}
+
+function timeAgo(from_time, to_time) {
+  from_time = Math.floor(from_time / 1000)
+  to_time = Math.floor(to_time / 1000)
+  let mins = Math.round(Math.abs(to_time - from_time)/60)
+
+  if (mins >= 0 && mins <= 1) 
+    return '1m'
+  if (mins >= 2 && mins <= 45)
+    return mins + 'm'
+  if (mins >= 46 && mins <= 90)
+    return '1h'
+  if (mins >= 91 && mins <= 1440)
+    return Math.round(mins / 60) + 'h'
+  if (mins >= 1441 && mins <= 2880)
+    return '1d'
+  if (mins >= 2881 && mins <= 43220)
+    return Math.round(mins / 1440) + 'd'
+  if (mins >= 43201 && mins <= 86400)
+    return '1M'
+  if (mins >= 86401 && mins <= 525960)
+    return Math.round(mins / 43200) + 'M'
+  if (mins >= 525961 && mins <= 1051920)
+    return '1Y'
+  return Math.round(mins / 525600) + 'Y'
+}
+
+function sparkpoints(el, ary, daily) {
+  let points = [], len = 60
+  if (daily) {
+    points = ary.slice(0, 60)
+    len = points.length
+  } else {
+    len = Math.ceil(len / 3)
+    for (let i = 0; i < len; i++) {
+      let x = i * 3
+      points[i] = ary[x] + (ary[x + 1] || 0) + (ary[x + 2] || 0)
+    }
+  }
+  if (points.every(x => x == 0))
+    len = 0
+  el.setAttribute('width', len * 2)
+  if (len > 0)
+    sparkline(el, points.reverse())
 }
 
 const ListFollow = ({ match }) => ({follows}, actions) => {
   let imp = null
+  let now = new Date()
+  let tag = match.params ? match.params.tag : "main"
   return <div id="follows">
     <div id="labels"></div>
-    <ol>{follows.all.map(follow => <li><a class="url" href={follow.url}>{follow.title}</a></li>)}</ol>
-  </div>
+    <ol>{follows.all.filter(follow => (follow.tags || ["main"]).includes(tag)).
+      map(follow => {
+        let lastPost = follow.posts[0], tags = []
+        let ago = lastPost && timeAgo(lastPost.updatedAt, now)
+        let daily = follow.importance < 7
+        if (follow.importance != imp) {
+          imp = follow.importance
+          let sel = Importances.find(x => x[0] == imp)
+          if (sel) {
+            tags.push(<li class="importance"><span>{sel[1]}</span></li>)
+          }
+        }
 
-//    <ol>{follows.map(follow => {
-//      // let ago = distance_of_time_short(follow.latest_at)
-//      let daily = follow.importance < 7
-//      if (follow.importance != imp) {
-//        imp = follow.importance
-//        // hdr = XYZ::Follow::IMPORTANCES.assoc(follow[:importance])
-//        // <li class="importance"><span><%= hdr[1] %></span></li>
-//      }
-//
-//      return <li class={`age-${ago[-1]}`}><h3>
-//        <a href={follow.url}
-//        <img class="favicon" src="<%= (follow[:photo] || "//" + follow[:url] + "/favicon.ico").gsub(/^https?:\/\//, '//') %>"
-//          onError="image_broken(this)" width="20" height="20">
-//        </a>
-//        <a class="url" href="http://<%= follow[:url] %>"><%=h follow[:title] %></a>
-//        <span class="latest" title="<%= distance_of_time_in_words(follow[:latest_at]) %>"><%= ago %></span>
-//        <span title="graph of the last <%= daily ? 'two' : 'six' %> months">
-//          <svg class="sparkline sparkline-<%= daily ? "d" : "w" %>"
-//            width="120" height="20" stroke-width="2"
-//            data-points="<%= follow[daily ? :sparkline_days : :sparkline_weeks] %>"></svg></span>
-//          <a class="edit" href="/edit/<%= follow[:url] %>" title="edit"><img src="/images/270f.png"></a>
-//        </h3>
-//        <div class="extra trunc">
-//          <div class="post"><%= follow[:latest_title] %>
-//            <p class="collapse"><a href="#">&#x2022;&#x2022;&#x2022;</a></p>
-//          </div>
-//          <div class="note"><%= follow[:description] %></div>
-//          <a href="http://<%= follow[:latest_url] %>"></a>
-//        </div>
-//        <p class="labels"><%= follow[:tags] %></p>
-//    </li>
-//    })}</ol>
+        tags.push(<li class={`age-${ago ? ago.slice(-1) : "X"}`}>
+          <h3>
+            <a href={follow.url}>
+              <img class="favicon" src={follow.photo || url.resolve(follow.url, '/favicon.ico')}
+                onerror={e => e.target.src=globe} width="20" height="20" />
+            </a>
+            <a class="url" href={follow.url}>{follow.title || follow.actualTitle}</a>
+            {ago && <span class="latest">{ago}</span>}
+            <span title={`graph of the last ${daily ? 'two' : 'six'} months`}>
+              <svg class={`sparkline sparkline-${daily ? "d" : "w"}`}
+                width="120" height="20" stroke-width="2"
+                oncreate={el => sparkpoints(el, follow.activity, daily)}></svg></span>
+              <a class="edit" href={`/edit/${follow.id}`} title="edit"><img src={images['270f']} /></a>
+          </h3>
+          <div class="extra trunc">
+            <div class="post">{lastPost && <span class="title">{lastPost.title}</span>}
+              <a class="collapse" href="javascript:;"
+                onclick={e => u(e.target).closest(".extra").toggleClass("trunc")}>&#x2022;&#x2022;&#x2022;</a>
+            </div>
+            <div class="note">{follow.description}</div>
+            <a href={follow.url}></a>
+          </div>
+        </li>)
+        return tags
+      })}</ol>
+  </div>
 }
 
 export default (state, actions) =>
   (state.follows.started &&
     <article>
       <header>
-        <Link to="/"><img src={logo} alt="Fraidycat Logo" title="Fraidycat" /></Link>
+        <Link to="/"><img src={images['fc']} alt="Fraidycat Logo" title="Fraidycat" /></Link>
       </header>
       <section>
         <div id="menu">
@@ -122,6 +191,7 @@ export default (state, actions) =>
         <Switch>
           <Route path="/" render={ListFollow} />
           <Route path="/add" render={AddFollow} />
+          <Route path="/add-feed" render={AddFeed} />
           <Route path="/edit/:id" render={EditFollow} />
           <Route path="/tag/:tag" render={ListFollow} />
         </Switch>
