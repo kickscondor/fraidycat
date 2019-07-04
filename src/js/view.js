@@ -37,7 +37,7 @@ const FollowForm = (follow) => (_, {follows}) =>
       <label for="tags">Tag(s) &mdash; separate with spaces</label>
       <input type="text" id="tags" value={follow.tags ? follow.tags.join(' ') : ''}
         oninput={e => follow.tags = e.target.value.split(/\s+/)} />
-      <p class="note">(If left blank, tag is assumed to be 'main'&mdash;the main listing.)</p>
+      <p class="note">(If left blank, tag is assumed to be '*'&mdash;the main page tag.)</p>
     </div>
 
     <div>
@@ -65,6 +65,7 @@ const AddFollow = ({ match }) => () => {
   return <div id="add-feed">
     <h2>Follow</h2>
     <p>What blog, wiki or social account do you want to follow?</p>
+    <p class="note"><em>This can also be a Twitter or Instagram feed, a YouTube channel, a subreddit, a Soundcloud.</em></p>
     {FollowForm({importance: 0})}
   </div>
 }
@@ -127,26 +128,40 @@ function sparkpoints(el, ary, daily) {
     sparkline(el, points.reverse())
 }
 
+function lastPostTime(follow) {
+  let lastPost = follow.posts[0]
+  return lastPost ? lastPost.updatedAt : new Date(0)
+}
+
 const ListFollow = ({ match }) => ({follows}, actions) => {
-  let imp = null
   let now = new Date()
-  let tag = match.params ? match.params.tag : "main"
+  let tag = match.params ? match.params.tag : "*"
+  let query = new URLSearchParams(window.location.search)
+  let imp = query.get('importance') || 0
+  let tags = {}, imps = {}
+  let viewable = follows.all.filter(follow => {
+    let ftags = (follow.tags || ["*"])
+    ftags.forEach(k => tags[k] = true)
+    let isShown = ftags.includes(tag)
+    if (isShown) imps[follow.importance] = true
+    return isShown
+  }).sort((a, b) => (a.importance - b.importance) || (lastPostTime(b) - lastPostTime(a)))
+
   return <div id="follows">
-    <div id="labels"></div>
-    <ol>{follows.all.filter(follow => (follow.tags || ["main"]).includes(tag)).
-      map(follow => {
+    <ul id="tags">
+    {Object.keys(tags).sort().map(t => <li><Link to={`/tag/${t}`} class={t == tag ? 'active' : null}>{t}</Link></li>)}
+    </ul>
+    <ul id="imps">
+    {Importances.map(sel => (imps[sel[0]] && (sel[0] == imp ? <li class='active'>{sel[1]}</li> : <li><Link to={query.set('importance', sel[0]) || `/tag/${tag}?${query}`}>{sel[1]}</Link></li>)))}
+    </ul>
+    <ol>{viewable.map(follow => {
         let lastPost = follow.posts[0], tags = []
         let ago = lastPost && timeAgo(lastPost.updatedAt, now)
         let daily = follow.importance < 7
-        if (follow.importance != imp) {
-          imp = follow.importance
-          let sel = Importances.find(x => x[0] == imp)
-          if (sel) {
-            tags.push(<li class="importance"><span>{sel[1]}</span></li>)
-          }
-        }
+        if (follow.importance != imp)
+          return
 
-        tags.push(<li class={`age-${ago ? ago.slice(-1) : "X"}`}>
+        return <li class={`age-${ago ? ago.slice(-1) : "X"}`}>
           <h3>
             <a href={follow.url}>
               <img class="favicon" src={follow.photo || url.resolve(follow.url, '/favicon.ico')}
@@ -158,18 +173,17 @@ const ListFollow = ({ match }) => ({follows}, actions) => {
               <svg class={`sparkline sparkline-${daily ? "d" : "w"}`}
                 width="120" height="20" stroke-width="2"
                 oncreate={el => sparkpoints(el, follow.activity, daily)}></svg></span>
-              <a class="edit" href={`/edit/${follow.id}`} title="edit"><img src={images['270f']} /></a>
+              <Link class="edit" to={`/edit/${follow.id}`} title="edit"><img src={images['270f']} /></Link>
           </h3>
           <div class="extra trunc">
-            <div class="post">{lastPost && <span class="title">{lastPost.title}</span>}
+            <div class="post">{<ol class="title">{follow.posts.map(f => <li><a href={f.url}>{f.title}</a> <span class="ago">{timeAgo(f.updatedAt, now)}</span></li>)}</ol>}
               <a class="collapse" href="javascript:;"
                 onclick={e => u(e.target).closest(".extra").toggleClass("trunc")}>&#x2022;&#x2022;&#x2022;</a>
             </div>
             <div class="note">{follow.description}</div>
             <a href={follow.url}></a>
           </div>
-        </li>)
-        return tags
+        </li>
       })}</ol>
   </div>
 }

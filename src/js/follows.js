@@ -1,32 +1,70 @@
 import { getIndexById, urlToID, urlToNormal } from './util'
 import { jsonDateParser } from "json-date-parser"
 import feedycat from './feedycat'
+const compare = require('./compare')
 const storage = require('./storage')
 const url = require('url')
 
-function lastPostTime(follow) {
-  let lastPost = follow.posts[0]
-  return lastPost ? lastPost.updatedAt : new Date(0)
+function isOutOfDate(follow, fetched) {
+  let imp = Number(follow.importance)
+  let age = (new Date()) - (fetched[follow.id] || 0)
+  if (imp < 1) {
+    // Real-time is currently a five minute check.
+    return age > (5 * 60 * 1000)
+  } else if (imp < 2) {
+    // Daily check is half-hourly.
+    return age > (30 * 60 * 1000)
+  } else if (imp < 60) {
+    // Monthly checks are twice a day.
+    return age > (12 * 60 * 60 * 1000)
+  } else {
+    // Older is a check once a week.
+    return age > (7 * 24 * 60 * 60 * 1000)
+  }
 }
 
 export default ({
-  state: {all: [], started: false},
+  state: {all: [], updating: [], fetched: {}, started: false},
   actions: {
-    init: () => (_, {set}) => {
+    init: () => (_, {startup}) => {
       storage.setup(() => {
         storage.user.readFile('/follows.json').then(data => {
           let all = JSON.parse(data, jsonDateParser)
-          set({all, started: true})
+          startup({all, started: true})
         }, err => {
-          set({started: true})
+          startup({started: true})
         })
       })
     },
-    write: all => (_, {location, set}) => {
-      all.sort((a, b) => (a.importance - b.importance) || (lastPostTime(b) - lastPostTime(a)))
+    startup: obj => (_, {poll, set}) => {
+      let saved = JSON.parse(window.localStorage.getItem('fraidycat') || '{"fetched": {}}', jsonDateParser)
+      set(Object.assign(obj, saved))
+      setInterval(poll, 5000)
+    },
+    markFetched: follow => ({fetched}, {set}) => {
+      fetched[follow.id] = new Date()
+      window.localStorage.setItem('fraidycat', JSON.stringify({fetched}))
+      set({fetched})
+    },
+    poll: () => async ({all, fetched, updating}, {markFetched, set, write}) => {
+      let qual = all.filter(follow => !updating.includes(follow) && isOutOfDate(follow, fetched))
+      if (qual.length > 0) {
+        let oldest = qual.reduce((old, follow) => (fetched[old.id] || 0) > (fetched[follow.id] || 0) ? follow : old)
+        if (oldest) {
+          updating.push(oldest)
+          set({updating})
+          console.log(`Updating ${oldest.title || oldest.actualTitle}`)
+          await feedycat(storage, oldest)
+          markFetched(oldest)
+          updating = updating.filter(follow => follow != oldest)
+          set({updating})
+          write(all)
+        }
+      }
+    },
+    write: (all) => (_, {location, set}) => {
       storage.user.writeFile('/follows.json', all).then(() => {
         set({all})
-        location.go("/")
       })
     },
     subscribe: fc => (_, {save}) => {
@@ -40,7 +78,7 @@ export default ({
         save(hsh)
       })
     },
-    save: follow => async ({all}, {location, set, write}) => {
+    save: follow => async ({all}, {markFetched, location, set, write}) => {
       let savedId = !!follow.id
       if (!savedId) {
         if (!follow.url.match(/^\w+:\/\//))
@@ -70,6 +108,7 @@ export default ({
         return
       }
 
+      markFetched(follow)
       if (savedId) {
         all[idx] = follow
       } else {
@@ -77,6 +116,7 @@ export default ({
       }
 
       write(all)
+      location.go("/")
     },
     remove: follow => ({all}, {write}) => {
       if (confirm("Delete " + follow.url + "?")) {
@@ -85,6 +125,7 @@ export default ({
           all.splice(idx, 1)
 
         write(all)
+        location.go("/")
       }
     }
   }

@@ -1,3 +1,4 @@
+const compare = require('./compare')
 const path = require('path')
 
 module.exports = storage
@@ -22,6 +23,21 @@ storage.prototype.readFile = async function (path) {
 storage.prototype.writeFile = async function (dest, obj) {
   await this.mkdir(path.dirname(dest)).catch(() => {})
   let data = typeof(obj) == "string" ? obj : JSON.stringify(obj)
+  let orig = null
+  try {
+    orig = await this.dat.readFile(dest)
+    if (typeof(obj) != "string") {
+      // Reload both of these objects from strings, so they can
+      // properly be compared. We don't want to write duplicate objects:
+      // they clutter up the Dat.
+      orig = JSON.parse(orig)
+      obj = JSON.parse(data)
+    }
+  } catch (e) {
+    // console.log(dest, e)
+  }
+  if (orig && compare(orig, obj))
+    return null
   return this.dat.writeFile(dest, data)
 }
 

@@ -235,7 +235,6 @@ async function feedme_get(fn, storage, meta, follow) {
     follow.posts = meta.posts.slice(0, POSTS_IN_MAIN_INDEX)
   }
 
-  follow.fetchedAt = now
   //
   // Build the 'activity' array - most recent first, then trim
   // off empty items from the history.

@@ -28,10 +28,11 @@ article {
   }
 
   a {
+    display: block;
     text-decoration: none;
     background-color: #FF0099;
     padding: 7px 9px;
-    margin: 5px;
+    margin: 15px 5px;
     border-radius: 18px;
     font-weight: bold;
     color: white;
@@ -44,16 +45,62 @@ article {
     padding: 0;
   }
 
-  .importance {
-    display: block;
+  & > ol > li {
+    border-bottom: dotted 1px #C77;
+  }
+
+  ul {
+    margin: 0;
+    padding: 0;
+
+    li {
+      display: inline-block;
+    }
+  }
+
+  #tags {
+    border-bottom: solid 1px #eee;
+    width: 100%;
+    margin-bottom: 12px;
+
+    li {
+      font-family: monospace;
+      font-size: 1.6rem;
+      margin-right: 6px;
+      text-align: center;
+      background-color: #eee;
+      box-shadow: 0 0 0 1px #ddd;
+
+      a {
+        padding: 4px 20px;
+        text-decoration: none;
+      }
+
+      a.active {
+        background-color: #fffff5;
+      }
+
+      a:hover {
+        background-color: #fff;
+      }
+    }
+  }
+
+  #imps li {
     font-family: sans-serif;
-    font-size: 1.1rem;
+    font-size: 0.9rem;
     font-variant: small-caps;
     border-bottom: none;
+    margin-right: 6px;
 
-    span {
+    a {
+      color: #975;
+    }
+
+    &.active {
+      font-size: 1.1rem;
       background: #FC9;
-      padding: 2px 4px;
+      padding: 2px 6px;
     }
   }
 
@@ -78,10 +125,6 @@ article {
     }
   }
 
-  li {
-    border-bottom: dotted 1px #C77;
-  }
-
   .latest {
     border-radius: 4px;
     background-color: #888866;
@@ -94,7 +137,7 @@ article {
   li.age-d,
   li.age-w {
     h3 a {
-      color: #667777;
+      color: #007777;
     }
     .latest {
       background-color: #559999;
@@ -104,7 +147,7 @@ article {
   li.age-m,
   li.age-h {
     h3 a {
-      color: #333333;
+      color: #003333;
     }
     .latest {
       background-color: #118844;
@@ -118,7 +161,8 @@ article {
 
   h3 img.favicon {
     background-color: #ECA;
-    margin-bottom: -3px;
+    margin-bottom: -6px;
+    margin-top: 6px;
     border-radius: 4px;
     border: solid 2px #ECA;
   }
@@ -126,7 +170,33 @@ article {
   div.extra {
     font-size: 1.1rem;
     margin-bottom: 6px;
-    padding-left: 30px;
+    padding-left: 33px;
+
+    ol.title {
+      list-style: square;
+
+      li {
+        margin-bottom: 6px;
+
+        a {
+          text-decoration: none;
+          color: #630;
+        }
+
+        a:visited {
+          color: #975;
+        }
+
+        a:hover {
+          color: #079;
+        }
+
+        .ago {
+          font-size: 0.9rem;
+          color: #590;
+        }
+      }
+    }
 
     a.collapse {
       user-select: none;
@@ -146,12 +216,28 @@ article {
   div.trunc {
     color: #975;
 
-    span.title {
+    ol.title {
       display: inline-block;
       padding-right: 6px;
       overflow: hidden;
       height: 1.5rem;
       max-width: calc(100% - 40px);
+
+      li {
+        display: inline-block;
+
+        a {
+          color: #630;
+        }
+
+        .ago {
+          display: none;
+        }
+
+        &::after {
+          content: " /\0000a0";
+        }
+      }
     }
   }
 
