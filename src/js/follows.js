@@ -118,7 +118,7 @@ export default ({
       write(all)
       location.go("/")
     },
-    remove: follow => ({all}, {write}) => {
+    remove: follow => ({all}, {location, write}) => {
       if (confirm("Delete " + follow.url + "?")) {
         let idx = getIndexById(all, follow.id)
         if (idx >= 0)

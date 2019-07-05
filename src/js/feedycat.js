@@ -30,6 +30,7 @@ async function readLoop(parser, reader, startTag, firstChunk) {
     }
     return null
   } catch (e) {
+    console.log(e)
     return chunk
   }
 }
@@ -55,7 +56,7 @@ function add_post(storage, meta, follow, item_url, item, now) {
     index = {id: item_id, url: item_url, createdAt: now}
     meta.posts.splice(i, 0, index)
   }
-  index.title = u("<div>").html((item.title || "").toString().trim() || item.description).text()
+  index.title = u("<div>" + ((item.title || "").toString().trim() || (item.description || "Untitled"))).text()
   index.publishedAt = item.publishedAt
   index.updatedAt = item.updatedAt
   
@@ -110,6 +111,7 @@ async function rss(storage, meta, follow, res) {
   if (!chunk) {
     parser.close()
   } else {
+    console.log(chunk)
     //
     // Attempt to parse as HTML, to discover the feed.
     //
@@ -128,7 +130,7 @@ async function rss(storage, meta, follow, res) {
       lastName = node.name
       if (lastName == 'link') {
         let rel = node.attributes['rel'], type = node.attributes['type']
-        if (rel == 'alternate' && type && type.match(/xml|json/i)) {
+        if ((rel == 'alternate' || rel == 'feed') && type && type.match(/xml|json/i)) {
           let title = node.attributes['title'] || "Feed"
           switch (node.attributes['type']) {
             case 'application/rss+xml':
