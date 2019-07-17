@@ -10,8 +10,16 @@ const url = require('url')
 const POSTS_IN_MAIN_INDEX = 5
 const ACTIVITY_IN_MAIN_INDEX = 180
 
+const PLAIN_HTML = 0
+const TIDDLYWIKI = 1
+
 function normalizeFeedUrl(abs, href) {
   return normalizeUrl(url.resolve(abs, href), {stripWWW: false, stripHash: true, removeTrailingSlash: false})
+}
+
+function twDate(str) {
+  return new Date(str.slice(0,4) + "-" + str.slice(4,6) + "-" + str.slice(6,8) +
+    " " + str.slice(8,10) + ":" + str.slice(10,12) + ":" + str.slice(12,14) + "Z")
 }
 
 async function readLoop(parser, reader, startTag, firstChunk) {
@@ -37,7 +45,7 @@ async function readLoop(parser, reader, startTag, firstChunk) {
 
 function add_post(storage, meta, follow, item_url, item, now) {
   let i = 0, index = null
-  let item_id = item_url.replace(/^[a-z]+:\/+[^\/]+\/+/, '').replace(/\W+/g, '_')
+  let item_id = item_url.replace(/^[a-z]+:\/+[^\/]+\/*/, '').replace(/\W+/g, '_')
   let item_stub = `${item.publishedAt.getFullYear()}/${item_id}`
 
   for (i = 0; i < meta.posts.length; i++) {
@@ -60,7 +68,8 @@ function add_post(storage, meta, follow, item_url, item, now) {
   index.publishedAt = item.publishedAt
   index.updatedAt = item.updatedAt
   
-  storage.user.writeFile(`/feeds/${follow.id}/${item_stub}.json`, item)
+  if (follow.fetchesContent)
+    storage.user.writeFile(`/feeds/${follow.id}/${item_stub}.json`, item)
 }
 
 //
@@ -111,24 +120,34 @@ async function rss(storage, meta, follow, res) {
   if (!chunk) {
     parser.close()
   } else {
-    console.log(chunk)
+    // console.log(chunk)
     //
     // Attempt to parse as HTML, to discover the feed.
     //
-    let xml = sax.createStream(false, {lowercasetags: true}),
-        feeds = [], maybeFeeds = [], lastName = null, lastHref = null
+    let xml = sax.createStream(false, {lowercasetags: true}), format = PLAIN_HTML,
+        feeds = [], maybeFeeds = [], lastName = null, lastHref = null, parents = [],
+        capture = null
     xml.on('text', text => {
       if (text && lastName == 'title') {
         follow.actualTitle = text.trim()
         lastName = null
-      } else if (lastName == 'a') {
-        if (`${lastHref} ${text}`.match(/rss|feed/i)) {
-          maybeFeeds.push({href: lastHref, title: text})
+      } else if (format == PLAIN_HTML) {
+        if (lastName == 'a') {
+          if (`${lastHref} ${text}`.match(/rss|feed/i)) {
+            maybeFeeds.push({href: lastHref, title: text})
+          }
         }
+      } else if (format == TIDDLYWIKI) {
+        if (capture)
+          capture.description += text
       }
     }).on('opentag', node => {
       lastName = node.name
-      if (lastName == 'link') {
+      if (lastName == 'meta') {
+        if (node.attributes['name'] == 'generator' && node.attributes['content'] == 'TiddlyWiki') {
+          format = TIDDLYWIKI
+        }
+      } else if (lastName == 'link') {
         let rel = node.attributes['rel'], type = node.attributes['type']
         if ((rel == 'alternate' || rel == 'feed') && type && type.match(/xml|json/i)) {
           let title = node.attributes['title'] || "Feed"
@@ -154,16 +173,50 @@ async function rss(storage, meta, follow, res) {
         } else if (rel && rel.match(/icon/i) && !rel.match(/mask/i) && !meta.photo) {
           meta.photo = node.attributes['href']
         }
-      } else if (lastName == 'a') {
-        lastHref = node.attributes['href']
+      } else if (format == PLAIN_HTML) {
+        if (lastName == 'a') {
+          lastHref = node.attributes['href']
+        }
+      } else if (format == TIDDLYWIKI) {
+        if (lastName == 'div') {
+          let p = parents[0]  
+          if (p && p.attributes['id'] == 'storeArea') {
+            let title = node.attributes['title']
+            if (title && !title.match(/^\$:\//)) {
+              let publishedAt = node.attributes['created']
+              if (publishedAt) {
+                let updatedAt = twDate(node.attributes['modified'] || publishedAt)
+                publishedAt = twDate(publishedAt)
+                capture = {description: "", publishedAt, updatedAt, title}
+              }
+            }
+          }
+          if (!node.isSelfClosing)
+            parents.unshift(node)
+        }
       }
-    }).on('closetag', node => lastName = null)
+    }).on('closetag', name => {
+      if (format == TIDDLYWIKI && name == 'div') {
+        let node = parents.shift()
+        let p = parents[0]  
+        if (p && p.attributes['id'] == 'storeArea') {
+          if (capture) {
+            capture.description = capture.description.trim()
+            add_post(storage, meta, follow, meta.feed + "#" + encodeURIComponent(capture.title), capture, now)
+            capture = null
+          }
+        }
+      }
+      lastName = null
+    })
     await readLoop(xml, reader, '<root>', chunk)
-    console.log(feeds, maybeFeeds)
+    if (format == TIDDLYWIKI)
+      return null
+    // console.log(feeds, maybeFeeds)
     if (feeds.length == 0) feeds = maybeFeeds
     if (feeds.length == 1) {
       meta.feed = normalizeFeedUrl(meta.feed, feeds[0].href)
-      return await feedme_get(storage, meta, follow)
+      return await feedme_get(storage, meta, follow, {})
     }
     return feeds
   }
@@ -218,15 +271,28 @@ function feedme_find(obj, key, where) {
   return obj ? obj[key] : text
 }
 
-async function feedme_get(fn, storage, meta, follow) {
+async function feedme_get(fn, storage, meta, follow, lastFetch) {
   let now = new Date()
-  let res = await experimental.globalFetch(meta.feed), feeds = null
-  if (res.status >= 300 && res.status < 400) {
-    meta.feed = normalizeFeedUrl(meta.feed, res.headers.get('Location'))
-    return await feedme_get(fn, storage, meta, follow)
+  let hdrs = {}
+  if (lastFetch.etag)
+    hdrs['If-None-Match'] = lastFetch.etag
+  else if (lastFetch.modified)
+    hdrs['If-Modified-Since'] = lastFetch.modified
+
+  let res = await experimental.globalFetch(meta.feed, {headers: hdrs}), feeds = null
+  if (res.status == 304) {
+    console.log(`${meta.feed} hasn't changed.`)
+    return
   }
 
-  follow.status = meta.status = res.status
+  if (res.status >= 300 && res.status < 400) {
+    meta.feed = normalizeFeedUrl(meta.feed, res.headers.get('Location'))
+    return await feedme_get(fn, storage, meta, follow, {})
+  }
+
+  follow.response = {etag: res.headers.get('ETag'),
+    modified: res.headers.get('Last-Modified'),
+    status: res.status}
   if (res.ok) {
     feeds = await fn(storage, meta, follow, res)
     if (feeds)
@@ -269,18 +335,20 @@ async function meta_get(storage, follow) {
   }
 }
 
-export default async (storage, follow) => {
+export default async (storage, follow, lastFetch) => {
   let meta = await meta_get(storage, follow)
   let url = urlToNormal(meta.url), match = null
+  if (!lastFetch)
+    lastFetch = {}
   if (!meta.feed) {
     meta.feed = follow.url
     if ((match = url.match(/^pinboard\.in\/([^?]+)/)) !== null)
       meta.feed = `http://feeds.pinboard.in/rss/${match[1]}`
   }
   if (url.startsWith('twitter.com/')) {
-    return await feedme_get(twitter, storage, meta, follow)
+    return await feedme_get(twitter, storage, meta, follow, lastFetch)
   } else if (url.startsWith('instagram.com/')) {
-    return await feedme_get(instagram, storage, meta, follow)
+    return await feedme_get(instagram, storage, meta, follow, lastFetch)
   } else if (url.startsWith('youtube.com/')) {
     return
   } else if (url.startsWith('reddit.com/')) {
@@ -288,5 +356,5 @@ export default async (storage, follow) => {
   } else if (url.startsWith('soundcloud.com/')) {
     return
   }
-  return await feedme_get(rss, storage, meta, follow)
+  return await feedme_get(rss, storage, meta, follow, lastFetch)
 }

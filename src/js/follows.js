@@ -5,9 +5,14 @@ const compare = require('./compare')
 const storage = require('./storage')
 const url = require('url')
 
+function fetchedAt(fetched, id) {
+  let fetch = fetched[id]
+  return fetch ? fetch.at : 0
+}
+
 function isOutOfDate(follow, fetched) {
   let imp = Number(follow.importance)
-  let age = (new Date()) - (fetched[follow.id] || 0)
+  let age = (new Date()) - (fetchedAt(fetched, follow.id) || 0)
   if (imp < 1) {
     // Real-time is currently a five minute check.
     return age > (5 * 60 * 1000)
@@ -42,19 +47,22 @@ export default ({
       setInterval(poll, 5000)
     },
     markFetched: follow => ({fetched}, {set}) => {
-      fetched[follow.id] = new Date()
-      window.localStorage.setItem('fraidycat', JSON.stringify({fetched}))
-      set({fetched})
+      if (follow.response) {
+        fetched[follow.id] = Object.assign(follow.response, {at: new Date()})
+        window.localStorage.setItem('fraidycat', JSON.stringify({fetched}))
+        delete follow.response
+        set({fetched})
+      }
     },
     poll: () => async ({all, fetched, updating}, {markFetched, set, write}) => {
       let qual = all.filter(follow => !updating.includes(follow) && isOutOfDate(follow, fetched))
       if (qual.length > 0) {
-        let oldest = qual.reduce((old, follow) => (fetched[old.id] || 0) > (fetched[follow.id] || 0) ? follow : old)
+        let oldest = qual.reduce((old, follow) => (fetchedAt(fetched, old.id) || 0) > (fetchedAt(fetched, follow.id) || 0) ? follow : old)
         if (oldest) {
           updating.push(oldest)
           set({updating})
           console.log(`Updating ${oldest.title || oldest.actualTitle}`)
-          await feedycat(storage, oldest)
+          await feedycat(storage, oldest, fetched[oldest.id])
           markFetched(oldest)
           updating = updating.filter(follow => follow != oldest)
           set({updating})
@@ -78,7 +86,7 @@ export default ({
         save(hsh)
       })
     },
-    save: follow => async ({all}, {markFetched, location, set, write}) => {
+    save: follow => async ({all, fetched}, {markFetched, location, set, write}) => {
       let savedId = !!follow.id
       if (!savedId) {
         if (!follow.url.match(/^\w+:\/\//))
@@ -95,7 +103,7 @@ export default ({
         return
       }
 
-      let feeds = await feedycat(storage, follow)
+      let feeds = await feedycat(storage, follow, fetched[follow.id])
       if (feeds) {
         set({feeds: {list: feeds, site: follow}})
         location.go("/add-feed")
@@ -127,6 +135,15 @@ export default ({
         write(all)
         location.go("/")
       }
+    },
+
+    add: () => (_, {location, set}) => {
+      set({editing: {importance: 0}})
+      location.go("/add")
+    },
+    edit: follow => (_, {location, set}) => {
+      set({editing: JSON.parse(JSON.stringify(follow), jsonDateParser)})
+      location.go("/edit")
     }
   }
 })

@@ -16,9 +16,9 @@ const Importances = [
   [365, 'Year']
 ]
 
-const FollowForm = (follow) => (_, {follows}) =>
+const FollowForm = (follow, isNew) => (_, {follows}) =>
   <form class="follow" onsubmit={e => e.preventDefault()}>
-    {!follow.url &&
+    {isNew &&
       <div>
         <label for="url">URL</label>
         <input type="text" id="url" name="url" value={follow.url} autocorrect="off" autocapitalize="none"
@@ -36,8 +36,8 @@ const FollowForm = (follow) => (_, {follows}) =>
     <div>
       <label for="tags">Tag(s) &mdash; separate with spaces</label>
       <input type="text" id="tags" value={follow.tags ? follow.tags.join(' ') : ''}
-        oninput={e => follow.tags = e.target.value.split(/\s+/)} />
-      <p class="note">(If left blank, tag is assumed to be '*'&mdash;the main page tag.)</p>
+        oninput={e => e.target.value ? (follow.tags = e.target.value.split(/\s+/)) : (delete follow.tags)} />
+      <p class="note">(If left blank, tag is assumed to be '&#x1f3e0;'&mdash;the main page tag.)</p>
     </div>
 
     <div>
@@ -47,26 +47,35 @@ const FollowForm = (follow) => (_, {follows}) =>
       <p class="note">(Leave empty to use <span>{follow.actualTitle || "the title loaded from the site"}</span>.)</p>
     </div>
 
+    <div>
+      <input type="checkbox" id="fetchesContent" onclick={e => follow.fetchesContent = e.target.checked} checked={follow.fetchesContent} />
+      <label for="fetchesContent">Read here?</label>
+      <p class="note">(Check this to save a copy of complete posts and read them from Fraidycat.)</p>
+    </div>
+
     <button onclick={_ => follows.save(follow)}>Save</button>
-    {follow.url && <button class="delete" onclick={_ => follows.remove(follow)}>Delete This</button>}
+    {!isNew && <button class="delete" onclick={_ => follows.remove(follow)}>Delete This</button>}
   </form>
 
 const EditFollow = ({ match }) => ({follows}) => {
-  let index = getIndexById(follows.all, match.params.id)
-  let follow = follows.all[index]
   return <div id="edit-feed">
     <h2>Edit</h2>
-    <p>URL: {follow.url}</p>
-    {FollowForm(follow)}
+    <p>URL: {follows.editing.url}</p>
+    {FollowForm(follows.editing, false)}
   </div>
 }
 
-const AddFollow = ({ match }) => () => {
+const EditFollowById = ({ match }) => ({follows}, actions) => {
+  let index = getIndexById(follows.all, match.params.id)
+  actions.follows.edit(follows.all[index])
+}
+
+const AddFollow = ({ match }) => ({follows}) => {
   return <div id="add-feed">
     <h2>Follow</h2>
     <p>What blog, wiki or social account do you want to follow?</p>
     <p class="note"><em>This can also be a Twitter or Instagram feed, a YouTube channel, a subreddit, a Soundcloud.</em></p>
-    {FollowForm({importance: 0})}
+    {FollowForm(follows.editing, true)}
   </div>
 }
 
@@ -135,12 +144,12 @@ function lastPostTime(follow) {
 
 const ListFollow = ({ match }) => ({follows}, actions) => {
   let now = new Date()
-  let tag = match.params ? match.params.tag : "*"
+  let tag = match.params ? match.params.tag : "\u{1f3e0}"
   let query = new URLSearchParams(window.location.search)
   let imp = query.get('importance') || 0
   let tags = {}, imps = {}
   let viewable = follows.all.filter(follow => {
-    let ftags = (follow.tags || ["*"])
+    let ftags = (follow.tags || ["\u{1f3e0}"])
     ftags.forEach(k => tags[k] = true)
     let isShown = ftags.includes(tag)
     if (isShown) imps[follow.importance] = true
@@ -161,7 +170,7 @@ const ListFollow = ({ match }) => ({follows}, actions) => {
         if (follow.importance != imp)
           return
 
-        return <li class={`age-${ago ? ago.slice(-1) : "X"}`}>
+        return <li key={follow.id} class={`age-${ago ? ago.slice(-1) : "X"}`}>
           <h3>
             <a href={follow.url}>
               <img class="favicon" src={follow.photo || url.resolve(follow.url, '/favicon.ico')}
@@ -173,7 +182,7 @@ const ListFollow = ({ match }) => ({follows}, actions) => {
               <svg class={`sparkline sparkline-${daily ? "d" : "w"}`}
                 width="120" height="20" stroke-width="2"
                 oncreate={el => sparkpoints(el, follow.activity, daily)}></svg></span>
-              <Link class="edit" to={`/edit/${follow.id}`} title="edit"><img src={images['270f']} /></Link>
+              <a href="javascript:;" class="edit" onclick={e => actions.follows.edit(follow)} title="edit"><img src={images['270f']} /></a>
           </h3>
           <div class="extra trunc">
             <div class="post">{<ol class="title">{follow.posts.map(f => <li><a href={f.url}>{f.title}</a> <span class="ago">{timeAgo(f.updatedAt, now)}</span></li>)}</ol>}
@@ -197,7 +206,7 @@ export default (state, actions) =>
       <section>
         <div id="menu">
           <ul>
-            <li><Link to="/add" title="Add a Follow">&#xff0b;</Link></li>
+            <li><a href="javascript:;" title="Add a Follow" onclick={e => actions.follows.add()}>&#xff0b;</a></li>
             {true ? "" : <li><Link to="/logout" title="Logout">&#x1f6aa;</Link></li>}
           </ul>
         </div>
@@ -206,7 +215,8 @@ export default (state, actions) =>
           <Route path="/" render={ListFollow} />
           <Route path="/add" render={AddFollow} />
           <Route path="/add-feed" render={AddFeed} />
-          <Route path="/edit/:id" render={EditFollow} />
+          <Route path="/edit" render={EditFollow} />
+          <Route path="/edit/:id" render={EditFollowById} />
           <Route path="/tag/:tag" render={ListFollow} />
         </Switch>
       </section>

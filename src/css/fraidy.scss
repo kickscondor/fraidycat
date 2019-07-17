@@ -179,7 +179,6 @@ article {
         margin-bottom: 6px;
 
         a {
-          text-decoration: none;
           color: #630;
         }
 
@@ -228,6 +227,7 @@ article {
 
         a {
           color: #630;
+          text-decoration: none;
         }
 
         .ago {
@@ -236,6 +236,10 @@ article {
 
         &::after {
           content: " /\0000a0";
+        }
+        
+        &:last-child::after {
+          content: "";
         }
       }
     }
@@ -255,6 +259,12 @@ article {
 @media only screen and (min-width: 600px) {
   #follows h3 a {
     max-width: calc(100% - 230px);
+  }
+}
+
+#feed-select {
+  li {
+    list-style: none;
   }
 }
 
@@ -285,8 +295,13 @@ input, textarea {
   padding: 4px;
 }
 
+input[type="checkbox"] {
+  float: left;
+  padding-right: 10px;
+}
+
 @media only screen and (min-width: 600px) {
-  input, textarea {
+  input[type="text"], textarea {
     width: 300px;
   }
 }
