@@ -2,6 +2,7 @@ import { getIndexById } from './util'
 import { h } from 'hyperapp'
 import { Link, Route, Switch } from '@kickscondor/router'
 import globe from '../images/globe.svg'
+const house = "\u{1f3e0}"
 import images from '../images/*.png'
 const url = require('url')
 
@@ -127,7 +128,7 @@ function sparkpoints(el, ary, daily) {
     len = Math.ceil(len / 3)
     for (let i = 0; i < len; i++) {
       let x = i * 3
-      points[i] = ary[x] + (ary[x + 1] || 0) + (ary[x + 2] || 0)
+      points[i] = (ary[x] || 0) + (ary[x + 1] || 0) + (ary[x + 2] || 0)
     }
   }
   if (points.every(x => x == 0))
@@ -138,45 +139,79 @@ function sparkpoints(el, ary, daily) {
 }
 
 function lastPostTime(follow) {
-  let lastPost = follow.posts[0]
-  return lastPost ? lastPost.updatedAt : new Date(0)
+  if (follow.posts) {
+    let lastPost = follow.posts[0]
+    if (lastPost)
+      return lastPost.updatedAt
+  }
+  return new Date(0)
+}
+
+function rewriteUrl(a, base) {
+  if (a.href && !a.href.match(/^[a-z]+:\/\//))
+    a.href = base + "/" + a.href
+  if (a.src && !a.src.match(/^[a-z]+:\/\//))
+    a.src = base + "/" + a.src
+}
+
+const ViewFollowById = ({ match }) => ({follows}, actions) => {
+  let now = new Date()
+  let index = getIndexById(follows.all, match.params.id)
+  let follow = follows.all[index]
+  let posts = actions.follows.getPosts(follow.id, 0, 20)
+  return <div id="reader">
+    <h1>{follow.title || follow.actualTitle}</h1>
+    <ol>{posts && posts.slice(0, 20).map(post => {
+      let details = actions.follows.getPostDetails({post, id: follow.id})
+      return <li key={post.id}>
+        <h2>{details && details.title}</h2>
+        <div class="content" innerHTML={details && (details.description || details.content_html || (details.content ? details.content.text : ""))} />
+        <div class="meta">{timeAgo(post.updatedAt, now)} ago</div>
+      </li>
+    })}
+    </ol>
+    </div>
 }
 
 const ListFollow = ({ match }) => ({follows}, actions) => {
   let now = new Date()
-  let tag = match.params ? match.params.tag : "\u{1f3e0}"
+  let tag = match.params ? match.params.tag : house
   let query = new URLSearchParams(window.location.search)
   let imp = query.get('importance') || 0
   let tags = {}, imps = {}
   let viewable = follows.all.filter(follow => {
-    let ftags = (follow.tags || ["\u{1f3e0}"])
+    let ftags = (follow.tags || [house])
     ftags.forEach(k => tags[k] = true)
     let isShown = ftags.includes(tag)
     if (isShown) imps[follow.importance] = true
     return isShown
   }).sort((a, b) => (a.importance - b.importance) || (lastPostTime(b) - lastPostTime(a)))
+  let tagTabs = Object.keys(tags).filter(t => t != house).sort()
+  tagTabs.unshift(house)
 
   return <div id="follows">
     <ul id="tags">
-    {Object.keys(tags).sort().map(t => <li><Link to={`/tag/${t}`} class={t == tag ? 'active' : null}>{t}</Link></li>)}
+    {tagTabs.map(t => <li><Link to={`/tag/${t}`} class={t == tag ? 'active' : null}>{t}</Link></li>)}
     </ul>
     <ul id="imps">
     {Importances.map(sel => (imps[sel[0]] && (sel[0] == imp ? <li class='active'>{sel[1]}</li> : <li><Link to={query.set('importance', sel[0]) || `/tag/${tag}?${query}`}>{sel[1]}</Link></li>)))}
     </ul>
     <ol>{viewable.map(follow => {
-        let lastPost = follow.posts[0], tags = []
+        let lastPost = (follow.posts && follow.posts[0]), tags = []
         let ago = lastPost && timeAgo(lastPost.updatedAt, now)
         let daily = follow.importance < 7
         if (follow.importance != imp)
           return
 
+        let linkUrl = follow.fetchesContent ? `/view/${follow.id}` : follow.url
         return <li key={follow.id} class={`age-${ago ? ago.slice(-1) : "X"}`}>
+          <Link to={linkUrl}></Link>
           <h3>
-            <a href={follow.url}>
-              <img class="favicon" src={follow.photo || url.resolve(follow.url, '/favicon.ico')}
+            <Link to={linkUrl}>
+              <img class="favicon" src={url.resolve(follow.url, follow.photo || '/favicon.ico')}
                 onerror={e => e.target.src=globe} width="20" height="20" />
-            </a>
-            <a class="url" href={follow.url}>{follow.title || follow.actualTitle}</a>
+            </Link>
+            <Link class="url" to={linkUrl}>{follow.title || follow.actualTitle}</Link>
             {ago && <span class="latest">{ago}</span>}
             <span title={`graph of the last ${daily ? 'two' : 'six'} months`}>
               <svg class={`sparkline sparkline-${daily ? "d" : "w"}`}
@@ -185,12 +220,11 @@ const ListFollow = ({ match }) => ({follows}, actions) => {
               <a href="javascript:;" class="edit" onclick={e => actions.follows.edit(follow)} title="edit"><img src={images['270f']} /></a>
           </h3>
           <div class="extra trunc">
-            <div class="post">{<ol class="title">{follow.posts.map(f => <li><a href={f.url}>{f.title}</a> <span class="ago">{timeAgo(f.updatedAt, now)}</span></li>)}</ol>}
-              <a class="collapse" href="javascript:;"
-                onclick={e => u(e.target).closest(".extra").toggleClass("trunc")}>&#x2022;&#x2022;&#x2022;</a>
+            <div class="post">{follow.posts && <ol class="title">{follow.posts.map(f => <li>{follow.fetchesContent ? f.title : <a href={f.url}>{f.title}</a>} <span class="ago">{timeAgo(f.updatedAt, now)}</span></li>)}</ol>}
+              {!follow.fetchesContent && <a class="collapse" href="javascript:;"
+                onclick={e => u(e.target).closest(".extra").toggleClass("trunc")}>&#x2022;&#x2022;&#x2022;</a>}
             </div>
             <div class="note">{follow.description}</div>
-            <a href={follow.url}></a>
           </div>
         </li>
       })}</ol>
@@ -217,6 +251,7 @@ export default (state, actions) =>
           <Route path="/add-feed" render={AddFeed} />
           <Route path="/edit" render={EditFollow} />
           <Route path="/edit/:id" render={EditFollowById} />
+          <Route path="/view/:id" render={ViewFollowById} />
           <Route path="/tag/:tag" render={ListFollow} />
         </Switch>
       </section>

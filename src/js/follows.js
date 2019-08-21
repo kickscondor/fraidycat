@@ -2,6 +2,7 @@ import { getIndexById, urlToID, urlToNormal } from './util'
 import { jsonDateParser } from "json-date-parser"
 import feedycat from './feedycat'
 const compare = require('./compare')
+const quicklru = require('quick-lru')
 const storage = require('./storage')
 const url = require('url')
 
@@ -29,7 +30,7 @@ function isOutOfDate(follow, fetched) {
 }
 
 export default ({
-  state: {all: [], updating: [], fetched: {}, started: false},
+  state: {all: [], updating: [], fetched: {}, started: false, postCache: new quicklru({maxSize: 1000})},
   actions: {
     init: () => (_, {startup}) => {
       storage.setup(() => {
@@ -86,6 +87,33 @@ export default ({
         save(hsh)
       })
     },
+    getPosts: id => ({postCache}, {set}) => {
+      let posts = postCache.get(id)
+      if (posts == null) {
+        postCache.set(id, [])
+        storage.user.readFile(`/feeds/${id}.json`).then(str => {
+          let meta = JSON.parse(str, jsonDateParser)          
+          postCache.set(id, meta.posts)
+          set({postCache})
+        }, err => {})
+      }
+      return posts
+    },
+    getPostDetails: ({id, post}) => ({postCache}, {set}) => {
+      if (post) {
+        let fullId = `${id}/${post.publishedAt.getFullYear()}/${post.id}`
+        let deets = postCache.get(fullId)
+        if (deets == null) {
+          postCache.set(fullId, {})
+          storage.user.readFile(`/feeds/${fullId}.json`).then(str => {
+            let obj = JSON.parse(str, jsonDateParser)
+            postCache.set(fullId, obj)
+            set({postCache})
+          }, err => {})
+        }
+        return deets
+      }
+    },
     save: follow => async ({all, fetched}, {markFetched, location, set, write}) => {
       let savedId = !!follow.id
       if (!savedId) {
@@ -103,7 +131,7 @@ export default ({
         return
       }
 
-      let feeds = await feedycat(storage, follow, fetched[follow.id])
+      let feeds = await feedycat(storage, follow)
       if (feeds) {
         set({feeds: {list: feeds, site: follow}})
         location.go("/add-feed")
