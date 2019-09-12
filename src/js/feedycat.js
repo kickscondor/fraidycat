@@ -1,5 +1,4 @@
 import { getIndexById, urlToID, urlToNormal } from './util'
-import { jsonDateParser } from "json-date-parser"
 import u from 'umbrellajs'
 
 const normalizeUrl = require('normalize-url')
@@ -20,27 +19,6 @@ function normalizeFeedUrl(abs, href) {
 function twDate(str) {
   return new Date(str.slice(0,4) + "-" + str.slice(4,6) + "-" + str.slice(6,8) +
     " " + str.slice(8,10) + ":" + str.slice(10,12) + ":" + str.slice(12,14) + "Z")
-}
-
-async function readLoop(parser, reader, startTag, firstChunk) {
-  let chunk = null
-  try {
-    let decoder = new TextDecoder()
-    if (startTag)
-      parser.write(startTag)
-    if (firstChunk)
-      parser.write(firstChunk)
-    while (true) {
-      const {done, value} = await reader.read()
-      if (done) break
-      chunk = decoder.decode(value)
-      parser.write(chunk)
-    }
-    return null
-  } catch (e) {
-    console.log(e)
-    return chunk
-  }
 }
 
 function add_photo(obj, key, val) {
@@ -84,7 +62,6 @@ function add_post(storage, meta, follow, item_url, item, now) {
 //    * A summary is kept in the hash at 'follows.json'.
 //
 async function rss(storage, meta, follow, res) {
-  let reader = res.body.getReader()
   let parser = new feedme()
   let now = new Date()
 
@@ -93,7 +70,7 @@ async function rss(storage, meta, follow, res) {
       add_photo(meta, link.rel, url.resolve(meta.feed, link.href))
       return
     }
-    link = feedme_find(link, 'href', [['type', 'text/html']])
+    link = feedme_find(link, 'href', [['rel', 'alternate'], ['type', 'text/html']])
     if (link)
       meta.url = url.resolve(meta.feed, link)
   })
@@ -108,16 +85,17 @@ async function rss(storage, meta, follow, res) {
     let item_url = url.resolve(meta.feed, feedme_find(link, 'href', [['rel', 'alternate'], ['type', 'text/html']]))
     item.publishedAt = new Date(item.date_published || item.pubdate || item.published || item['dc:date'])
     item.updatedAt = new Date(item.date_modified || item.updated || item.date_published || item.pubdate || item.published || item['dc:date'])
+    if ('mastodon:scope' in item && 'summary' in item)
+      item.title = feedme_find(item.summary, 'content', [['type', 'html']])
     add_post(storage, meta, follow, item_url, item, now)
   }
   parser.on('entry', item_func)
   parser.on('item', item_func)
 
-  let chunk = await readLoop(parser, reader)
-  if (!chunk) {
+  try {
+    parser.write(res.body)
     parser.close()
-  } else {
-    // console.log(chunk)
+  } catch (e) {
     //
     // Attempt to parse as HTML, to discover the feed.
     //
@@ -204,7 +182,8 @@ async function rss(storage, meta, follow, res) {
       }
       lastName = null
     })
-    await readLoop(xml, reader, '<root>', chunk)
+    xml.write('<root>')
+    xml.write(res.body)
     if (format == TIDDLYWIKI)
       return null
     if (feeds.length == 0) feeds = maybeFeeds
@@ -216,9 +195,31 @@ async function rss(storage, meta, follow, res) {
   }
 }
 
+// This uses RSS for the feed, but uses the site's social media
+// metadata for the avatar, title and such.
+async function site_rss(storage, meta, follow, res) {
+  let doc = u('<div>').html(res.body)
+  let can = doc.find('link[rel="canonical"]')
+  if (can.length != 0)
+    meta.url = can.attr('href')
+  meta.title = doc.find('meta[property="twitter:title"]').attr('content')
+  meta.photos = {avatar: doc.find('meta[property="twitter:image"]').attr('content')}
+  meta.description = doc.find('meta[property="twitter:description"]').attr('content')
+
+  let url = urlToNormal(meta.url), match = null
+  if ((match = url.match(/^youtube\.com\/channel\/([-\w]+)/)) !== null) {
+    meta.feed = `https://www.youtube.com/feeds/videos.xml?channel_id=${match[1]}`
+  } else if ((match = url.match(/^([\.\w]+\.)?reddit\.com\/r\/([^\/]+)/)) !== null) {
+    meta.feed = `http://www.reddit.com/r/${match[2]}/top/.rss?sort=top`
+  } else if ((match = url.match(/^([\.\w]+\.)?reddit\.com\/user\/([^\/]+)/)) !== null) {
+    meta.feed = `http://www.reddit.com/user/${match[2]}/.rss`
+  }
+  return await feedme_get(rss, storage, meta, follow, {})
+}
+
 async function twitter(storage, meta, follow, res) {
   let now = new Date()
-  let doc = u('<div>').html(await res.text())
+  let doc = u('<div>').html(res.body)
   meta.title = doc.find('title').text()
   meta.photos = {avatar: doc.find('img.ProfileAvatar-image').attr('src')}
   meta.description = doc.find('p.ProfileHeaderCard-bio').html()
@@ -233,7 +234,7 @@ async function twitter(storage, meta, follow, res) {
 
 async function instagram(storage, meta, follow, res) {
   let now = new Date()
-  let doc = u('<div>').html(await res.text())
+  let doc = u('<div>').html(res.body)
   meta.title = doc.find('title').text().trim()
   doc.find('script').each(script => {
     let scr = script.innerText.match(/([^{]+?({.*profile_pic_url.*})[^}]+?)/)
@@ -257,7 +258,7 @@ async function instagram(storage, meta, follow, res) {
 
 async function soundcloud(storage, meta, follow, res) {
   let now = new Date()
-  let doc = u('<div>').html(await res.text())
+  let doc = u('<div>').html(res.body)
   throw "This is a joke!"
   meta.title = doc.find('title').text()
   meta.photos = {avatar: doc.find('meta[property="twitter:image"]').attr('content')}
@@ -270,13 +271,6 @@ async function soundcloud(storage, meta, follow, res) {
       publishedAt: item_time, updatedAt: item_time}
     add_post(storage, meta, follow, item_url, item, now)
   })
-}
-
-async function youtube(storage, meta, follow, res) {
-  let now = new Date()
-  let doc = u('<div>').html(await res.text())
-  meta.feed = doc.find('link[rel="canonical"]').attr('href')
-  return await feedme_get(rss, storage, meta, follow, {})
 }
 
 function find_one(obj, where) {
@@ -310,24 +304,25 @@ async function feedme_get(fn, storage, meta, follow, lastFetch) {
       hdrs['If-Modified-Since'] = lastFetch.modified
   }
 
-  let res = await experimental.globalFetch(meta.feed, {headers: hdrs}), feeds = null
-  console.log([meta.feed, res.status, res.ok, lastFetch])
+  let res = await storage.user.fetch(meta.feed, {headers: hdrs}), feeds = null
+  console.log([meta.feed, res, lastFetch])
   if (res.status == 304) {
     console.log(`${meta.feed} hasn't changed.`)
     return
   }
 
   if (res.status >= 300 && res.status < 400) {
-    meta.feed = normalizeFeedUrl(meta.feed, res.headers.get('Location'))
+    meta.feed = normalizeFeedUrl(meta.feed, res.headers['Location'])
     return await feedme_get(fn, storage, meta, follow, {})
   }
 
-  follow.response = {etag: res.headers.get('ETag'),
-    modified: res.headers.get('Last-Modified'),
+  follow.response = {etag: res.headers['ETag'],
+    modified: res.headers['Last-Modified'],
     status: res.status}
   if (!res.ok)
     throw `${meta.feed} is giving a ${res.status} error.`
 
+  meta.feed = res.url
   feeds = await fn(storage, meta, follow, res)
   if (feeds)
     return feeds
@@ -363,8 +358,7 @@ async function feedme_get(fn, storage, meta, follow, lastFetch) {
 
 async function meta_get(storage, follow) {
   try {
-    let data = await storage.user.readFile(`/feeds/${follow.id}.json`)
-    return JSON.parse(data, jsonDateParser)
+    return await storage.user.readFile(`/feeds/${follow.id}.json`)
   } catch (e) {
     return {createdAt: new Date(), url: follow.url, posts: []}
   }
@@ -375,18 +369,12 @@ export default async (storage, follow, lastFetch) => {
   let url = urlToNormal(meta.url), match = null
   if (!lastFetch)
     lastFetch = {}
+  let proc = rss
   if (!meta.feed) {
     meta.feed = follow.url
     if ((match = url.match(/^pinboard\.in\/([^?]+)/)) !== null)
       meta.feed = `http://feeds.pinboard.in/rss/${match[1]}`
-    else if ((match = url.match(/^youtube\.com\/channel\/([-\w]+)/)) !== null)
-      meta.feed = `https://www.youtube.com/feeds/videos.xml?channel_id=${match[1]}`
-    else if ((match = url.match(/^([\.\w]+\.)?reddit\.com\/r\/([^\/]+)/)) !== null)
-      meta.feed = `http://www.reddit.com/r/${match[2]}/top/.rss?sort=top`
-    else if ((match = url.match(/^([\.\w]+\.)?reddit\.com\/user\/([^\/]+)/)) !== null)
-      meta.feed = `http://www.reddit.com/user/${match[2]}/.rss`
   }
-  let proc = rss
   if (url.startsWith('twitter.com/')) {
     proc = twitter
   } else if (url.startsWith('instagram.com/')) {
@@ -394,7 +382,9 @@ export default async (storage, follow, lastFetch) => {
   } else if (url.startsWith('soundcloud.com/')) {
     proc = soundcloud
   } else if (url.startsWith('youtube.com/')) {
-    proc = youtube
+    proc = site_rss
+  } else if ((match = url.match(/^([\.\w]+\.)?reddit\.com\//)) !== null) {
+    proc = site_rss
   }
   return await feedme_get(proc, storage, meta, follow, lastFetch)
 }

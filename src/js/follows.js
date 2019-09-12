@@ -3,7 +3,12 @@ import { jsonDateParser } from "json-date-parser"
 import feedycat from './feedycat'
 const compare = require('./compare')
 const quicklru = require('quick-lru')
-const storage = require('./storage')
+let storage = null
+if (process.env.STORAGE === 'dat') {
+  storage = require('./storage/dat')
+} else {
+  storage = require('./storage/webext')
+}
 const url = require('url')
 
 function fetchedAt(fetched, id) {
@@ -34,8 +39,7 @@ export default ({
   actions: {
     init: () => (_, {startup}) => {
       storage.setup(() => {
-        storage.user.readFile('/follows.json').then(data => {
-          let all = JSON.parse(data, jsonDateParser)
+        storage.user.readFile('/follows.json').then(all => {
           startup({all, started: true})
         }, err => {
           startup({started: true})
@@ -43,14 +47,17 @@ export default ({
       })
     },
     startup: obj => (_, {poll, set}) => {
-      let saved = JSON.parse(window.localStorage.getItem('fraidycat') || '{"fetched": {}}', jsonDateParser)
-      set(Object.assign(obj, saved))
-      setInterval(poll, 5000)
+      storage.user.localGet('fraidycat', {fetched: {}}).then(saved => {
+        Object.assign(obj, saved)
+        console.log(obj)
+        set(obj)
+        setInterval(poll, 5000)
+      })
     },
     markFetched: follow => ({fetched}, {set}) => {
       if (follow.response) {
         fetched[follow.id] = Object.assign(follow.response, {at: new Date()})
-        window.localStorage.setItem('fraidycat', JSON.stringify({fetched}))
+        storage.user.localSet('fraidycat', {fetched})
         delete follow.response
         set({fetched})
       }
@@ -91,8 +98,7 @@ export default ({
       let posts = postCache.get(id)
       if (posts == null) {
         postCache.set(id, [])
-        storage.user.readFile(`/feeds/${id}.json`).then(str => {
-          let meta = JSON.parse(str, jsonDateParser)          
+        storage.user.readFile(`/feeds/${id}.json`).then(meta => {
           postCache.set(id, meta.posts)
           set({postCache})
         }, err => {})
@@ -105,8 +111,7 @@ export default ({
         let deets = postCache.get(fullId)
         if (deets == null) {
           postCache.set(fullId, {})
-          storage.user.readFile(`/feeds/${fullId}.json`).then(str => {
-            let obj = JSON.parse(str, jsonDateParser)
+          storage.user.readFile(`/feeds/${fullId}.json`).then(obj => {
             postCache.set(fullId, obj)
             set({postCache})
           }, err => {})
@@ -165,11 +170,13 @@ export default ({
       }
     },
 
-    add: () => (_, {location, set}) => {
+    add: (e) => (_, {location, set}) => {
+      e.preventDefault()
       set({editing: {importance: 0}})
       location.go("/add")
     },
-    edit: follow => (_, {location, set}) => {
+    edit: (e, follow) => (_, {location, set}) => {
+      e.preventDefault()
       set({editing: JSON.parse(JSON.stringify(follow), jsonDateParser)})
       location.go("/edit")
     }

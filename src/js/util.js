@@ -1,5 +1,13 @@
 const normalizeUrl = require('normalize-url')
 
+export async function responseToObject (resp) {
+  let headers = {}
+  let body = await resp.text()
+  for (let h of resp.headers)
+    headers[h[0]] = h[1]
+  return {status: resp.status, ok: resp.ok, url: resp.url, body, headers}
+}
+
 export function getIndexById (ary, id) {
   for (let i = 0; i < ary.length; i++) {
     if (ary[i].id == id)

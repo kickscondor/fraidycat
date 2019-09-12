@@ -11,14 +11,14 @@ export const hyperload = tree => {
   const actions = tree.actions || {}
   const view = tree.view
 
-  modules.location = location
+  modules.location = location({hashRouting: true})
   for (let name in modules) {
     state[name] = modules[name].state || {}
     actions[name] = Object.assign({set: o => o}, modules[name].actions)
   }
 
   actions.initialize = _ => (_, actions) => {
-    location.subscribe(actions.location)
+    modules.location.subscribe(actions.location)
 
     if (typeof(actions.init) !== 'undefined') {
       actions.init()

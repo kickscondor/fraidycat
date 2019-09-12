@@ -1,0 +1,18 @@
+{
+  "manifest_version": 2,
+  "name": "Fraidycat",
+  "version": "1.0",
+  "description": "Follow from afar.",
+  "homepage_url": "https://fraidyc.at/",
+
+  "options_ui": {
+    "page": "index.html"
+  },
+  "background": {
+    "scripts": ["background.js"]
+  },
+  "browser_action": {
+    "default_title": "Read"
+  },
+  "permissions": ["http://*/", "https://*/", "storage", "tabs"]
+}

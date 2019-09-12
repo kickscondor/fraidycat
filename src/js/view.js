@@ -9,6 +9,8 @@ const url = require('url')
 import u from 'umbrellajs'
 import sparkline from '@fnando/sparkline'
 
+const CAN_ARCHIVE = (process.env.STORAGE != 'webext')
+
 const Importances = [
   [0,   'Real-time'],
   [1,   'Daily'],
@@ -21,7 +23,7 @@ const FollowForm = (follow, isNew) => (_, {follows}) =>
   <form class="follow" onsubmit={e => e.preventDefault()}>
     {isNew &&
       <div>
-        <label for="url">URL</label>
+        <label for="url">URL <img src={images['supported']} /></label>
         <input type="text" id="url" name="url" value={follow.url} autocorrect="off" autocapitalize="none"
           oninput={e => follow.url = e.target.value} />
       </div>}
@@ -48,11 +50,12 @@ const FollowForm = (follow, isNew) => (_, {follows}) =>
       <p class="note">(Leave empty to use <span>{follow.actualTitle || "the title loaded from the site"}</span>.)</p>
     </div>
 
-    <div>
-      <input type="checkbox" id="fetchesContent" onclick={e => follow.fetchesContent = e.target.checked} checked={follow.fetchesContent} />
-      <label for="fetchesContent">Read here?</label>
-      <p class="note">(Check this to save a copy of complete posts and read them from Fraidycat.)</p>
-    </div>
+    {CAN_ARCHIVE &&
+      <div>
+        <input type="checkbox" id="fetchesContent" onclick={e => follow.fetchesContent = e.target.checked} checked={follow.fetchesContent} />
+        <label for="fetchesContent">Read here?</label>
+        <p class="note">(Check this to save a copy of complete posts and read them from Fraidycat.)</p>
+      </div>}
 
     <button onclick={_ => follows.save(follow)}>Save</button>
     {!isNew && <button class="delete" onclick={_ => follows.remove(follow)}>Delete This</button>}
@@ -120,20 +123,24 @@ function timeAgo(from_time, to_time) {
 }
 
 function sparkpoints(el, ary, daily) {
-  let points = [], len = 60
+  let points = [], len = ary.length
   if (daily) {
     points = ary.slice(0, 60)
-    len = points.length
-  } else {
+    if (points.every(x => x == 0))
+      daily = false
+    else
+      len = points.length
+  }
+  if (!daily) {
     len = Math.ceil(len / 3)
     for (let i = 0; i < len; i++) {
       let x = i * 3
       points[i] = (ary[x] || 0) + (ary[x + 1] || 0) + (ary[x + 2] || 0)
     }
+    if (points.every(x => x == 0))
+      len = 0
   }
-  if (points.every(x => x == 0))
-    len = 0
-  el.setAttribute('width', len * 2)
+  u(el).addClass(`sparkline-${daily ? "d" : "w"}`).attr('width', len * 2)
   if (len > 0)
     sparkline(el, points.reverse())
 }
@@ -161,6 +168,7 @@ const ViewFollowById = ({ match }) => ({follows}, actions) => {
   let posts = actions.follows.getPosts(follow.id, 0, 20)
   return <div id="reader">
     <h1>{follow.title || follow.actualTitle}</h1>
+    {follow.description && <div class="note">{follow.description}</div>}
     <ol>{posts && posts.slice(0, 20).map(post => {
       let details = actions.follows.getPostDetails({post, id: follow.id})
       return <li key={post.id}>
@@ -175,10 +183,9 @@ const ViewFollowById = ({ match }) => ({follows}, actions) => {
 
 const ListFollow = ({ match }) => ({follows}, actions) => {
   let now = new Date()
-  let tag = match.params ? match.params.tag : house
-  let query = new URLSearchParams(window.location.search)
-  let imp = query.get('importance') || 0
+  let tag = match.params.tag ? match.params.tag : house
   let tags = {}, imps = {}
+  console.log([tag, follows])
   let viewable = follows.all.filter(follow => {
     let ftags = (follow.tags || [house])
     ftags.forEach(k => tags[k] = true)
@@ -186,6 +193,7 @@ const ListFollow = ({ match }) => ({follows}, actions) => {
     if (isShown) imps[follow.importance] = true
     return isShown
   }).sort((a, b) => (a.importance - b.importance) || (lastPostTime(b) - lastPostTime(a)))
+  let imp = match.params.importance || (viewable.length > 0 ? viewable[0].importance : 0)
   let tagTabs = Object.keys(tags).filter(t => t != house).sort()
   tagTabs.unshift(house)
 
@@ -194,7 +202,7 @@ const ListFollow = ({ match }) => ({follows}, actions) => {
     {tagTabs.map(t => <li><Link to={`/tag/${t}`} class={t == tag ? 'active' : null}>{t}</Link></li>)}
     </ul>
     <ul id="imps">
-    {Importances.map(sel => (imps[sel[0]] && (sel[0] == imp ? <li class='active'>{sel[1]}</li> : <li><Link to={query.set('importance', sel[0]) || `/tag/${tag}?${query}`}>{sel[1]}</Link></li>)))}
+    {Importances.map(sel => (imps[sel[0]] && (sel[0] == imp ? <li class='active'>{sel[1]}</li> : <li><Link to={`/tag/${tag}?importance=${sel[0]}`}>{sel[1]}</Link></li>)))}
     </ul>
     <ol>{viewable.map(follow => {
         let lastPost = (follow.posts && follow.posts[0]), tags = []
@@ -204,8 +212,10 @@ const ListFollow = ({ match }) => ({follows}, actions) => {
           return
 
         let linkUrl = follow.fetchesContent ? `/view/${follow.id}` : follow.url
-        return <li key={follow.id} class={`age-${ago ? ago.slice(-1) : "X"}`}>
+        let id = `follow-${follow.id}`
+        return <li key={id} class={`age-${ago ? ago.slice(-1) : "X"}`}>
           <Link to={linkUrl}></Link>
+          <a name={id}></a>
           <h3>
             <Link to={linkUrl}>
               <img class="favicon" src={url.resolve(follow.url, follow.photo || '/favicon.ico')}
@@ -214,17 +224,16 @@ const ListFollow = ({ match }) => ({follows}, actions) => {
             <Link class="url" to={linkUrl}>{follow.title || follow.actualTitle}</Link>
             {ago && <span class="latest">{ago}</span>}
             <span title={`graph of the last ${daily ? 'two' : 'six'} months`}>
-              <svg class={`sparkline sparkline-${daily ? "d" : "w"}`}
+              <svg class="sparkline"
                 width="120" height="20" stroke-width="2"
                 oncreate={el => sparkpoints(el, follow.activity, daily)}></svg></span>
-              <a href="javascript:;" class="edit" onclick={e => actions.follows.edit(follow)} title="edit"><img src={images['270f']} /></a>
+              <a href="#" class="edit" onclick={e => actions.follows.edit(e, follow)} title="edit"><img src={images['270f']} /></a>
           </h3>
           <div class="extra trunc">
             <div class="post">{follow.posts && <ol class="title">{follow.posts.map(f => <li>{follow.fetchesContent ? f.title : <a href={f.url}>{f.title}</a>} <span class="ago">{timeAgo(f.updatedAt, now)}</span></li>)}</ol>}
-              {!follow.fetchesContent && <a class="collapse" href="javascript:;"
-                onclick={e => u(e.target).closest(".extra").toggleClass("trunc")}>&#x2022;&#x2022;&#x2022;</a>}
+              {!follow.fetchesContent && <a class="collapse" href="#"
+                onclick={e => {e.preventDefault(); u(e.target).closest(".extra").toggleClass("trunc")}}>&#x2022;&#x2022;&#x2022;</a>}
             </div>
-            <div class="note">{follow.description}</div>
           </div>
         </li>
       })}</ol>
@@ -240,19 +249,19 @@ export default (state, actions) =>
       <section>
         <div id="menu">
           <ul>
-            <li><a href="javascript:;" title="Add a Follow" onclick={e => actions.follows.add()}>&#xff0b;</a></li>
+            <li><a href="#" title="Add a Follow" onclick={e => actions.follows.add(e)}>&#xff0b;</a></li>
             {true ? "" : <li><Link to="/logout" title="Logout">&#x1f6aa;</Link></li>}
           </ul>
         </div>
 
         <Switch>
-          <Route path="/" render={ListFollow} />
           <Route path="/add" render={AddFollow} />
           <Route path="/add-feed" render={AddFeed} />
           <Route path="/edit" render={EditFollow} />
           <Route path="/edit/:id" render={EditFollowById} />
           <Route path="/view/:id" render={ViewFollowById} />
           <Route path="/tag/:tag" render={ListFollow} />
+          <Route render={ListFollow} />
         </Switch>
       </section>
     </article>)
