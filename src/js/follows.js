@@ -1,5 +1,4 @@
 import { getIndexById, urlToID, urlToNormal } from './util'
-import { jsonDateParser } from "json-date-parser"
 import feedycat from './feedycat'
 const compare = require('./compare')
 const quicklru = require('quick-lru')
@@ -168,17 +167,6 @@ export default ({
         write(all)
         location.go("/")
       }
-    },
-
-    add: (e) => (_, {location, set}) => {
-      e.preventDefault()
-      set({editing: {importance: 0}})
-      location.go("/add")
-    },
-    edit: (e, follow) => (_, {location, set}) => {
-      e.preventDefault()
-      set({editing: JSON.parse(JSON.stringify(follow), jsonDateParser)})
-      location.go("/edit")
     }
   }
 })

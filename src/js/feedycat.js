@@ -312,12 +312,12 @@ async function feedme_get(fn, storage, meta, follow, lastFetch) {
   }
 
   if (res.status >= 300 && res.status < 400) {
-    meta.feed = normalizeFeedUrl(meta.feed, res.headers['Location'])
+    meta.feed = normalizeFeedUrl(meta.feed, res.headers['location'])
     return await feedme_get(fn, storage, meta, follow, {})
   }
 
-  follow.response = {etag: res.headers['ETag'],
-    modified: res.headers['Last-Modified'],
+  follow.response = {etag: res.headers['etag'],
+    modified: res.headers['last-modified'],
     status: res.status}
   if (!res.ok)
     throw `${meta.feed} is giving a ${res.status} error.`

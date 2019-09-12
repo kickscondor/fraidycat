@@ -1,5 +1,6 @@
 import { getIndexById } from './util'
 import { h } from 'hyperapp'
+import { jsonDateParser } from "json-date-parser"
 import { Link, Route, Switch } from '@kickscondor/router'
 import globe from '../images/globe.svg'
 const house = "\u{1f3e0}"
@@ -19,8 +20,9 @@ const Importances = [
   [365, 'Year']
 ]
 
-const FollowForm = (follow, isNew) => (_, {follows}) =>
-  <form class="follow" onsubmit={e => e.preventDefault()}>
+const FollowForm = (isNew) => ({follows}, actions) => {
+  let follow = follows.editing
+  return follow && <form class="follow" onsubmit={e => e.preventDefault()}>
     {isNew &&
       <div>
         <label for="url">URL <img src={images['supported']} /></label>
@@ -57,29 +59,33 @@ const FollowForm = (follow, isNew) => (_, {follows}) =>
         <p class="note">(Check this to save a copy of complete posts and read them from Fraidycat.)</p>
       </div>}
 
-    <button onclick={_ => follows.save(follow)}>Save</button>
-    {!isNew && <button class="delete" onclick={_ => follows.remove(follow)}>Delete This</button>}
+    <button onclick={_ => actions.follows.save(follow)}>Save</button>
+    {!isNew && <button class="delete" onclick={_ => actions.follows.remove(follow)}>Delete This</button>}
   </form>
+}
 
-const EditFollow = ({ match }) => ({follows}) => {
+const EditFollowById = ({ match, setup }) => ({follows}) => {
+  if (setup) {
+    let index = getIndexById(follows.all, match.params.id)
+    follows.editing = JSON.parse(JSON.stringify(follows.all[index]), jsonDateParser)
+  }
+
   return <div id="edit-feed">
     <h2>Edit</h2>
     <p>URL: {follows.editing.url}</p>
-    {FollowForm(follows.editing, false)}
+    {FollowForm(false)}
   </div>
 }
 
-const EditFollowById = ({ match }) => ({follows}, actions) => {
-  let index = getIndexById(follows.all, match.params.id)
-  actions.follows.edit(follows.all[index])
-}
+const AddFollow = ({ match, setup }) => ({follows}) => {
+  if (setup)
+    follows.editing = {importance: 0}
 
-const AddFollow = ({ match }) => ({follows}) => {
   return <div id="add-feed">
     <h2>Follow</h2>
     <p>What blog, wiki or social account do you want to follow?</p>
     <p class="note"><em>This can also be a Twitter or Instagram feed, a YouTube channel, a subreddit, a Soundcloud.</em></p>
-    {FollowForm(follows.editing, true)}
+    {FollowForm(true)}
   </div>
 }
 
@@ -227,7 +233,7 @@ const ListFollow = ({ match }) => ({follows}, actions) => {
               <svg class="sparkline"
                 width="120" height="20" stroke-width="2"
                 oncreate={el => sparkpoints(el, follow.activity, daily)}></svg></span>
-              <a href="#" class="edit" onclick={e => actions.follows.edit(e, follow)} title="edit"><img src={images['270f']} /></a>
+              <Link to={`/edit/${follow.id}`} class="edit" title="edit"><img src={images['270f']} /></Link>
           </h3>
           <div class="extra trunc">
             <div class="post">{follow.posts && <ol class="title">{follow.posts.map(f => <li>{follow.fetchesContent ? f.title : <a href={f.url}>{f.title}</a>} <span class="ago">{timeAgo(f.updatedAt, now)}</span></li>)}</ol>}
@@ -249,7 +255,7 @@ export default (state, actions) =>
       <section>
         <div id="menu">
           <ul>
-            <li><a href="#" title="Add a Follow" onclick={e => actions.follows.add(e)}>&#xff0b;</a></li>
+            <li><Link to="/add" title="Add a Follow">&#xff0b;</Link></li>
             {true ? "" : <li><Link to="/logout" title="Logout">&#x1f6aa;</Link></li>}
           </ul>
         </div>
@@ -257,7 +263,6 @@ export default (state, actions) =>
         <Switch>
           <Route path="/add" render={AddFollow} />
           <Route path="/add-feed" render={AddFeed} />
-          <Route path="/edit" render={EditFollow} />
           <Route path="/edit/:id" render={EditFollowById} />
           <Route path="/view/:id" render={ViewFollowById} />
           <Route path="/tag/:tag" render={ListFollow} />
