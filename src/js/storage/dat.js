@@ -1,4 +1,4 @@
-import { responseToObject } from './util'
+import { responseToObject } from '../util'
 import { jsonDateParser } from "json-date-parser"
 const compare = require('../compare')
 const path = require('path')
@@ -11,9 +11,8 @@ function storage (url) {
   else this.dat = new DatArchive(url)
 }
 
-storage.prototype.fetch = async function (resource, init) {
-  let resp = await experimental.globalFetch(resource, init)
-  return responseToObject(resp)
+storage.prototype.fetch = function (resource, init) {
+  return experimental.globalFetch(resource, init).then(responseToObject)
 }
 
 storage.prototype.mkdir = async function (dest) {

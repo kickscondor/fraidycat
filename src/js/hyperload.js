@@ -1,5 +1,10 @@
 import { location } from "@kickscondor/router"
 
+let locationOpts = {}
+if (process.env.STORAGE === 'webext') {
+  locationOpts = {hashRouting: true}
+}
+
 export const hyperload = tree => {
   const modules = {}
 
@@ -11,7 +16,7 @@ export const hyperload = tree => {
   const actions = tree.actions || {}
   const view = tree.view
 
-  modules.location = location({hashRouting: true})
+  modules.location = location(locationOpts)
   for (let name in modules) {
     state[name] = modules[name].state || {}
     actions[name] = Object.assign({set: o => o}, modules[name].actions)
