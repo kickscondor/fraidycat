@@ -5,6 +5,7 @@ import { Link, Route, Switch } from '@kickscondor/router'
 import globe from '../images/globe.svg'
 const house = "\u{1f3e0}"
 import images from '../images/*.png'
+import 'emoji-selector'
 const url = require('url')
 
 import u from 'umbrellajs'
@@ -20,14 +21,20 @@ const Importances = [
   [365, 'Year']
 ]
 
+const FormFreeze = (e) => {
+  e.preventDefault()
+  u('button', e.target).each(ele => ele.disabled = true)
+}
+
 const FollowForm = (isNew) => ({follows}, actions) => {
   let follow = follows.editing
-  return follow && <form class="follow" onsubmit={e => e.preventDefault()}>
+  return follow && <form class="follow" onsubmit={FormFreeze}>
     {isNew &&
       <div>
         <label for="url">URL <img src={images['supported']} /></label>
         <input type="text" id="url" name="url" value={follow.url} autocorrect="off" autocapitalize="none"
           oninput={e => follow.url = e.target.value} />
+        <p class="note">(Also see <a href="https://rssbox.herokuapp.com">RSS Box</a> for other services.)</p>
       </div>}
 
     <div>
@@ -42,6 +49,13 @@ const FollowForm = (isNew) => ({follows}, actions) => {
       <label for="tags">Tag(s) &mdash; separate with spaces</label>
       <input type="text" id="tags" value={follow.tags ? follow.tags.join(' ') : ''}
         oninput={e => e.target.value ? (follow.tags = e.target.value.split(/\s+/)) : (delete follow.tags)} />
+      <emoji-selector oncreate={el => {
+        el.emojiSelected = ch => {
+          if (follow.tags) { follow.tags.push(ch) } else { follow.tags = [ch] }
+          actions.follows.set({follow})
+          el.close()
+        }
+      }}></emoji-selector>
       <p class="note">(If left blank, tag is assumed to be '&#x1f3e0;'&mdash;the main page tag.)</p>
     </div>
 
@@ -59,7 +73,7 @@ const FollowForm = (isNew) => ({follows}, actions) => {
         <p class="note">(Check this to save a copy of complete posts and read them from Fraidycat.)</p>
       </div>}
 
-    <button onclick={_ => actions.follows.save(follow)}>Save</button>
+    <button onclick={e => actions.follows.save(follow)}>Save</button>
     {!isNew && <button class="delete" onclick={_ => actions.follows.remove(follow)}>Delete This</button>}
   </form>
 }
@@ -91,15 +105,23 @@ const AddFollow = ({ match, setup }) => ({follows}) => {
 
 const AddFeed = () => ({follows}, actions) => {
   let {list, site} = follows.feeds
-  return <div id="feed-select">
-    <h2>Select a Feed</h2>
-    <p>{site.title || site.actualTitle} ({site.url}) has several feeds:</p>
-    <ul>
-    {list.map(feed =>
-      <li><input type="checkbox" onclick={e => feed.selected = e.target.checked} value={feed.href} /> {feed.title}</li>)}
-    </ul>
-    <button onclick={_ => actions.follows.subscribe(follows.feeds)}>Subscribe</button>
-  </div>
+  return list.length == 0 ? 
+      <div id="feed-select">
+        <h2>No Feeds Discovered</h2>
+        <p>This URL seems to have no feeds. Check with the site's owner&mdash;perhaps
+          they can give you the direct feed URL.</p>
+      </div>
+    : <div id="feed-select">
+        <h2>Select a Feed</h2>
+        <p>{site.title || site.actualTitle} ({site.url}) has several feeds:</p>
+        <form class="feeds" onsubmit={FormFreeze}>
+        <ul>
+        {list.map(feed =>
+          <li><input type="checkbox" onclick={e => feed.selected = e.target.checked} value={feed.href} /> {feed.title}</li>)}
+        </ul>
+        <button onclick={_ => actions.follows.subscribe(follows.feeds)}>Subscribe</button>
+        </form>
+      </div>
 }
 
 function timeAgo(from_time, to_time) {

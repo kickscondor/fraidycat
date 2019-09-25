@@ -27,7 +27,7 @@ function add_photo(obj, key, val) {
 }
 
 function add_post(storage, meta, follow, item_url, item, now) {
-  let item_id = item_url.replace(/^[a-z]+:\/+[^\/#]+[\/#]*/, '').replace(/\W+/g, '_')
+  let item_id = item_url.replace(/^([a-z]+:\/+[^\/#]+)?[\/#]*/, '').replace(/\W+/g, '_')
   let item_stub = `${item.publishedAt.getFullYear()}/${item_id}`
   let i = getIndexById(meta.posts, item_id), index = null
   if (i < 0) {
@@ -259,14 +259,15 @@ async function instagram(storage, meta, follow, res) {
 async function soundcloud(storage, meta, follow, res) {
   let now = new Date()
   let doc = u('<div>').html(res.body)
-  throw "This is a joke!"
+  let article = u('<div>').html(doc.find('noscript:not(.errorPage__inner)').html())
+  console.log(article)
   meta.title = doc.find('title').text()
   meta.photos = {avatar: doc.find('meta[property="twitter:image"]').attr('content')}
   meta.description = doc.find('div.truncatedUserDescription__content').html()
-  doc.find('article.audible').each(n => { n = u(n)
+  article.find('article.audible').each(n => { n = u(n)
     let a = n.find('a[itemprop="url"]')
     let item_url = url.resolve(meta.feed, a.attr('href'))
-    let item_time = new Date(n.find('time[pubdate]').attr('pubdate'))
+    let item_time = new Date(n.find('time[pubdate]').text())
     let item = {description: a.text(),
       publishedAt: item_time, updatedAt: item_time}
     add_post(storage, meta, follow, item_url, item, now)
@@ -304,10 +305,11 @@ async function feedme_get(fn, storage, meta, follow, lastFetch) {
       hdrs['If-Modified-Since'] = lastFetch.modified
   }
 
-  let res = await storage.user.fetch(meta.feed, {headers: hdrs}), feeds = null
+  let res = await storage.user.fetch(meta.feed, {headers: hdrs, credentials: 'omit'}), feeds = null
   console.log([meta.feed, res, lastFetch])
   if (res.status == 304) {
     console.log(`${meta.feed} hasn't changed.`)
+    lastFetch.at = new Date()
     return
   }
 
@@ -322,7 +324,6 @@ async function feedme_get(fn, storage, meta, follow, lastFetch) {
   if (!res.ok)
     throw `${meta.feed} is giving a ${res.status} error.`
 
-  meta.feed = res.url
   feeds = await fn(storage, meta, follow, res)
   if (feeds)
     return feeds

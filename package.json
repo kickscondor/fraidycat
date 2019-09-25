@@ -2,7 +2,7 @@
   "name": "fraidycat",
   "scripts": {
     "start": "parcel src/index.html",
-    "build": "mkdir -p dist && cp -r src/root/* dist && STORAGE=dat parcel build src/index.html",
+    "build": "mkdir -p dist && cp -r src/root/* dist && STORAGE=dat parcel build src/index.html --no-cache",
     "webext": "rm -rf dist-webext && cp -r src/root/ dist-webext && STORAGE=webext parcel build webext/manifest.json -d dist-webext"
   },
   "dependencies": {
@@ -12,6 +12,7 @@
     "babel-polyfill": "^6.26.0",
     "babel-preset-env": "^1.7.0",
     "babel-preset-es2015": "^6.24.1",
+    "emoji-selector": "^1.0.4",
     "feedme": "^1.2.0",
     "hyperapp": "^1.2.9",
     "json-date-parser": "^1.0.1",
