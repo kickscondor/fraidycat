@@ -1,6 +1,6 @@
 body {
   font-family: 'Signika';
-  background-color: #FFFFF5;
+  background-color: #F7F7E7;
   margin: 0;
   padding: 0;
   font-size: 1.1rem;
@@ -76,7 +76,7 @@ article {
   }
 
   #tags {
-    border-bottom: solid 1px #eee;
+    border-bottom: solid 3px #FA9;
     width: 100%;
     margin-bottom: 12px;
 
@@ -85,21 +85,22 @@ article {
       font-size: 2rem;
       margin-right: 6px;
       text-align: center;
-      background-color: #eee;
-      box-shadow: 0 0 0 1px #ddd;
+      background-color: #FDC;
 
       a {
-        padding: 4px 20px;
+        padding: 6px 20px 3px 20px;
         text-decoration: none;
       }
 
       a.active {
-        background-color: #fffff5;
+        background-color: #F7F7E7;
+        border: solid 3px #FA9;
+        border-bottom: 0;
       }
 
-      a:hover {
-        background-color: #fff;
-      }
+      // a:hover {
+      //   background-color: #FFFFF0;
+      // }
     }
   }
 
@@ -111,12 +112,13 @@ article {
     margin-right: 6px;
 
     a {
-      color: #975;
+      color: #620;
     }
 
     &.active {
       font-size: 1.4rem;
-      background: #FC9;
+      background: #F09;
+      color: white;
       padding: 2px 6px;
     }
   }
@@ -202,25 +204,45 @@ article {
 
     ol.title {
       list-style: square;
+      color: #FA9;
 
       li {
         margin-bottom: 6px;
 
         a {
           color: #630;
+          text-decoration: none;
         }
 
-        a:visited {
-          color: #975;
-        }
+        // a:visited {
+        //   color: #CA5;
+        // }
 
         a:hover {
           color: #079;
+          text-decoration: underline;
         }
 
-        .ago {
+        span {
+          margin-left: 8px;
           font-size: 0.9rem;
-          color: #590;
+          color: #553;
+        }
+
+        &.age-d,
+        &.age-w {
+          span {
+            color: #379;
+            font-weight: bold;
+          }
+        }
+
+        &.age-m,
+        &.age-h {
+          span {
+            color: #590;
+            font-weight: bold;
+          }
         }
       }
     }
@@ -228,7 +250,7 @@ article {
     a.collapse {
       user-select: none;
       display: inline-block;
-      background-color: #975;
+      background-color: #579;
       border-radius: 7px;
       color: #FED;
       font-weight: bold;
@@ -255,16 +277,7 @@ article {
       li {
         display: inline-block;
 
-        a {
-          color: #630;
-          text-decoration: none;
-        }
-
-        a:hover {
-          text-decoration: underline;
-        }
-
-        .ago {
+        span {
           display: none;
         }
 
@@ -322,7 +335,7 @@ article {
 
 /* general form styles */
 form > div {
-  margin-bottom: 8px;
+  margin-bottom: 16px;
 }
 
 div.err {
@@ -331,7 +344,9 @@ div.err {
 }
 
 label {
+  color: #620;
   font-size: 0.9rem;
+  font-weight: bold;
   display: block;
   margin: 4px 0;
 }
@@ -359,11 +374,10 @@ input[type="checkbox"] {
 
 form p.note {
   margin: 0;
-  font: 0.7em sans-serif;
 }
 
-form p.note span {
-  font-style: italic;
+p.note {
+  font-size: 0.7em;
 }
 
 button.delete {

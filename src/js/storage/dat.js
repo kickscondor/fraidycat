@@ -9,6 +9,7 @@ function storage (url) {
   if (!(this instanceof storage)) return new storage (url)
   if (url instanceof DatArchive) this.dat = url
   else this.dat = new DatArchive(url)
+  this.onSyncFn = () => {}
 }
 
 storage.prototype.fetch = function (resource, init) {
@@ -56,19 +57,31 @@ storage.prototype.writeFile = async function (dest, obj, raw) {
   return this.dat.writeFile(dest, data)
 }
 
+storage.prototype.onSync = function (fn) {
+  this.onSyncFn = fn
+}
+
 storage.setup = function (fn) {
   let userDat = window.localStorage.getItem('userDat')
+  let setupFn = (dat) => {
+    // dat.watch('~/settings.json')
+    // dat.addEventListener('changed', ({path}) => {
+    //   dat.readFile(path).then(data =>
+    //     storage.user.onSync({path, data, object: JSON.parse(data, jsonDateParser)}))
+    // })
+    fn()
+  }
   if (!userDat) {
     DatArchive.create({title: "Fraidycat Follows",
       description: "My personal collection of Fraidycat follows.",
       type: ["fraidycat"]}).
     then(dat => {
-      storage.user = storage(dat)
+      storage.user = storage(dat, setupFn)
       window.localStorage.setItem('userDat', dat.url)
-      fn()
+      setupFn(storage.user)
     })
   } else {
-    storage.user = storage(userDat)
-    fn()
+    storage.user = storage(userDat, setupFn)
+    setupFn(storage.user)
   }
 }

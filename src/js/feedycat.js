@@ -64,15 +64,14 @@ function add_post(storage, meta, follow, item_url, item, now) {
 async function rss(storage, meta, follow, res) {
   let parser = new feedme()
   let now = new Date()
+  let linkTags = []
 
   parser.on('link', (link) => {
     if (typeof(link) === 'object' && link.rel === 'avatar') {
       add_photo(meta, link.rel, url.resolve(meta.feed, link.href))
       return
     }
-    link = feedme_find(link, 'href', [['rel', 'alternate'], ['type', 'text/html']])
-    if (link)
-      meta.url = url.resolve(meta.feed, link)
+    linkTags.push(link)
   })
   parser.on('favicon', (src) => add_photo(meta, 'favicon', url.resolve(meta.feed, src)))
   parser.on('image', (img) => add_photo(meta, 'avatar', url.resolve(meta.feed, img.url)))
@@ -83,8 +82,10 @@ async function rss(storage, meta, follow, res) {
   let item_func = item => {
     let link = item.url || item.link || item.id || item.guid
     let item_url = url.resolve(meta.feed, feedme_find(link, 'href', [['rel', 'alternate'], ['type', 'text/html']]))
-    item.publishedAt = new Date(item.date_published || item.pubdate || item.published || item['dc:date'])
-    item.updatedAt = new Date(item.date_modified || item.updated || item.date_published || item.pubdate || item.published || item['dc:date'])
+    let publishedStr = item.date_published || item.pubdate || item.published || item['dc:date']
+    let updatedStr = item.date_modified || item.updated
+    item.updatedAt = new Date(updatedStr || publishedStr)
+    item.publishedAt = new Date(publishedStr || updatedStr)
     if ('mastodon:scope' in item && 'summary' in item)
       item.title = feedme_find(item.summary, 'content', [['type', 'html']])
     add_post(storage, meta, follow, item_url, item, now)
@@ -94,6 +95,9 @@ async function rss(storage, meta, follow, res) {
 
   try {
     parser.write(res.body)
+    let link = feedme_find(linkTags, 'href', [['rel', 'alternate'], ['type', 'text/html']])
+    if (link)
+      meta.url = url.resolve(meta.feed, link)
     parser.close()
   } catch (e) {
     //
@@ -318,6 +322,8 @@ async function feedme_get(fn, storage, meta, follow, lastFetch) {
     return await feedme_get(fn, storage, meta, follow, {})
   }
 
+  follow.feed = meta.feed
+  follow.id = urlToID(urlToNormal(meta.feed))
   follow.response = {etag: res.headers['etag'],
     modified: res.headers['last-modified'],
     status: res.status}
@@ -358,11 +364,12 @@ async function feedme_get(fn, storage, meta, follow, lastFetch) {
 }
 
 async function meta_get(storage, follow) {
-  try {
-    return await storage.user.readFile(`/feeds/${follow.id}.json`)
-  } catch (e) {
-    return {createdAt: new Date(), url: follow.url, posts: []}
+  if (follow.id) {
+    try {
+      return await storage.user.readFile(`/feeds/${follow.id}.json`)
+    } catch (e) {}
   }
+  return {createdAt: new Date(), url: follow.url, posts: []}
 }
 
 export default async (storage, follow, lastFetch) => {

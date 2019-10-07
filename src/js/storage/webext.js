@@ -6,6 +6,8 @@ module.exports = storage
 
 function storage () {
   if (!(this instanceof storage)) return new storage ()
+  this.id = ""
+  this.onSyncFn = () => {}
 }
 
 storage.prototype.fetch = async function (url, options) {
@@ -50,7 +52,27 @@ storage.prototype.writeFile = async function (path, data, raw) {
   return browser.runtime.sendMessage({action: "writeFile", path, data})
 }
 
+storage.prototype.onSync = function (fn) {
+  this.onSyncFn = fn
+}
+
 storage.setup = function (fn) {
-  storage.user = storage()
-  fn()
+  let s = storage.user = storage()
+  browser.runtime.sendMessage({action: "session"}).then(session => {
+    console.log(`Connected to background script ${session.id}`)
+    storage.user.id = session.id
+    fn()
+
+    browser.runtime.onMessage.addListener((msg, sender, resp) => {
+      switch (msg.action) {
+        case "sync":
+          try {
+            msg.object = JSON.parse(msg.data, jsonDateParser)
+            if (msg.object.id !== storage.user.id)
+              s.onSyncFn(msg)
+          } catch {}
+        break
+      }
+    })
+  })
 }

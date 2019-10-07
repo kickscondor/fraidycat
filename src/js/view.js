@@ -38,8 +38,8 @@ const FollowForm = (isNew) => ({follows}, actions) => {
       </div>}
 
     <div>
-      <label for="username">Importance</label> 
-      <select id="username" name="importance" onchange={e => follow.importance = e.target.options[e.target.selectedIndex].value}>
+      <label for="importance">Importance</label> 
+      <select id="importance" name="importance" onchange={e => follow.importance = e.target.options[e.target.selectedIndex].value}>
       {Importances.map(imp => 
         <option value={imp[0]} selected={imp[0] == follow.importance}>{imp[1]}</option>)}
       </select>
@@ -63,7 +63,7 @@ const FollowForm = (isNew) => ({follows}, actions) => {
       <label for="title">Title</label>
       <input type="text" id="title" value={follow.title}
         oninput={e => follow.title = e.target.value} />
-      <p class="note">(Leave empty to use <span>{follow.actualTitle || "the title loaded from the site"}</span>.)</p>
+      <p class="note">(Leave empty to use <em>{follow.actualTitle || "the title loaded from the site"}</em>.)</p>
     </div>
 
     {CAN_ARCHIVE &&
@@ -74,18 +74,16 @@ const FollowForm = (isNew) => ({follows}, actions) => {
       </div>}
 
     <button onclick={e => actions.follows.save(follow)}>Save</button>
-    {!isNew && <button class="delete" onclick={_ => actions.follows.remove(follow)}>Delete This</button>}
+    {!isNew && <button class="delete" onclick={_ => actions.follows.confirmRemove(follow)}>Delete This</button>}
   </form>
 }
 
 const EditFollowById = ({ match, setup }) => ({follows}) => {
-  if (setup) {
-    let index = getIndexById(follows.all, match.params.id)
-    follows.editing = JSON.parse(JSON.stringify(follows.all[index]), jsonDateParser)
-  }
+  if (setup)
+    follows.editing = JSON.parse(JSON.stringify(follows.all[match.params.id]), jsonDateParser)
 
   return <div id="edit-feed">
-    <h2>Edit</h2>
+    <h2>Edit a Follow</h2>
     <p>URL: {follows.editing.url}</p>
     {FollowForm(false)}
   </div>
@@ -96,14 +94,14 @@ const AddFollow = ({ match, setup }) => ({follows}) => {
     follows.editing = {importance: 0}
 
   return <div id="add-feed">
-    <h2>Follow</h2>
+    <h2>Add a Follow</h2>
     <p>What blog, wiki or social account do you want to follow?</p>
     <p class="note"><em>This can also be a Twitter or Instagram feed, a YouTube channel, a subreddit, a Soundcloud.</em></p>
     {FollowForm(true)}
   </div>
 }
 
-const AddFeed = () => ({follows}, actions) => {
+const AddFeed = () => ({follows, settings}, actions) => {
   let {list, site} = follows.feeds
   return list.length == 0 ? 
       <div id="feed-select">
@@ -191,8 +189,7 @@ function rewriteUrl(a, base) {
 
 const ViewFollowById = ({ match }) => ({follows}, actions) => {
   let now = new Date()
-  let index = getIndexById(follows.all, match.params.id)
-  let follow = follows.all[index]
+  let follow = follows.all[match.params.id]
   let posts = actions.follows.getPosts(follow.id, 0, 20)
   return <div id="reader">
     <h1>{follow.title || follow.actualTitle}</h1>
@@ -214,7 +211,7 @@ const ListFollow = ({ match }) => ({follows}, actions) => {
   let tag = match.params.tag ? match.params.tag : house
   let tags = {}, imps = {}
   console.log([tag, follows])
-  let viewable = follows.all.filter(follow => {
+  let viewable = Object.values(follows.all).filter(follow => {
     let ftags = (follow.tags || [house])
     ftags.forEach(k => tags[k] = true)
     let isShown = ftags.includes(tag)
@@ -242,7 +239,6 @@ const ListFollow = ({ match }) => ({follows}, actions) => {
         let linkUrl = follow.fetchesContent ? `/view/${follow.id}` : follow.url
         let id = `follow-${follow.id}`
         return <li key={id} class={`age-${ago ? ago.slice(-1) : "X"}`}>
-          <Link to={linkUrl}></Link>
           <a name={id}></a>
           <h3>
             <Link to={linkUrl}>
@@ -258,7 +254,13 @@ const ListFollow = ({ match }) => ({follows}, actions) => {
               <Link to={`/edit/${follow.id}`} class="edit" title="edit"><img src={images['270f']} /></Link>
           </h3>
           <div class="extra trunc">
-            <div class="post">{follow.posts && <ol class="title">{follow.posts.map(f => <li>{follow.fetchesContent ? f.title : <a href={f.url}>{f.title}</a>} <span class="ago">{timeAgo(f.updatedAt, now)}</span></li>)}</ol>}
+            <div class="post">{follow.posts &&
+              <ol class="title">{follow.posts.map(f => {
+                let postAge = timeAgo(f.updatedAt, now)
+                return <li class={`age-${postAge.slice(-1)}`}>{follow.fetchesContent ? f.title : <a href={f.url}>{f.title}</a>}
+                  <span>{timeAgo(f.updatedAt, now)}</span>
+                </li>
+              })}</ol>}
               {!follow.fetchesContent && <a class="collapse" href="#"
                 onclick={e => {e.preventDefault(); u(e.target).closest(".extra").toggleClass("trunc")}}>&#x2022;&#x2022;&#x2022;</a>}
             </div>
