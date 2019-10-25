@@ -1,39 +1,43 @@
+//
+// webext/background.js
+//
 import 'babel-polyfill'
-import { responseToObject } from '../src/js/util'
-const browser = require("webextension-polyfill")
-const session = Math.random().toString(36)
+import { responseToObject } from './src/js/util'
+const browser = require('webextension-polyfill')
+const storage = require('./src/js/storage/webext')
+const mixin = require('./src/js/storage')
 
 //
-// This script simply wraps the fetch API and the storage.local API
-// so that src/js/storage/webext.js can communicate with it.
+// This script runs in the background, fetching feeds and communicating
+// stuff to the foreground pages. So Fraidycat can do its work so long as
+// the browser is open.
 //
-console.log(`Started up Fraidycat background script. (${session})`)
-browser.runtime.onMessage.addListener((msg, sender, resp) => {
-  console.log(msg)
-  switch (msg.action) {
-    case "fetch":
-      let req = new Request(msg.url, msg.options)
-      console.log(req)
-      return fetch(req).then(responseToObject)
-    case "localGet":
-    case "readFile":
-      return browser.storage[msg.path.startsWith('~') ? 'sync' : 'local'].
-        get(msg.path).then(items => items[msg.path])
-    case "localSet":
-    case "writeFile":
-      return browser.storage[msg.path.startsWith('~') ? 'sync' : 'local'].
-        set({[msg.path]: msg.data})
-    case "session":
-      return new Promise((resolve, _) => resolve({id: session}))
-  }
-})
+let start = async function () {
+  let local = await storage()
+  Object.assign(local, mixin)
+  console.log(`Started up Fraidycat background script. (${local.id})`)
 
-browser.storage.onChanged.addListener((dict, area) => {
-  if (area !== "sync")
-    return
-  for (let path in dict)
-    browser.runtime.sendMessage({action: area, path, data: dict[path].newValue})
-})
+  local.setup(data => {
+    local.sendMessage({action: 'update', data}).
+      catch(err => console.log(err))
+  })
+
+  local.receiveMessage(msg => {
+    if (msg.action !== 'update')
+      return local[msg.action](msg.data)
+  })
+
+  browser.storage.onChanged.addListener((dict, area) => {
+    if (area !== "sync")
+      return
+    console.log([area, dict])
+    let changes = {}
+    for (let path in dict)
+      changes[path] = dict[path].newValue
+    local.onSync(changes)
+  })
+}
+start()
 
 browser.browserAction.onClicked.addListener(tab => {
   browser.tabs.create({url: "index.html"})

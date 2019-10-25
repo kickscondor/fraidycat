@@ -16,6 +16,13 @@ export function getIndexById (ary, id) {
   return -1
 }
 
+export function getMaxIndex (index) {
+  let vals = Object.values(index)
+  if (vals.length == 0)
+    return 0
+  return Math.max(...vals)
+}
+
 export function urlToNormal (link) {
   return normalizeUrl(link, {stripProtocol: true, removeDirectoryIndex: true, stripHash: true})
 }

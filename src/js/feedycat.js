@@ -42,7 +42,7 @@ function add_post(storage, meta, follow, item_url, item, now) {
   meta.posts.sort((a, b) => b.updatedAt - a.updatedAt)
   
   if (follow.fetchesContent)
-    storage.user.writeFile(`/feeds/${follow.id}/${item_stub}.json`, item)
+    storage.writeFile(`/feeds/${follow.id}/${item_stub}.json`, item)
 }
 
 //
@@ -67,11 +67,14 @@ async function rss(storage, meta, follow, res) {
   let linkTags = []
 
   parser.on('link', (link) => {
-    if (typeof(link) === 'object' && link.rel === 'avatar') {
-      add_photo(meta, link.rel, url.resolve(meta.feed, link.href))
-      return
+    if (typeof(link) === 'object') {
+      if (link.rel === 'avatar') {
+        add_photo(meta, link.rel, url.resolve(meta.feed, link.href))
+        return
+      }
     }
-    linkTags.push(link)
+    if (link.rel !== 'self')
+      linkTags.push(link)
   })
   parser.on('favicon', (src) => add_photo(meta, 'favicon', url.resolve(meta.feed, src)))
   parser.on('image', (img) => add_photo(meta, 'avatar', url.resolve(meta.feed, img.url)))
@@ -146,7 +149,7 @@ async function rss(storage, meta, follow, res) {
             default:
               return
           }
-          feeds.push({title, href: node.attributes['href']})
+          feeds.push({title, href: url.resolve(meta.feed, node.attributes['href'])})
         } else if (rel && rel.match(/icon/i) && !rel.match(/mask/i)) {
           add_photo(meta, node.attributes['sizes'] || rel, node.attributes['href'])
         }
@@ -296,7 +299,7 @@ function feedme_find(obj, key, where) {
   let text = obj.text
   if (obj.find)
     obj = find_one(obj, where)
-  return obj ? obj[key] : text
+  return obj ? (obj[key] || obj) : text
 }
 
 async function feedme_get(fn, storage, meta, follow, lastFetch) {
@@ -309,10 +312,11 @@ async function feedme_get(fn, storage, meta, follow, lastFetch) {
       hdrs['If-Modified-Since'] = lastFetch.modified
   }
 
-  let res = await storage.user.fetch(meta.feed, {headers: hdrs, credentials: 'omit'}), feeds = null
+  let res = await storage.fetch(meta.feed, {headers: hdrs, credentials: 'omit'}), feeds = null
   console.log([meta.feed, res, lastFetch])
   if (res.status == 304) {
     console.log(`${meta.feed} hasn't changed.`)
+    lastFetch.status = res.status
     lastFetch.at = new Date()
     return
   }
@@ -360,13 +364,13 @@ async function feedme_get(fn, storage, meta, follow, lastFetch) {
     arr.splice(len + 1)
   }
   follow.activity = arr
-  storage.user.writeFile(`/feeds/${follow.id}.json`, meta)
+  storage.writeFile(`/feeds/${follow.id}.json`, meta)
 }
 
 async function meta_get(storage, follow) {
   if (follow.id) {
     try {
-      return await storage.user.readFile(`/feeds/${follow.id}.json`)
+      return await storage.readFile(`/feeds/${follow.id}.json`)
     } catch (e) {}
   }
   return {createdAt: new Date(), url: follow.url, posts: []}

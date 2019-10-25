@@ -1,4 +1,4 @@
-import { getIndexById } from './util'
+import { getIndexById, urlToNormal } from './util'
 import { h } from 'hyperapp'
 import { jsonDateParser } from "json-date-parser"
 import { Link, Route, Switch } from '@kickscondor/router'
@@ -111,7 +111,7 @@ const AddFeed = () => ({follows, settings}, actions) => {
       </div>
     : <div id="feed-select">
         <h2>Select a Feed</h2>
-        <p>{site.title || site.actualTitle} ({site.url}) has several feeds:</p>
+        <p>{site.title || site.actualTitle || urlToNormal(site.url)} has several feeds:</p>
         <form class="feeds" onsubmit={FormFreeze}>
         <ul>
         {list.map(feed =>
@@ -192,12 +192,12 @@ const ViewFollowById = ({ match }) => ({follows}, actions) => {
   let follow = follows.all[match.params.id]
   let posts = actions.follows.getPosts(follow.id, 0, 20)
   return <div id="reader">
-    <h1>{follow.title || follow.actualTitle}</h1>
+    <h2>{follow.title || follow.actualTitle || urlToNormal(follow.url)}</h2>
     {follow.description && <div class="note">{follow.description}</div>}
     <ol>{posts && posts.slice(0, 20).map(post => {
       let details = actions.follows.getPostDetails({post, id: follow.id})
       return <li key={post.id}>
-        <h2>{details && details.title}</h2>
+        <h3>{details && details.title}</h3>
         <div class="content" innerHTML={details && (details.description || details.content_html || (details.content ? details.content.text : ""))} />
         <div class="meta">{timeAgo(post.updatedAt, now)} ago</div>
       </li>
@@ -210,7 +210,6 @@ const ListFollow = ({ match }) => ({follows}, actions) => {
   let now = new Date()
   let tag = match.params.tag ? match.params.tag : house
   let tags = {}, imps = {}
-  console.log([tag, follows])
   let viewable = Object.values(follows.all).filter(follow => {
     let ftags = (follow.tags || [house])
     ftags.forEach(k => tags[k] = true)
@@ -245,7 +244,7 @@ const ListFollow = ({ match }) => ({follows}, actions) => {
               <img class="favicon" src={url.resolve(follow.url, follow.photo || '/favicon.ico')}
                 onerror={e => e.target.src=globe} width="20" height="20" />
             </Link>
-            <Link class="url" to={linkUrl}>{follow.title || follow.actualTitle}</Link>
+            <Link class="url" to={linkUrl}>{follow.title || follow.actualTitle || urlToNormal(follow.url)}</Link>
             {ago && <span class="latest">{ago}</span>}
             <span title={`graph of the last ${daily ? 'two' : 'six'} months`}>
               <svg class="sparkline"
@@ -274,7 +273,7 @@ export default (state, actions) =>
   (state.follows.started &&
     <article>
       <header>
-        <Link to="/"><img src={images['fc']} alt="Fraidycat Logo" title="Fraidycat" /></Link>
+        <h1><Link to="/"><img src={images['fc']} alt="Fraidycat" title="Fraidycat" /></Link></h1>
       </header>
       <section>
         <div id="menu">
