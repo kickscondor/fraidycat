@@ -1,18 +1,18 @@
-
-                      /||
-                      \ \\
-       ,_     _,     _/ //
-       |\\___/||----- ____\
-       |      |_------     |  :. :.
-       | {}{} |            |
-       | =v=  |        ___ |  fraidycat
-       |  ^   | _------ | ||
-       | ,--, ||    ||| | ||  follow from afar
-       | || | ||    ||| | ||
-       | || | ||    ||' | ||  ~ blogs, wikis ~
-       | || | ||        '-'      ~ twitter, insta, yt, etc ~
-       | || | ||
-       '-'' '-''                            :. :.
+     
+                           /||
+                           \ \\
+            ,_     _,     _/ //
+            |\\_____/||----- ____\
+            |        |_------     |  :. :.
+            |  {}{}  |            |
+            |  =v=   |        ___ |  fraidycat
+            |   ^    | _------ | ||
+            | ,----, ||    ||| | ||  follow from afar
+            | ||   | ||    ||| | ||
+            | ||   | ||    ||' | ||  ~ blogs, wikis ~
+            | ||   | ||        '-'      ~ twitter, insta, yt, etc ~
+            | ||   | ||
+            '-''   '-''                            :. :.
 
 **Fraidycat** is a browser extension for Chrome or Firefox---or a Dat website
 that can be used in the Beaker Browser---that can be used to follow folks on
