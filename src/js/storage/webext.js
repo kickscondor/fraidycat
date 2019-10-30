@@ -1,5 +1,10 @@
+//
+// The platform-specific code for web extensions. (Relies heavily on the
+// webextension-polyfill, which acts as a common API between Firefox and
+// Chrome.)
+//
 import { jsonDateParser } from "json-date-parser"
-import { getMaxIndex, responseToObject } from '../util'
+import { responseToObject } from '../util'
 const browser = require("webextension-polyfill");
 const path = require('path')
 
@@ -8,6 +13,9 @@ class WebextStorage {
     this.id = id 
   }
 
+  //
+  // JSON convenience.
+  //
   encode(obj) {
     return JSON.stringify(obj)
   }
@@ -16,6 +24,9 @@ class WebextStorage {
     return JSON.parse(str, jsonDateParser)
   }
 
+  //
+  // I/O functions.
+  //
   async fetch(url, options) {
     let req = new Request(url, options)
     return fetch(req).then(responseToObject)
@@ -61,6 +72,9 @@ class WebextStorage {
   }
 
   //
+  // The following 'Synced' functions all do I/O to browser.storage.sync. (The
+  // synced data for an extension.)
+  //
   // Since you can only sync 8k JSON files (up to 512 of them), I'll need to
   // split up the sync file into pieces. I've decided to do this chronologically -
   // so the first split would contain the first N (in addition order) and so on.
@@ -73,20 +87,27 @@ class WebextStorage {
   //
   async readSynced(subkey) {
     return new Promise((resolve, reject) => {
-      browser.storage.sync.get(null).then(items => {
-        let master = this.mergeSynced(items, subkey)
-        resolve(master)
-      })
+      browser.storage.sync.get(null).then(items =>
+        resolve(this.mergeSynced(items, subkey)))
     })
   }
 
+  //
+  // Loads synced data, building the index as we go.
+  //
   mergeSynced(items, subkey) {
-    let master = {[subkey]: {}}
-    if (items.master) {
-      Object.assign(master, this.decode(items.master))
-      let len = getMaxIndex(master.index)
-      for (let i = 0; i <= len; i++) {
-        Object.assign(master[subkey], this.decode(items[`${subkey}/${i}`]))
+    let master = {[subkey]: {}, index: {}, maxIndex: 0}
+    for (let k in items) {
+      let km = k.split('/'), data = this.decode(items[k])
+      if (km[0] === subkey) {
+        let n = Number(km[1])
+        if (n > master.maxIndex)
+          master.maxIndex = n
+        for (let id in data)
+          master.index[id] = n
+        Object.assign(master[km[0]], data)
+      } else {
+        master[km[0]] = data
       }
     }
     return master
@@ -96,51 +117,51 @@ class WebextStorage {
     //
     // Build all the parts in advance.
     //
-    let high = 0
-    let synced = {master: {}}
-    for (let k in obj.index) {
+    let synced = {}, parts = []
+    for (let k in obj.follows) {
       let i = obj.index[k]
-      if (i > high)
-        high = i
-
+      if (typeof(i) === 'undefined')
+        obj.index[k] = i = obj.maxIndex
       let s = synced[`${subkey}/${i}`] || {}
       s[k] = obj[subkey][k]
       synced[`${subkey}/${i}`] = s
-    }
-
-    for (let k in obj) {
-      if (k != subkey)
-        synced.master[k] = obj[k]
+      if (ids.includes(k) && !parts.includes(i))
+        parts.push(i)
     }
 
     //
     // Attempt to save each piece - if it fails, take off an item and try again.
     //
-    for (let i = 0; i <= high; i++) {
-      if (ids.includes(i)) {
+    for (let i = 0; i <= obj.maxIndex; i++) {
+      if (parts.includes(i)) {
         let k = `${subkey}/${i}`
         try {
-          synced.master.at = new Date()
 					await browser.storage.sync.set({[k]: this.encode(synced[k]),
-            master: this.encode(synced.master), id: this.id})
+            id: this.encode([this.id, new Date()])})
         } catch (e) {
           let id = Object.keys(synced[k]).pop()
           delete synced[k][id]
-          if (i === high) {
-            high++
-					  synced[`${subkey}/${high}`] = {}
+          if (i === obj.maxIndex) {
+            obj.maxIndex++
+					  synced[`${subkey}/${obj.maxIndex}`] = {}
           }
-          if (!ids.includes(high))
-						ids.push(high)
-          synced.master.index[id] = high
+          if (!parts.includes(obj.maxIndex))
+						parts.push(obj.maxIndex)
+          obj.index[id] = obj.maxIndex
 
-					synced[`${subkey}/${high}`][id] = obj[subkey][id]
+					synced[`${subkey}/${obj.maxIndex}`][id] = obj[subkey][id]
           i--
         }
       }
     }
+
+    return await browser.storage.sync.set({settings: this.encode(obj.settings),
+      id: this.encode([this.id, new Date()])})
   }
 
+  //
+  // Messaging functions.
+  //
   receiveMessage(fn) {
     browser.runtime.onMessage.addListener((msg, sender, resp) => {
       if (msg.data)

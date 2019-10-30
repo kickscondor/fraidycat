@@ -41,7 +41,7 @@ export default ({
     // Go to a follow's tag/importance page.
     //
     goToFollow: follow => (_, {location}) => {
-      location.go(`/tag/${(follow.tags && follow.tags[0]) || "\u{1f3e0}"}?importance=${follow.importance}`)
+      location.go(`/${follow.tags && `tag/${follow.tags[0]}`}?importance=${follow.importance}`)
     },
 
     //
@@ -49,12 +49,11 @@ export default ({
     //
     save: follow => ({local}, {location, goToFollow, set}) => {
       follow.editedAt = new Date()
-      local.command("refresh", follow).then(feeds => {
+      local.command("save", follow).then(feeds => {
         if (feeds) {
           set({feeds: {list: feeds, site: follow}})
           location.go("/add-feed")
         } else {
-          local.command("write", {update: true, follows: [follow.id]})
           goToFollow(follow)
         }
       }).catch(msg => {
@@ -68,7 +67,7 @@ export default ({
     //
     subscribe: fc => async ({local}, {location}) => {
       let errors = await local.command("subscribe", fc)
-      location.go("/")
+      goToFollow(fc.site)
       if (errors.length > 0)
         alert(errors.join("\n"))
     },

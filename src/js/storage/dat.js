@@ -9,6 +9,20 @@ class DatStorage {
     this.dat = dat
   }
 
+  //
+  // JSON convenience.
+  //
+  encode(obj) {
+    return JSON.stringify(obj)
+  }
+
+  decode(str) {
+    return JSON.parse(str, jsonDateParser)
+  }
+
+  //
+  // I/O functions.
+  //
   fetch(resource, init) {
     return experimental.globalFetch(resource, init).then(responseToObject)
   }
@@ -22,20 +36,20 @@ class DatStorage {
 
   async localGet(key, def) {
     let str = window.localStorage.getItem(key)
-    return str ? JSON.parse(str, jsonDateParser) : def
+    return str ? decode(str) : def
   }
 
   async localSet(key, def) {
-    return window.localStorage.setItem(key, JSON.stringify(def))
+    return window.localStorage.setItem(key, encode(def))
   }
 
   async readFile(path, raw) {
-    return this.dat.readFile(path).then(str => raw ? str : JSON.parse(str, jsonDateParser))
+    return this.dat.readFile(path).then(str => raw ? str : decode(str))
   }
 
   async writeFile(dest, obj, raw) {
     await this.mkdir(path.dirname(dest)).catch(() => {})
-    let data = raw ? obj : JSON.stringify(obj)
+    let data = raw ? obj : encode(obj)
     let orig = null
     try {
       orig = await this.dat.readFile(dest)
@@ -54,6 +68,27 @@ class DatStorage {
     return this.dat.writeFile(dest, data)
   }
 
+  //
+  // On Beaker, for simplicity, the synced follow file will be read from a
+  // single large file. However, I don't have a way yet of adding other dats
+  // from the Fraidycat interface---I am hoping to use the new multi-writer
+  // Hypercore at some point. Otherwise, I'll need to use the `watch` API
+  // on a list of dats. (And perhaps the peer API, too, to notify the original
+  // dat.) Multiwriter hypercore just can't come soon enough...
+  //
+  async readSynced(subkey) {
+    return readFile("/" + subkey + ".json")
+  }
+
+  async writeSynced(subkey, ids, obj) {
+    return writeFile("/" + subkey + ".json", obj)
+  }
+
+  //
+  // Since everything is handled in the foreground in Beaker (the fetch API
+  // is already backgrounded), we just do straight method calls. No need for
+  // a messaging API.
+  //
   command(action, obj) {
     return this[action](obj)
   }

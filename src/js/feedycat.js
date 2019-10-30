@@ -1,6 +1,14 @@
+//
+// My feed parser, based on the 'feedme' module. Feedme generally works well,
+// however, the API is kind of a mess. I like that it uses the streaming SAX
+// parser underneath - to prevent stalling under the hood. But the code to
+// parse RSS below is pretty gnarly. I think if I could improve feedme, I would
+// have it fire common events for Atom, RSS and JSON Feed.
+//
 import { getIndexById, urlToID, urlToNormal } from './util'
 import u from 'umbrellajs'
 
+const elasticlunr = require('@kickscondor/elasticlunr')
 const normalizeUrl = require('normalize-url')
 const feedme = require('feedme')
 const sax = require('sax')
@@ -12,6 +20,9 @@ const ACTIVITY_IN_MAIN_INDEX = 180
 const PLAIN_HTML = 0
 const TIDDLYWIKI = 1
 
+//
+// Some utility functions.
+//
 function normalizeFeedUrl(abs, href) {
   return normalizeUrl(url.resolve(abs, href), {stripWWW: false, stripHash: true, removeTrailingSlash: false})
 }
@@ -26,6 +37,11 @@ function add_photo(obj, key, val) {
   obj.photos[key] = val
 }
 
+//
+// Add a post to the blog's master index (/feeds/{follow.id}.json) and to the
+// full post content (in the case that we're fetching all content) which is
+// at /feeds/{follow.id}/{item.id}.json.
+//
 function add_post(storage, meta, follow, item_url, item, now) {
   let item_id = item_url.replace(/^([a-z]+:\/+[^\/#]+)?[\/#]*/, '').replace(/\W+/g, '_')
   let item_stub = `${item.publishedAt.getFullYear()}/${item_id}`
@@ -201,9 +217,11 @@ async function rss(storage, meta, follow, res) {
     return feeds
   }
 }
-
+ 
+//
 // This uses RSS for the feed, but uses the site's social media
 // metadata for the avatar, title and such.
+//
 async function site_rss(storage, meta, follow, res) {
   let doc = u('<div>').html(res.body)
   let can = doc.find('link[rel="canonical"]')
@@ -224,6 +242,9 @@ async function site_rss(storage, meta, follow, res) {
   return await feedme_get(rss, storage, meta, follow, {})
 }
 
+//
+// Scrape a Twitter page.
+//
 async function twitter(storage, meta, follow, res) {
   let now = new Date()
   let doc = u('<div>').html(res.body)
@@ -239,6 +260,9 @@ async function twitter(storage, meta, follow, res) {
   })
 }
 
+//
+// Scrape an Instagram page.
+//
 async function instagram(storage, meta, follow, res) {
   let now = new Date()
   let doc = u('<div>').html(res.body)
@@ -263,6 +287,9 @@ async function instagram(storage, meta, follow, res) {
   })
 }
 
+//
+// Scrape a SoundCloud page.
+//
 async function soundcloud(storage, meta, follow, res) {
   let now = new Date()
   let doc = u('<div>').html(res.body)
@@ -281,6 +308,36 @@ async function soundcloud(storage, meta, follow, res) {
   })
 }
 
+//
+// Scrape Facebook (unfinished).
+//
+async function facebook(storage, meta, follow, res) {
+  let now = new Date()
+  let doc = u('<div>').html(res.body)
+  meta.title = doc.find('title').text().trim()
+  meta.photos = {avatar: doc.find('meta[property="og:image"]').attr('content')}
+  meta.description = doc.find('meta[property="og:description"]').attr('content')
+  // doc.find('[data-ft]').each(n => {
+  //   let a = n.find('a[itemprop="url"]')
+  //   let item_url = url.resolve(meta.feed, a.attr('href'))
+  //   let item_time = new Date(n.find('time[pubdate]').text())
+  //   let item = {description: a.text(),
+  //     publishedAt: item_time, updatedAt: item_time}
+  //   add_post(storage, meta, follow, item_url, item, now)
+  // })
+}
+
+//
+// This pair of functions is designed to find the closest matching object
+// based on available attributes. This is useful when attempting to choose between:
+//
+//   <link rel="self" href="..." />
+//   <link rel="alternate" href="..." />
+//   <link>...</link>
+//
+// Again, this might not be necessary if FeedMe could be taught to discern
+// between different feed formats.
+//
 function find_one(obj, where) {
   let ans = obj.find(x => where.every(v => x[v[0]] === v[1]))
   if (!ans) {
@@ -302,6 +359,10 @@ function feedme_find(obj, key, where) {
   return obj ? (obj[key] || obj) : text
 }
 
+//
+// Respect cache headers and prevent re-fetching content. This is mostly
+// relevant to Beaker (because the fetch API respects caching).
+//
 async function feedme_get(fn, storage, meta, follow, lastFetch) {
   let now = new Date()
   let hdrs = {}
@@ -376,6 +437,9 @@ async function meta_get(storage, follow) {
   return {createdAt: new Date(), url: follow.url, posts: []}
 }
 
+//
+// Determine parsing strategy from the URL.
+//
 export default async (storage, follow, lastFetch) => {
   let meta = await meta_get(storage, follow)
   let url = urlToNormal(meta.url), match = null
@@ -393,6 +457,9 @@ export default async (storage, follow, lastFetch) => {
     proc = instagram
   } else if (url.startsWith('soundcloud.com/')) {
     proc = soundcloud
+  } else if ((match = url.match(/^([\.\w]+\.)?facebook\.com\/([^\/?]+)/)) !== null) {
+    meta.feed = `https://m.facebook.com/${match[2]}`
+    proc = facebook
   } else if (url.startsWith('youtube.com/')) {
     proc = site_rss
   } else if ((match = url.match(/^([\.\w]+\.)?reddit\.com\//)) !== null) {

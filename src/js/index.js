@@ -1,3 +1,8 @@
+//
+// Fraidycat uses Hyperapp V1. I use my own module system (in hyperload.js)
+// and a forked router (@kickscondor/router). This allows me to use the same
+// code for Beaker Browser and the web extension.
+//
 import { h, app } from 'hyperapp'
 import { hyperload } from './hyperload'
 import 'babel-polyfill'

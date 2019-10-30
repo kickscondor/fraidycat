@@ -11,7 +11,7 @@
 //   a. follows.json: All follows, last ten posts, basic stats.
 //   b. follows/feed-id.json: Individual follow metadata.
 //   c. follows/feed-id/post-id.json: Locally cached post.
-// * Synced metadata. (settings.json) Lists all inputted metadata for a
+// * Synced metadata. Lists all inputted metadata for a
 //   follow.
 //
 // The synced metadata is very minimal - it's up to the local Fraidycat
@@ -19,7 +19,6 @@
 // instance to run alone, with no syncing, should the user want it that way.
 //
 import feedycat from './feedycat'
-import { getMaxIndex } from './util'
 const quicklru = require('quick-lru')
 const url = require('url')
 
@@ -58,11 +57,11 @@ module.exports = {
     }
 
     Object.assign(this, {all: {}, updating: [], fetched: {},
-      settings: {broadcast: false, follows: {}, index: {}},
+      common: {settings: {broadcast: false}, follows: {}, index: {}, maxIndex: 0},
       postCache: new quicklru({maxSize: 1000}), update})
 
     this.readFile('/follows.json').
-      then(all => obj.all = all).catch(_ => 0).
+      then(all => obj.all = all).catch(e => console.log(e)).
       finally(() => {
         this.localGet('fraidycat').then(saved => {
           if (saved)
@@ -70,7 +69,8 @@ module.exports = {
           Object.assign(this, obj)
           update(obj)
           this.readSynced('follows').
-            then(this.sync).catch(_ => 0).
+            then(inc => this.sync(Object.assign(inc, {firstLoad: true}))).
+            catch(e => console.log(e)).
             finally(_ => setInterval(() => this.poll(), 200))
         })
       })
@@ -120,7 +120,7 @@ module.exports = {
   // Update pieces of the follows list that have changed (from other browsers).
   //
   onSync(changes) {
-    if (changes.id !== this.id) {
+    if (changes.id[0] !== this.id) {
       let obj = this.mergeSynced(changes, 'follows')
       this.sync(obj)
     }
@@ -131,13 +131,15 @@ module.exports = {
   // browsers, other dats owned by the user) or removed as well.
   //
   async sync(inc) {
-    console.log(inc)
+    let updated = false, updateSettings = false, follows = []
     if ('follows' in inc) {
-      let updated = false, updateSettings = false, follows = []
-      this.settings.index = inc.index
+      if ('index' in inc)
+        Object.assign(this.common.index, inc.index)
 
       for (let id in inc.follows) {
         let current = this.all[id], incoming = inc.follows[id]
+        if (!(id in this.common.follows))
+          this.common.follows[id] = inc.follows[id]
         if (!current || current.editedAt < incoming.editedAt) {
           if (incoming.deleted) {
             if (current) {
@@ -154,22 +156,25 @@ module.exports = {
           updated = true
         }
       }
+    }
 
+    if ('firstLoad' in inc) {
       for (let id in this.all) {
-        if (!inc.follows[id]) {
+        if (!inc.follows || !inc.follows[id]) {
           this.notifyFollow(this.all[id])
           follows.push(id)
           updateSettings = true
         }
       }
-
-      if (updated || updateSettings)
-        this.write({update: updateSettings, follows})
-
-      delete inc['follows']
-      delete inc['index']
     }
-    Object.assign(this.settings, inc)
+
+    if (updated || updateSettings) {
+      this.write({update: updateSettings, follows})
+    }
+
+    if ('settings' in inc) {
+      Object.assign(this.common.settings, inc.settings)
+    }
   },
 
   //
@@ -209,10 +214,7 @@ module.exports = {
   // Notify of follow
   //
   notifyFollow(follow) {
-    if (!(follow.id in this.settings.index)) {
-      this.settings.index[follow.id] = getMaxIndex(this.settings.index)
-    }
-    this.settings.follows[follow.id] = {url: follow.feed, tags: follow.tags,
+    this.common.follows[follow.id] = {url: follow.feed, tags: follow.tags,
       importance: follow.importance, title: follow.title,
       fetchesContent: follow.fetchesContent, editedAt: follow.editedAt}
   },
@@ -240,6 +242,13 @@ module.exports = {
     this.all[follow.id] = follow
     this.update({op: 'replace', path: `/all/${follow.id}`, value: follow})
     this.notifyFollow(follow)
+  },
+
+  async save(follow) {
+    let feeds = await this.refresh(follow)
+    if (!feeds)
+      this.write({update: true, follows: [follow.id]})
+    return feeds
   },
 
   //
@@ -278,10 +287,7 @@ module.exports = {
   async write(opts) {
     this.writeFile('/follows.json', this.all).then(() => {
       if (opts.update) {
-        if (this.id)
-          this.settings.id = this.id
-        this.writeSynced('follows', opts.follows.map(id => this.settings.index[id]),
-          this.settings)
+        this.writeSynced('follows', opts.follows, this.common)
       }
     })
   },
@@ -291,7 +297,7 @@ module.exports = {
   //
   async remove(follow) {
     delete this.all[follow.id]
-    this.settings.follows[follow.id] = {deleted: true, editedAt: new Date()}
+    this.common.follows[follow.id] = {deleted: true, editedAt: new Date()}
     this.update({op: 'remove', path: `/all/${follow.id}`})
     this.write({update: true, follows: [follow.id]})
   }
