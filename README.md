@@ -46,8 +46,8 @@ down by importance - tags can be checked in 'real-time' or 'daily', 'weekly',
 
 Follows are show in dark green if they have been updated in the past two days,
 a plain cyan if they are up to a month old and in an unassuming light brown if they
-are over a month old. A small graph of activity over the past year is displayed
-- in pink (if showing the previous two months of activity) or in gray (if
+are over a month old. A small graph of activity over the past year is displayed - in
+pink (if showing the previous two months of activity) or in gray (if
 showing the past six months.)
 
 Fraidycat is quite light on features - I am mostly focused on making sure that
@@ -132,6 +132,8 @@ To build the web extension, use:
 The extension will appear in a `dist-webext` folder. You can then load that
 "unpacked" extension from the browser - as a 'temporary add-on', for example,
 in Firefox.
+
+To use Fraidycat, click on the 'F' icon in the browser toolbar.
 
 (Be aware that syncing may not work when using the extension in this way - it
 does in Chrome, though.)

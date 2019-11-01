@@ -65,7 +65,7 @@ export default ({
     //
     // Subscribe to follows from a list found within an HTML page.
     //
-    subscribe: fc => async ({local}, {location}) => {
+    subscribe: fc => async ({local}, {goToFollow, location}) => {
       let errors = await local.command("subscribe", fc)
       goToFollow(fc.site)
       if (errors.length > 0)
