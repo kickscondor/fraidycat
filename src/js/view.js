@@ -148,6 +148,18 @@ function timeAgo(from_time, to_time) {
   return Math.round(mins / 525600) + 'Y'
 }
 
+function timeDarkness(from_time, to_time) {
+  from_time = Math.floor(from_time / 1000)
+  to_time = Math.floor(to_time / 1000)
+  let mins = Math.round(Math.abs(to_time - from_time)/60)
+
+  if (mins >= 0 && mins < 3600)
+    return 'h'
+  if (mins >= 3600 && mins <= 43220)
+    return 'd'
+  return 'M'
+}
+
 function sparkpoints(el, ary, daily) {
   let points = [], len = ary.length
   if (daily) {
@@ -231,13 +243,14 @@ const ListFollow = ({ match }) => ({follows}, actions) => {
     <ol>{viewable.map(follow => {
         let lastPost = (follow.posts && follow.posts[0]), tags = []
         let ago = lastPost && timeAgo(lastPost.updatedAt, now)
+        let dk = lastPost && timeDarkness(lastPost.updatedAt, now)
         let daily = follow.importance < 7
         if (follow.importance != imp)
           return
 
         let linkUrl = follow.fetchesContent ? `/view/${follow.id}` : follow.url
         let id = `follow-${follow.id}`
-        return <li key={id} class={`age-${ago ? ago.slice(-1) : "X"}`}>
+        return <li key={id} class={`age-${dk || "X"}`}>
           <a name={id}></a>
           <h3>
             <Link to={linkUrl}>
