@@ -2,10 +2,10 @@
 // webext/background.js
 //
 import 'babel-polyfill'
-import { responseToObject } from './src/js/util'
+import { responseToObject } from './js/util'
 const browser = require('webextension-polyfill')
-const storage = require('./src/js/storage/webext')
-const mixin = require('./src/js/storage')
+const storage = require('./js/storage/webext')
+const mixin = require('./js/storage')
 
 //
 // This script runs in the background, fetching feeds and communicating
@@ -40,5 +40,5 @@ let start = async function () {
 start()
 
 browser.browserAction.onClicked.addListener(tab => {
-  browser.tabs.create({url: "/src/index.html"})
+  browser.tabs.create({url: "index.html"})
 })
