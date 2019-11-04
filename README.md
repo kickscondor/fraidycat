@@ -129,7 +129,7 @@ To build the web extension, use:
     npm install
     npm run webext
 
-The extension will appear in a `dist-webext` folder. You can then load that
+The extension will appear in a `build/webext` folder. You can then load that
 "unpacked" extension from the browser - as a 'temporary add-on', for example,
 in Firefox.
 
