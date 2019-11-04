@@ -40,5 +40,5 @@ let start = async function () {
 start()
 
 browser.browserAction.onClicked.addListener(tab => {
-  browser.tabs.create({url: "index.html"})
+  browser.tabs.create({url: "/src/index.html"})
 })

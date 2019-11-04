@@ -11,7 +11,7 @@
   },
 
   "options_ui": {
-    "page": "index.html"
+    "page": "src/index.html"
   },
   "background": {
     "scripts": ["background.js"]
