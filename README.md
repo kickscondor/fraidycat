@@ -93,6 +93,10 @@ The only way to sync your follows at the moment is through your browser account.
 So, if you are using Firefox, you must be signed in as the same user with the
 same browser and Fraidycat installed on both machines.
 
+You can really only get sync support if you install from an official web store
+(*Fraidycat not available there yet*) or if you install [from source](#Installation)
+in Chrome.
+
 Be aware that each browser will fetch feeds independently - so they may fall out
 of sync as they try to stay updated. However, every time you add or edit or
 remove a follow, your other computers will be notified.
