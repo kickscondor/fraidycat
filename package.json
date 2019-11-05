@@ -1,7 +1,9 @@
 {
   "name": "fraidycat",
   "scripts": {
+    "lint": "web-ext lint --source-dir ./build/webext/",
     "start": "parcel src/index.html",
+    "start:firefox": "web-ext run --source-dir ./build/webext/",
     "build": "rimraf build/dat && cpx src/root/ build/dat && cross-env STORAGE=dat parcel build src/index.html --no-cache -d build/dat",
     "webext": "rimraf build/webext && cpx src/root/ build/webext && cross-env STORAGE=webext parcel build src/manifest.json -d build/webext"
   },
@@ -34,6 +36,7 @@
     "babel-preset-stage-0": "^6.24.1",
     "node-sass": "^4.13.0",
     "parcel-plugin-web-extension": "^1.5.2",
+    "web-ext": "^3.2.0",
     "webextension-polyfill": "^0.4.0"
   }
 }
