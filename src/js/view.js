@@ -4,7 +4,7 @@ import { jsonDateParser } from "json-date-parser"
 import { Link, Route, Switch } from '@kickscondor/router'
 import globe from '../images/globe.svg'
 import images from '../images/*.png'
-import 'emoji-selector'
+import EmojiButton from '@kickscondor/emoji-button'
 import u from '@kickscondor/umbrellajs'
 const url = require('url')
 
@@ -19,6 +19,12 @@ const FormFreeze = (e) => {
 
 const FollowForm = (isNew) => ({follows}, actions) => {
   let follow = follows.editing
+  let picker = new EmojiButton()
+  picker.on('emoji', ch => {
+    if (follow.tags) { follow.tags.push(ch) } else { follow.tags = [ch] }
+    actions.follows.set({follow})
+  })
+
   return follow && <form class="follow" onsubmit={FormFreeze}>
     {isNew &&
       <div>
@@ -39,14 +45,11 @@ const FollowForm = (isNew) => ({follows}, actions) => {
     <div>
       <label for="tags">Tag(s) &mdash; separate with spaces</label>
       <input type="text" id="tags" value={follow.tags ? follow.tags.join(' ') : ''}
-        oninput={e => e.target.value ? (follow.tags = e.target.value.split(/\s+/)) : (delete follow.tags)} />
-      <emoji-selector oncreate={el => {
-        el.emojiSelected = ch => {
-          if (follow.tags) { follow.tags.push(ch) } else { follow.tags = [ch] }
-          actions.follows.set({follow})
-          el.close()
-        }
-      }}></emoji-selector>
+        oninput={e => e.target.value ? (follow.tags = e.target.value.trim().split(/\s+/)) : (delete follow.tags)} />
+      <a href="#" onclick={e => {
+        e.preventDefault()
+        picker.pickerVisible ? picker.hidePicker() : picker.showPicker(e)
+      }}>&#128513;</a>
       <p class="note">(If left blank, tag is assumed to be '&#x1f3e0;'&mdash;the main page tag.)</p>
     </div>
 

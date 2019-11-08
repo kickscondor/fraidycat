@@ -1,17 +1,19 @@
 {
   "name": "fraidycat",
   "scripts": {
-    "lint": "web-ext lint --source-dir ./build/webext/",
     "start": "parcel src/index.html",
     "start:firefox": "web-ext run --source-dir ./build/webext/",
     "build": "rimraf build/dat && cpx src/root/ build/dat && cross-env STORAGE=dat parcel build src/index.html --no-cache -d build/dat",
-    "webext": "rimraf build/webext && cpx src/root/ build/webext && cross-env STORAGE=webext parcel build src/manifest.json -d build/webext"
+    "webext": "rimraf build/webext && cpx src/root/ build/webext && cross-env STORAGE=webext parcel build src/manifest.json -d build/webext",
+    "webext:lint": "web-ext lint --source-dir ./build/webext/",
+    "webext:safe": "find build/webext -type f -name '*.js' | xargs sed -i 's/\\([=:]\\)Function(/\\1(/g'"
   },
   "dependencies": {
     "@fnando/sparkline": "^0.3.10",
     "@kickscondor/elasticlunr": "^0.9.8",
+    "@kickscondor/emoji-button": "^2.1.4",
     "@kickscondor/router": "^0.7.3",
-    "@kickscondor/umbrellajs": "^3.1.1",
+    "@kickscondor/umbrellajs": "^3.1.2",
     "@shelacek/ubjson": "^1.0.1",
     "babel-plugin-transform-react-jsx": "^6.24.1",
     "babel-polyfill": "^6.26.0",
@@ -19,7 +21,6 @@
     "babel-preset-es2015": "^6.24.1",
     "cpx": "^1.5.0",
     "cross-env": "^6.0.3",
-    "emoji-selector": "^1.0.4",
     "fast-json-patch": "^3.0.0-1",
     "feedme": "^1.2.0",
     "hyperapp": "^1.2.9",
@@ -30,6 +31,7 @@
     "quick-lru": "^4.0.1",
     "rimraf": "^3.0.0",
     "taggle": "^1.14.4",
+    "umbrellajs": "^3.1.0",
     "yarn": "^1.19.1"
   },
   "devDependencies": {
