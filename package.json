@@ -31,7 +31,6 @@
     "quick-lru": "^4.0.1",
     "rimraf": "^3.0.0",
     "taggle": "^1.14.4",
-    "umbrellajs": "^3.1.0",
     "yarn": "^1.19.1"
   },
   "devDependencies": {
