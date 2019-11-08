@@ -99,13 +99,13 @@ export default ({
     //
     // Import follows from OPML.
     //
-    importOpml: (e) => ({local}, {location}) => {
+    importFrom: (e, format) => ({local}, {location}) => {
       let f = e.target.files[0]
       if (f) {
         let r = new FileReader()
         r.onload = async function (o) {
           let contents = o.target.result
-          await local.command("importOpml", contents)
+          await local.command("importFrom", {format, contents})
           location.go("/")
         }
         r.readAsText(f)
@@ -115,12 +115,12 @@ export default ({
     //
     // Export follows to OPML.
     //
-    exportOpml: () => ({local}) => {
-      local.command("exportOpml").then(opml => {
-        console.log(opml)
-        var data = "data:text/xml;charset=UTF-8," + encodeURIComponent(opml)
+    exportTo: (format) => ({local}) => {
+      local.command("exportTo", format).then(opml => {
+        var data = "data:" + opml.mimeType +
+          ";charset=UTF-8," + encodeURIComponent(opml.contents)
         var link = document.createElement('a')
-        link.setAttribute('download', 'fraidycat.opml')
+        link.setAttribute('download', 'fraidycat.' + format)
         link.setAttribute('href', data)
         document.body.appendChild(link)
         link.click()

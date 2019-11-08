@@ -27,7 +27,7 @@ article {
 
 #menu {
   ul {
-    margin-top: -56px;
+    margin-top: -40px;
     float: right;
     list-style: none;
     padding: 0;
@@ -38,14 +38,16 @@ article {
   }
 
   a {
-    display: block;
     text-decoration: none;
-    background-color: #FF0099;
-    padding: 7px 9px;
     margin: 15px 5px;
-    border-radius: 18px;
-    font-weight: bold;
-    color: white;
+
+    &.pink {
+      padding: 7px 9px;
+      background-color: #FF0099;
+      border-radius: 18px;
+      font-weight: bold;
+      color: white;
+    }
   }
 }
 
@@ -338,6 +340,12 @@ article {
 #feed-select {
   li {
     list-style: none;
+  }
+}
+
+#settings {
+  button {
+    margin-left: 12px;
   }
 }
 

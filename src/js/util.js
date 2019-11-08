@@ -1,5 +1,15 @@
 const normalizeUrl = require('normalize-url')
 
+export const house = "\u{1f3e0}"
+
+export const Importances = [
+  [0,   'Real-time'],
+  [1,   'Daily'],
+  [7,   'Weekly'],
+  [30,  'Monthly'],
+  [365, 'Year']
+]
+
 export async function responseToObject (resp) {
   let headers = {}
   let body = await resp.text()
@@ -30,4 +40,8 @@ export function urlToNormal (link) {
 export function urlToID (normLink) {
   let hashInt = normLink.split("").reduce(function(a,b){a=((a<<5)-a)+b.charCodeAt(0);return a&a},0)
   return `${normLink.split('/')[0]}-${(hashInt >>> 0).toString(16)}`
+}
+
+export function followTitle(follow) {
+  return follow.title || follow.actualTitle || urlToNormal(follow.url)
 }

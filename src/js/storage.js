@@ -18,8 +18,10 @@
 // instance to pull down feeds and operate independently. This allows the
 // instance to run alone, with no syncing, should the user want it that way.
 //
-import { urlToNormal } from './util'
+import { followTitle, house, Importances } from './util'
 import feedycat from './feedycat'
+import u from 'umbrellajs'
+
 const og = require('opml-generator')
 const quicklru = require('quick-lru')
 const sax = require('sax')
@@ -103,7 +105,7 @@ module.exports = {
       if (oldest) {
         let lastFetch = this.fetched[oldest.id]
         this.updating.push(oldest)
-        console.log(`Updating ${oldest.title || oldest.actualTitle}`)
+        console.log(`Updating ${followTitle(oldest)}`)
         await feedycat(this, oldest, lastFetch)
         this.markFetched(oldest)
         this.updating = this.updating.filter(follow => follow != oldest)
@@ -225,51 +227,124 @@ module.exports = {
   //
   // Import from an OPML file
   //
-  async importOpml(raw) {
-    let xml = sax.createStream(false, {lowercasetags: true}), currentTag = null
-    let follows = []
-    xml.on('opentag', node => {
-      if (node.name == 'outline') {
-        let tags = [], match = null, importance = 0
-        if (node.attributes.category) {
-          tags = node.attributes.category.split(',').filter(tag => {
-            if ((match = tag.match(/^importance\/(\d+)$/)) !== null) {
-              importance = Number(match[1])
-              return false
+  async importFrom(data) {
+    if (data.format == 'opml') {
+      //
+      // Import follows from the OPML - everything that's missing.
+      //
+      let follows = []
+      let xml = sax.createStream(false, {lowercasetags: true}), currentTag = null
+      xml.on('opentag', node => {
+        if (node.name == 'outline') {
+          let url = node.attributes.xmlurl || node.attributes.htmlurl
+          if (url) {
+            let tags = [], match = null, importance = 0
+            if (node.attributes.category) {
+              tags = node.attributes.category.split(',').filter(tag => {
+                if ((match = tag.match(/^importance\/(\d+)$/)) !== null) {
+                  importance = Number(match[1])
+                  return false
+                }
+                return true
+              })
             }
-            return true
-          })
+
+            if (tags.length == 0)
+              tags = null
+
+            follows.push({url, tags, importance, title: node.attributes.title,
+              editedAt: new Date(node.attributes.created)})
+          }
         }
+      })
+      xml.write(data.contents)
+      if (follows.length > 0)
+        this.sync({follows})
+    } else {
 
-        if (tags.length == 0)
-          tags = null
-
-        follows.push({url: node.attributes.xmlurl || node.attributes.htmlurl,
-          tags, importance, title: node.attributes.title,
-          editedAt: new Date(node.attributes.created)})
-      }
-    })
-    xml.write(raw)
-    this.sync({follows})
+      //
+      // Import all settings from a JSON file.
+      //
+      this.sync(this.decode(data.contents))
+    }
   },
 
   //
   // Export to OPML
   //
-  async exportOpml() {
+  async exportTo(format) {
     let outlines = []
-    for (let id in this.all) {
-      let follow = this.all[id]
-      let category = `importance/${follow.importance}` + 
-        (follow.tags ? ',' + follow.tags.join(',') : '')
-      let item = {category, created: follow.editedAt,
-        text: follow.title || follow.actualTitle || urlToNormal(follow.url),
-        xmlUrl: follow.feed, htmlUrl: follow.url}
-      if (follow.title)
-        item.title = follow.title
-      outlines.push(item)
+    let mimeType = null, contents = null
+
+    if (format === 'opml') {
+      //
+      // Export follows (not all settings) to OPML.
+      //
+      mimeType = 'text/xml'
+      for (let id in this.all) {
+        let follow = this.all[id]
+        let category = `importance/${follow.importance}` + 
+          (follow.tags ? ',' + follow.tags.join(',') : '')
+        let item = {category, created: follow.editedAt, text: followTitle(follow),
+          xmlUrl: follow.feed, htmlUrl: follow.url}
+        if (follow.title)
+          item.title = follow.title
+        outlines.push(item)
+      }
+      contents = og({title: "Fraidycat Follows", dateCreated: new Date()}, outlines)
+
+    } else if (format === 'html') {
+      //
+      // Export to HTML similar to Firefox bookmarks.
+      //
+      mimeType = 'text/html'
+      let follows = {}, allTags = {}
+      Object.values(this.all).
+        sort((a, b) => followTitle(a) > followTitle(b)).
+        map(follow => {
+          (follow.tags || [house]).forEach(k => {
+            let fk = `${k}/${follow.importance}`
+            if (!follows[fk])
+              follows[fk] = []
+            follows[fk].push(follow)
+            allTags[k] = true
+          })
+        })
+
+      let tags = Object.keys(allTags).filter(t => t != house).sort()
+      tags.unshift(house)
+
+      let dl = u('<dl>')
+      for (let tag of tags) {
+        let dli = u('<dl>')
+        for (let imp of Importances) {
+          let fk = `${tag}/${imp[0]}`
+          if (follows[fk]) {
+            let dlr = u('<dl>')
+            for (let follow of follows[fk]) {
+              dlr.append(u('<dt>').append(u('<a>').attr({href: follow.url}).text(followTitle(follow))))
+            }
+            dli.append(u('<dt>').append(u('<h4>').text(imp[1])).append(dlr))
+          }
+        }
+
+        dl.append(u('<dt>').append(u('<h3>').text(tag)).append(dli))
+      }
+
+      contents = u('<div>').
+        append(u('<meta>').attr({'Content-Type': 'text/html; charset=UTF-8'})).
+        append(u('<title>').text('Fraidycat Links')).
+        append(u('<h1>').text('Fraidycat Follows')).
+        append(dl).html()
+
+    } else {
+      //
+      // Straight JSON export of the sync file.
+      //
+      mimeType = 'application/json'
+      contents = this.encode(this.common)
     }
-    return og({title: "Fraidycat Follows", dateCreated: new Date()}, outlines)
+    return {mimeType, contents}
   },
 
   //
@@ -315,7 +390,7 @@ module.exports = {
       let follow = {url: feed.href, importance: site.importance,
         tags: site.tags, title: site.title, editedAt: new Date()}
       if (sel.length > 1) {
-        follow.title = `${site.title || site.actualTitle} [${feed.title}]`
+        follow.title = `${followTitle(site)} [${feed.title}]`
       }
 
       try {

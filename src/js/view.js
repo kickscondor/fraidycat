@@ -1,9 +1,8 @@
-import { getIndexById, urlToNormal } from './util'
+import { followTitle, getIndexById, house, Importances } from './util'
 import { h } from 'hyperapp'
 import { jsonDateParser } from "json-date-parser"
 import { Link, Route, Switch } from '@kickscondor/router'
 import globe from '../images/globe.svg'
-const house = "\u{1f3e0}"
 import images from '../images/*.png'
 import 'emoji-selector'
 const url = require('url')
@@ -12,14 +11,6 @@ import u from 'umbrellajs'
 import sparkline from '@fnando/sparkline'
 
 const CAN_ARCHIVE = (process.env.STORAGE != 'webext')
-
-const Importances = [
-  [0,   'Real-time'],
-  [1,   'Daily'],
-  [7,   'Weekly'],
-  [30,  'Monthly'],
-  [365, 'Year']
-]
 
 const FormFreeze = (e) => {
   e.preventDefault()
@@ -111,7 +102,7 @@ const AddFeed = () => ({follows, settings}, actions) => {
       </div>
     : <div id="feed-select">
         <h2>Select a Feed</h2>
-        <p>{site.title || site.actualTitle || urlToNormal(site.url)} has several feeds:</p>
+        <p>{followTitle(site)} has several feeds:</p>
         <form class="feeds" onsubmit={FormFreeze}>
         <ul>
         {list.map(feed =>
@@ -204,7 +195,7 @@ const ViewFollowById = ({ match }) => ({follows}, actions) => {
   let follow = follows.all[match.params.id]
   let posts = actions.follows.getPosts(follow.id, 0, 20)
   return <div id="reader">
-    <h2>{follow.title || follow.actualTitle || urlToNormal(follow.url)}</h2>
+    <h2>{followTitle(follow)}</h2>
     {follow.description && <div class="note">{follow.description}</div>}
     <ol>{posts && posts.slice(0, 20).map(post => {
       let details = actions.follows.getPostDetails({post, id: follow.id})
@@ -257,7 +248,7 @@ const ListFollow = ({ match }) => ({follows}, actions) => {
               <img class="favicon" src={url.resolve(follow.url, follow.photo || '/favicon.ico')}
                 onerror={e => e.target.src=globe} width="20" height="20" />
             </Link>
-            <Link class="url" to={linkUrl}>{follow.title || follow.actualTitle || urlToNormal(follow.url)}</Link>
+            <Link class="url" to={linkUrl}>{followTitle(follow)}</Link>
             {ago && <span class="latest">{ago}</span>}
             <span title={`graph of the last ${daily ? 'two' : 'six'} months`}>
               <svg class="sparkline"
@@ -282,17 +273,39 @@ const ListFollow = ({ match }) => ({follows}, actions) => {
   </div>
 }
 
+const ImportFrom = (format) => {
+  let imp = document.getElementById('fileImp')
+  imp.name = format
+  imp.click()
+}
+
 const ChangeSettings = ({ match, setup }) => (_, {follows}) => {
   return <div id="settings">
     <form onsubmit={e => e.preventDefault()}>
-    <h2>Your Settings</h2>
-    <p>Please keep in mind: these settings will sync.</p>
+    <input type="file" id="fileImp" style="display: none" name=""
+      onchange={e => follows.importFrom(e, e.target.name)} />
     <h3>Import / Export</h3>
-    <p>
-      <button onclick={e => document.getElementById('fileImp').click()}>Import Follows from OPML</button>
-      <input type="file" id="fileImp" style="display: none" onchange={e => follows.importOpml(e)} />
-      <button onclick={e => follows.exportOpml()}>Export Follows to OPML</button>
-    </p>
+    <div>
+      <p><strong>JSON:</strong>
+        <button onclick={e => ImportFrom('json')}>Full Import</button>
+        <button onclick={e => follows.exportTo('json')}>Full Export</button></p>
+      <p class="note">This will save <em>all</em> of your Fraidycat settings.</p>
+    </div>
+    <div>
+      <p>
+        <strong>OPML:</strong>
+        <button onclick={e => ImportFrom('opml')}>Import Follows</button>
+        <button onclick={e => follows.exportTo('opml')}>Export Follows</button>
+      </p>
+      <p class="note">This will only backup your follows.</p>
+    </div>
+    <div>
+      <p>
+        <strong>HTML:</strong>
+        <button onclick={e => follows.exportTo('html')}>Export Follows</button>
+      </p>
+      <p class="note">This is just for fun - a bookmarks list in HTML.</p>
+    </div>
     </form>
   </div>
 }
@@ -307,7 +320,7 @@ export default (state, actions) => {
       <section>
         <div id="menu">
           {!settings && <ul>
-            <li><Link to="/add" title="Add a Follow">&#xff0b;</Link></li>
+            <li><Link to="/add" class="pink" title="Add a Follow">&#xff0b;</Link></li>
             <li><Link to="/settings" title="Settings">&#x2699;&#xfe0f;</Link></li>
           </ul>}
         </div>
