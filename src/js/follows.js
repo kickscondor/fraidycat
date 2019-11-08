@@ -106,7 +106,10 @@ export default ({
         r.onload = async function (o) {
           let contents = o.target.result
           await local.command("importFrom", {format, contents})
-          location.go("/")
+          if (window.location.pathname === "/settings.html")
+            window.close()
+          else
+            location.go("/")
         }
         r.readAsText(f)
       }
