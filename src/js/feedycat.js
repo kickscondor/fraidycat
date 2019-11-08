@@ -294,7 +294,7 @@ async function soundcloud(storage, meta, follow, res) {
   let now = new Date()
   let doc = u('<div>').html(res.body)
   let article = u('<div>').html(doc.find('noscript:not(.errorPage__inner)').html())
-  console.log(article)
+  // console.log(article)
   meta.title = doc.find('title').text()
   meta.photos = {avatar: doc.find('meta[property="twitter:image"]').attr('content')}
   meta.description = doc.find('div.truncatedUserDescription__content').html()
@@ -374,7 +374,7 @@ async function feedme_get(fn, storage, meta, follow, lastFetch) {
   }
 
   let res = await storage.fetch(meta.feed, {headers: hdrs, credentials: 'omit'}), feeds = null
-  console.log([meta.feed, res, lastFetch])
+  // console.log([meta.feed, res, lastFetch])
   if (res.status == 304) {
     console.log(`${meta.feed} hasn't changed.`)
     lastFetch.status = res.status

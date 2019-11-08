@@ -33,7 +33,7 @@ export default ({
     // Receive updates from the background process.
     //
     update: (patch) => (state) => {
-      console.log([state, patch])
+      // console.log([state, patch])
       return patch.op ? applyOperation(state, patch) : patch
     },
 
@@ -94,6 +94,38 @@ export default ({
         local.command("remove", follow)
         location.go("/")
       }
+    },
+
+    //
+    // Import follows from OPML.
+    //
+    importOpml: (e) => ({local}, {location}) => {
+      let f = e.target.files[0]
+      if (f) {
+        let r = new FileReader()
+        r.onload = async function (o) {
+          let contents = o.target.result
+          await local.command("importOpml", contents)
+          location.go("/")
+        }
+        r.readAsText(f)
+      }
+    },
+
+    //
+    // Export follows to OPML.
+    //
+    exportOpml: () => ({local}) => {
+      local.command("exportOpml").then(opml => {
+        console.log(opml)
+        var data = "data:text/xml;charset=UTF-8," + encodeURIComponent(opml)
+        var link = document.createElement('a')
+        link.setAttribute('download', 'fraidycat.opml')
+        link.setAttribute('href', data)
+        document.body.appendChild(link)
+        link.click()
+        document.body.removeChild(link)
+      })
     },
   }
 })

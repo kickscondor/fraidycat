@@ -10,8 +10,6 @@ import 'babel-polyfill'
 import follows from './follows'
 import views from './view'
 
-import '../css/fraidy.scss'
-
 const {state, actions, view} = hyperload({
   modules: {follows},
   view: views

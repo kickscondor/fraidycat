@@ -59,9 +59,9 @@ different computers.
 Here is a current list of what is fully supported:
 
 * **Feeds (RSS, Atom, JSON Feed).** It will discover any feeds attached to the
-  URL you supply. Many sites not listed (like Wikipedia, Kickstarter or Stack Overflow) will
-  automatically work because of this. (*ALL SITES SHOULD SUPPORT THIS COME ON
-  FRIENDS!*)
+  URL you supply. Many sites not listed (like Mastodono, micro.blog,
+  Wikipedia, Kickstarter or Stack Overflow) will automatically work because
+  of this. (*ALL SITES SHOULD SUPPORT THIS COME ON FRIENDS! IT'S TOO EASY!*)
 * **TiddlyWiki.** As odd as this seems, I use this heavily to follow wikis
   like philosopher.life and wiki.waifu.haus. The entire wiki is read every time
   it changes - so be aware that this can cause some strain on the extension.

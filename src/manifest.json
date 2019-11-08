@@ -2,7 +2,7 @@
   "manifest_version": 2,
   "name": "Fraidycat",
   "key": "hecfkgekabkkhiidlinmifelhdooeool",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Follow from afar.",
   "homepage_url": "https://fraidyc.at/",
   "icons": {
@@ -11,8 +11,11 @@
   },
 
   "options_ui": {
-    "page": "index.html"
+    "page": "settings.html"
   },
+  "web_accessible_resources": [
+    "index.html"
+  ],
   "background": {
     "scripts": ["background.js"]
   },

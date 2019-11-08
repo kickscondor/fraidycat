@@ -24,6 +24,7 @@
     "hyperapp": "^1.2.9",
     "json-date-parser": "^1.0.1",
     "normalize-url": "^4.5.0",
+    "opml-generator": "^1.1.1",
     "parcel-bundler": "^1.12.4",
     "quick-lru": "^4.0.1",
     "rimraf": "^3.0.0",

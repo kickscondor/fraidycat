@@ -18,8 +18,11 @@
 // instance to pull down feeds and operate independently. This allows the
 // instance to run alone, with no syncing, should the user want it that way.
 //
+import { urlToNormal } from './util'
 import feedycat from './feedycat'
+const og = require('opml-generator')
 const quicklru = require('quick-lru')
+const sax = require('sax')
 const url = require('url')
 
 function fetchedAt(fetched, id) {
@@ -220,6 +223,56 @@ module.exports = {
   },
 
   //
+  // Import from an OPML file
+  //
+  async importOpml(raw) {
+    let xml = sax.createStream(false, {lowercasetags: true}), currentTag = null
+    let follows = []
+    xml.on('opentag', node => {
+      if (node.name == 'outline') {
+        let tags = [], match = null, importance = 0
+        if (node.attributes.category) {
+          tags = node.attributes.category.split(',').filter(tag => {
+            if ((match = tag.match(/^importance\/(\d+)$/)) !== null) {
+              importance = Number(match[1])
+              return false
+            }
+            return true
+          })
+        }
+
+        if (tags.length == 0)
+          tags = null
+
+        follows.push({url: node.attributes.xmlurl || node.attributes.htmlurl,
+          tags, importance, title: node.attributes.title,
+          editedAt: new Date(node.attributes.created)})
+      }
+    })
+    xml.write(raw)
+    this.sync({follows})
+  },
+
+  //
+  // Export to OPML
+  //
+  async exportOpml() {
+    let outlines = []
+    for (let id in this.all) {
+      let follow = this.all[id]
+      let category = `importance/${follow.importance}` + 
+        (follow.tags ? ',' + follow.tags.join(',') : '')
+      let item = {category, created: follow.editedAt,
+        text: follow.title || follow.actualTitle || urlToNormal(follow.url),
+        xmlUrl: follow.feed, htmlUrl: follow.url}
+      if (follow.title)
+        item.title = follow.title
+      outlines.push(item)
+    }
+    return og({title: "Fraidycat Follows", dateCreated: new Date()}, outlines)
+  },
+
+  //
   // Fetch a follow from a remote source, updating its local metadata.
   //
   async refresh(follow) {
@@ -255,7 +308,7 @@ module.exports = {
   // Subscribe to (possibly) several from a list of feeds for a site.
   //
   async subscribe(fc) {
-    console.log(fc)
+    // console.log(fc)
     let site = fc.site, list = fc.list, follows = []
     let sel = list.filter(feed => feed.selected), errors = []
     for (let feed of sel) {

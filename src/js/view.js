@@ -282,27 +282,45 @@ const ListFollow = ({ match }) => ({follows}, actions) => {
   </div>
 }
 
-export default (state, actions) =>
-  (state.follows.started &&
+const ChangeSettings = ({ match, setup }) => (_, {follows}) => {
+  return <div id="settings">
+    <form onsubmit={e => e.preventDefault()}>
+    <h2>Your Settings</h2>
+    <p>Please keep in mind: these settings will sync.</p>
+    <h3>Import / Export</h3>
+    <p>
+      <button onclick={e => document.getElementById('fileImp').click()}>Import Follows from OPML</button>
+      <input type="file" id="fileImp" style="display: none" onchange={e => follows.importOpml(e)} />
+      <button onclick={e => follows.exportOpml()}>Export Follows to OPML</button>
+    </p>
+    </form>
+  </div>
+}
+
+export default (state, actions) => {
+  let settings = window.location.pathname === "/settings.html"
+  return (state.follows.started &&
     <article>
       <header>
         <h1><Link to="/"><img src={images['fc']} alt="Fraidycat" title="Fraidycat" /></Link></h1>
       </header>
       <section>
         <div id="menu">
-          <ul>
+          {!settings && <ul>
             <li><Link to="/add" title="Add a Follow">&#xff0b;</Link></li>
-            {true ? "" : <li><Link to="/logout" title="Logout">&#x1f6aa;</Link></li>}
-          </ul>
+            <li><Link to="/settings" title="Settings">&#x2699;&#xfe0f;</Link></li>
+          </ul>}
         </div>
 
         <Switch>
+          <Route path="/settings" render={ChangeSettings} />
           <Route path="/add" render={AddFollow} />
           <Route path="/add-feed" render={AddFeed} />
           <Route path="/edit/:id" render={EditFollowById} />
           <Route path="/view/:id" render={ViewFollowById} />
           <Route path="/tag/:tag" render={ListFollow} />
-          <Route render={ListFollow} />
+          <Route render={settings ? ChangeSettings : ListFollow} />
         </Switch>
       </section>
     </article>)
+}

@@ -30,7 +30,7 @@ let start = async function () {
   browser.storage.onChanged.addListener((dict, area) => {
     if (area !== "sync")
       return
-    console.log([area, dict])
+    // console.log([area, dict])
     let changes = {}
     for (let path in dict)
       changes[path] = dict[path].newValue
