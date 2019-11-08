@@ -132,6 +132,10 @@ To build the web extension, use:
 
     npm install
     npm run webext
+    npm run webext:safe
+
+(The final step eliminates some code that triggers Mozilla's security scan.
+This code is unused by Fraidycat and is included by its dependencies.)
 
 The extension will appear in a `build/webext` folder. You can then load that
 "unpacked" extension from the browser - as a 'temporary add-on', for example,
