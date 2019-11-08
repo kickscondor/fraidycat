@@ -20,7 +20,7 @@
 //
 import { followTitle, house, Importances } from './util'
 import feedycat from './feedycat'
-import u from 'umbrellajs'
+import u from '@kickscondor/umbrellajs'
 
 const og = require('opml-generator')
 const quicklru = require('quick-lru')

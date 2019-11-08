@@ -5,9 +5,9 @@ import { Link, Route, Switch } from '@kickscondor/router'
 import globe from '../images/globe.svg'
 import images from '../images/*.png'
 import 'emoji-selector'
+import u from '@kickscondor/umbrellajs'
 const url = require('url')
 
-import u from 'umbrellajs'
 import sparkline from '@fnando/sparkline'
 
 const CAN_ARCHIVE = (process.env.STORAGE != 'webext')
@@ -201,7 +201,7 @@ const ViewFollowById = ({ match }) => ({follows}, actions) => {
       let details = actions.follows.getPostDetails({post, id: follow.id})
       return <li key={post.id}>
         <h3>{details && details.title}</h3>
-        <div class="content" innerHTML={details && (details.description || details.content_html || (details.content ? details.content.text : ""))} />
+        <div class="content"><custom-element>{details && (details.description || details.content_html || (details.content ? details.content.text : ""))}</custom-element></div>
         <div class="meta">{timeAgo(post.updatedAt, now)} ago</div>
       </li>
     })}

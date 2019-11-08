@@ -6,7 +6,7 @@
 // have it fire common events for Atom, RSS and JSON Feed.
 //
 import { getIndexById, urlToID, urlToNormal } from './util'
-import u from 'umbrellajs'
+import u from '@kickscondor/umbrellajs'
 
 const elasticlunr = require('@kickscondor/elasticlunr')
 const normalizeUrl = require('normalize-url')
