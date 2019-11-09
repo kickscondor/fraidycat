@@ -36,20 +36,20 @@ class DatStorage {
 
   async localGet(key, def) {
     let str = window.localStorage.getItem(key)
-    return str ? decode(str) : def
+    return str ? this.decode(str) : def
   }
 
   async localSet(key, def) {
-    return window.localStorage.setItem(key, encode(def))
+    return window.localStorage.setItem(key, this.encode(def))
   }
 
   async readFile(path, raw) {
-    return this.dat.readFile(path).then(str => raw ? str : decode(str))
+    return this.dat.readFile(path).then(str => raw ? str : this.decode(str))
   }
 
   async writeFile(dest, obj, raw) {
     await this.mkdir(path.dirname(dest)).catch(() => {})
-    let data = raw ? obj : encode(obj)
+    let data = raw ? obj : this.encode(obj)
     let orig = null
     try {
       orig = await this.dat.readFile(dest)
@@ -77,11 +77,11 @@ class DatStorage {
   // dat.) Multiwriter hypercore just can't come soon enough...
   //
   async readSynced(subkey) {
-    return readFile("/" + subkey + ".json")
+    return this.readFile("/sync/" + subkey + ".json")
   }
 
   async writeSynced(subkey, ids, obj) {
-    return writeFile("/" + subkey + ".json", obj)
+    return this.writeFile("/sync/" + subkey + ".json", obj)
   }
 
   //
