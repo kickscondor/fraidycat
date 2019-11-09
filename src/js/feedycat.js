@@ -248,7 +248,7 @@ async function site_rss(storage, meta, follow, res) {
 async function twitter(storage, meta, follow, res) {
   let now = new Date()
   let doc = u('<div>').html(res.body)
-  meta.title = doc.find('title').text()
+  meta.title = doc.find('h1').text()
   meta.photos = {avatar: doc.find('img.ProfileAvatar-image').attr('src')}
   meta.description = doc.find('p.ProfileHeaderCard-bio').html()
   doc.find('div.tweet').each(tweet => { tweet = u(tweet)
