@@ -101,8 +101,8 @@ module.exports = async function () {
   if (!dat) {
     dat = await DatArchive.create({title: "Fraidycat Follows",
       description: "My personal collection of Fraidycat follows.",
-      type: ["fraidycat"]}).
-    window.localStorage.setItem('dat', this.dat.url)
+      type: ["fraidycat"]})
+    window.localStorage.setItem('userDat', dat.url)
   } else {
     dat = new DatArchive(dat)
   }
