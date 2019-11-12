@@ -77,7 +77,7 @@ function add_post(storage, meta, follow, item_url, item, now) {
 //    * An index of all posts is kept at 'feeds/{feed.id}.json'.
 //    * A summary is kept in the hash at 'follows.json'.
 //
-async function rss(storage, meta, follow, res) {
+async function rss(options, storage, meta, follow, res) {
   let parser = new feedme()
   let now = new Date()
   let linkTags = []
@@ -105,6 +105,8 @@ async function rss(storage, meta, follow, res) {
     let updatedStr = item.date_modified || item.updated
     item.updatedAt = new Date(updatedStr || publishedStr)
     item.publishedAt = new Date(publishedStr || updatedStr)
+    if (options.ignoreUpdated)
+      item.updatedAt = item.publishedAt
     if ('mastodon:scope' in item && 'summary' in item)
       item.title = feedme_find(item.summary, 'content', [['type', 'html']])
     add_post(storage, meta, follow, item_url, item, now)
@@ -222,7 +224,7 @@ async function rss(storage, meta, follow, res) {
 // This uses RSS for the feed, but uses the site's social media
 // metadata for the avatar, title and such.
 //
-async function site_rss(storage, meta, follow, res) {
+async function site_rss(options, storage, meta, follow, res) {
   let doc = u('<div>').html(res.body)
   let can = doc.find('link[rel="canonical"]')
   if (can.length != 0)
@@ -239,13 +241,13 @@ async function site_rss(storage, meta, follow, res) {
   } else if ((match = url.match(/^([\.\w]+\.)?reddit\.com\/user\/([^\/]+)/)) !== null) {
     meta.feed = `http://www.reddit.com/user/${match[2]}/.rss`
   }
-  return await feedme_get(rss, storage, meta, follow, {})
+  return await feedme_get(rss, options, storage, meta, follow, {})
 }
 
 //
 // Scrape a Twitter page.
 //
-async function twitter(storage, meta, follow, res) {
+async function twitter(options, storage, meta, follow, res) {
   let now = new Date()
   let doc = u('<div>').html(res.body)
   meta.title = doc.find('h1').text()
@@ -263,7 +265,7 @@ async function twitter(storage, meta, follow, res) {
 //
 // Scrape an Instagram page.
 //
-async function instagram(storage, meta, follow, res) {
+async function instagram(options, storage, meta, follow, res) {
   let now = new Date()
   let doc = u('<div>').html(res.body)
   meta.title = doc.find('title').text().trim()
@@ -290,7 +292,7 @@ async function instagram(storage, meta, follow, res) {
 //
 // Scrape a SoundCloud page.
 //
-async function soundcloud(storage, meta, follow, res) {
+async function soundcloud(options, storage, meta, follow, res) {
   let now = new Date()
   let doc = u('<div>').html(res.body)
   let article = u('<div>').html(doc.find('noscript:not(.errorPage__inner)').html())
@@ -311,7 +313,7 @@ async function soundcloud(storage, meta, follow, res) {
 //
 // Scrape Facebook (unfinished).
 //
-async function facebook(storage, meta, follow, res) {
+async function facebook(options, storage, meta, follow, res) {
   let now = new Date()
   let doc = u('<div>').html(res.body)
   meta.title = doc.find('title').text().trim()
@@ -363,7 +365,7 @@ function feedme_find(obj, key, where) {
 // Respect cache headers and prevent re-fetching content. This is mostly
 // relevant to Beaker (because the fetch API respects caching).
 //
-async function feedme_get(fn, storage, meta, follow, lastFetch) {
+async function feedme_get(fn, options, storage, meta, follow, lastFetch) {
   let now = new Date()
   let hdrs = {}
   if (lastFetch) {
@@ -384,7 +386,7 @@ async function feedme_get(fn, storage, meta, follow, lastFetch) {
 
   if (res.status >= 300 && res.status < 400) {
     meta.feed = normalizeFeedUrl(meta.feed, res.headers['location'])
-    return await feedme_get(fn, storage, meta, follow, {})
+    return await feedme_get(fn, options, storage, meta, follow, {})
   }
 
   follow.feed = meta.feed
@@ -395,7 +397,7 @@ async function feedme_get(fn, storage, meta, follow, lastFetch) {
   if (!res.ok)
     throw `${meta.feed} is giving a ${res.status} error.`
 
-  feeds = await fn(storage, meta, follow, res)
+  feeds = await fn(options, storage, meta, follow, res)
   if (feeds)
     return feeds
 
@@ -445,7 +447,7 @@ export default async (storage, follow, lastFetch) => {
   let url = urlToNormal(meta.url), match = null
   if (!lastFetch)
     lastFetch = {}
-  let proc = rss
+  let proc = rss, options = {}
   if (!meta.feed) {
     meta.feed = follow.url
     if ((match = url.match(/^pinboard\.in\/([^?]+)/)) !== null)
@@ -462,8 +464,9 @@ export default async (storage, follow, lastFetch) => {
     proc = facebook
   } else if (url.startsWith('youtube.com/')) {
     proc = site_rss
+    options.ignoreUpdated = true
   } else if ((match = url.match(/^([\.\w]+\.)?reddit\.com\//)) !== null) {
     proc = site_rss
   }
-  return await feedme_get(proc, storage, meta, follow, lastFetch)
+  return await feedme_get(proc, options, storage, meta, follow, lastFetch)
 }
