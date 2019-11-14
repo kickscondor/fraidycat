@@ -286,7 +286,7 @@ const ChangeSettings = ({ match, setup }) => (_, {follows}) => {
   return <div id="settings">
     <form onsubmit={e => e.preventDefault()}>
     <input type="file" id="fileImp" style="display: none" name=""
-      onchange={e => follows.importFrom(e, e.target.name)} />
+      onchange={e => follows.importFrom(e)} />
     <h3>Import / Export</h3>
     <div>
       <p><strong>JSON:</strong>

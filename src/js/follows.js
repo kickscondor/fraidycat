@@ -99,12 +99,12 @@ export default ({
     //
     // Import follows from OPML.
     //
-    importFrom: (e, format) => ({local}, {location}) => {
+    importFrom: (e) => ({local}, {location}) => {
       let f = e.target.files[0]
       if (f) {
         let r = new FileReader()
         r.onload = async function (o) {
-          let contents = o.target.result
+          let contents = o.target.result, format = e.target.name
           await local.command("importFrom", {format, contents})
           if (window.location.pathname === "/settings.html")
             window.close()

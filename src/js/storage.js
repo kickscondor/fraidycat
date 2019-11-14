@@ -232,7 +232,7 @@ module.exports = {
       //
       // Import follows from the OPML - everything that's missing.
       //
-      let follows = []
+      let follows = [], parents = []
       let xml = sax.createStream(false, {lowercasetags: true}), currentTag = null
       xml.on('opentag', node => {
         if (node.name == 'outline') {
@@ -240,14 +240,15 @@ module.exports = {
           if (url) {
             let tags = [], match = null, importance = 0
             if (node.attributes.category) {
-              tags = node.attributes.category.split(',').filter(tag => {
-                if ((match = tag.match(/^importance\/(\d+)$/)) !== null) {
-                  importance = Number(match[1])
-                  return false
-                }
-                return true
-              })
+              tags = node.attributes.category.split(',')
             }
+            tags = tags.concat(parents).filter(tag => {
+              if ((match = tag.match(/^importance\/(\d+)$/)) !== null) {
+                importance = Number(match[1])
+                return false
+              }
+              return true
+            })
 
             if (tags.length == 0)
               tags = null
@@ -255,6 +256,14 @@ module.exports = {
             follows.push({url, tags, importance, title: node.attributes.title,
               editedAt: new Date(node.attributes.created)})
           }
+
+          if (!node.isSelfClosing) {
+            parents.push(node.attributes.text)
+          }
+        }
+      }).on('closetag', name => {
+        if (name == 'outline') {
+          parents.pop()
         }
       })
       xml.write(data.contents)
