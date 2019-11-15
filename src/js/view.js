@@ -31,7 +31,7 @@ const FollowForm = (isNew) => ({follows}, actions) => {
         <label for="url">URL <img src={images['supported']} /></label>
         <input type="text" id="url" name="url" value={follow.url} autocorrect="off" autocapitalize="none"
           oninput={e => follow.url = e.target.value} />
-        <p class="note">(Also see <a href="https://rssbox.herokuapp.com">RSS Box</a> for other services.)</p>
+        <p class="note">(Also see <a href="https://rss.app/">RSS.app</a> and <a href="https://rssbox.herokuapp.com">RSS Box</a> for other services.)</p>
       </div>}
 
     <div>
@@ -43,7 +43,7 @@ const FollowForm = (isNew) => ({follows}, actions) => {
     </div>
 
     <div>
-      <label for="tags">Tag(s) &mdash; separate with spaces</label>
+      <label for="tags" class="optional">Tag(s) &mdash; separate with spaces</label>
       <input type="text" id="tags" value={follow.tags ? follow.tags.join(' ') : ''}
         oninput={e => e.target.value ? (follow.tags = e.target.value.trim().split(/\s+/)) : (delete follow.tags)} />
       <a href="#" onclick={e => {
@@ -54,7 +54,7 @@ const FollowForm = (isNew) => ({follows}, actions) => {
     </div>
 
     <div>
-      <label for="title">Title</label>
+      <label for="title" class="optional">Title</label>
       <input type="text" id="title" value={follow.title}
         oninput={e => follow.title = e.target.value} />
       <p class="note">(Leave empty to use <em>{follow.actualTitle || "the title loaded from the site"}</em>.)</p>
@@ -268,7 +268,10 @@ const ListFollow = ({ match }) => ({follows}, actions) => {
                 </li>
               })}</ol>}
               {!follow.fetchesContent && <a class="collapse" href="#"
-                onclick={e => {e.preventDefault(); u(e.target).closest(".extra").toggleClass("trunc")}}>&#x2022;&#x2022;&#x2022;</a>}
+                onclick={e => {e.preventDefault(); u(e.target).closest(".extra").toggleClass("trunc")}}>
+                  <span class="enter">&#x2ba8;</span>
+                  <span class="close">&#x1f7ab;</span>
+                  </a>}
             </div>
           </div>
         </li>

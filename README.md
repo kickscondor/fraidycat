@@ -21,6 +21,11 @@ view of all the incoming posts - Fraidycat braces itself against this unbridled
 firehose! - you are shown an overview of who is active and a brief summary of
 their activity.
 
+* Official Add-on for Firefox:
+  [Download](https://addons.mozilla.org/en-US/firefox/addon/fraidycat/)
+* Official Extension for Chrome:
+  [Download](https://chrome.google.com/webstore/detail/fraidycat/hecfkgekabkkhiidlinmifelhdooeool)
+
 Here is my Fraidycat home page from October 25th, 2019:
 
 ![My Fraidycat home page](https://www.kickscondor.com/images/blog/fraidycat-oct26.png)
@@ -122,7 +127,7 @@ actually refetched if they haven't changed.
 Presently I really only encourage use of Fraidycat as a web extension for
 Firefox and Chrome. (I also use it with Vivaldi - works great.) Beaker still
 needs to release some fixes I have submitted - only then I will feel okay
-promoting it on that network.
+promoting it on the Dat network.
 
 I will begin releasing public builds on November 4th, 2019.
 

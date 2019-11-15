@@ -212,6 +212,14 @@ article {
     margin-bottom: 6px;
     padding-left: 33px;
 
+    .enter {
+      display: none;
+    }
+
+    .close {
+      display: inline;
+    }
+
     ol.title {
       list-style: square;
       color: #FA9;
@@ -267,7 +275,7 @@ article {
       font-size: 14px;
       baseline-shift: -3px;
       text-decoration: none;
-      padding: 0px 4px;
+      padding: 0px 6px 0 4px;
       margin: 0px 6px;
       overflow: hidden;
     }
@@ -275,6 +283,14 @@ article {
 
   div.trunc {
     color: #975;
+
+    .enter {
+      display: inline;
+    }
+
+    .close {
+      display: none;
+    }
 
     ol.title {
       display: inline-block;
@@ -351,7 +367,7 @@ article {
 
 /* general form styles */
 form > div {
-  margin-bottom: 16px;
+  margin-bottom: 22px;
 }
 
 div.err {
@@ -361,10 +377,15 @@ div.err {
 
 label {
   color: #620;
-  font-size: 0.9rem;
+  font-size: 1.1rem;
   font-weight: bold;
   display: block;
-  margin: 4px 0;
+  margin: 8px 0;
+}
+
+label.optional {
+  font-weight: 400;
+  font-size: 1rem;
 }
 
 input, textarea, select {
@@ -389,11 +410,11 @@ input[type="checkbox"] {
 }
 
 form p.note {
-  margin: 0;
+  margin: 8px 0;
 }
 
 p.note {
-  font-size: 0.7em;
+  font-size: 0.8em;
 }
 
 button.delete {
