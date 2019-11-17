@@ -96,6 +96,17 @@ article {
       margin-right: 6px;
       text-align: center;
       background-color: #FDC;
+      border-top: solid 4px #FDC;
+
+      &.age-m,
+      &.age-h {
+        border-top: solid 4px #9DB;
+      }
+
+      &.age-d,
+      &.age-w {
+        border-top: solid 4px #CDD;
+      }
 
       a {
         padding: 6px 20px 3px 20px;
@@ -107,10 +118,6 @@ article {
         border: solid 3px #FA9;
         border-bottom: 0;
       }
-
-      // a:hover {
-      //   background-color: #FFFFF0;
-      // }
     }
   }
 

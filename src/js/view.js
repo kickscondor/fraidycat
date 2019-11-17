@@ -148,10 +148,10 @@ function timeDarkness(from_time, to_time) {
   let mins = Math.round(Math.abs(to_time - from_time)/60)
 
   if (mins >= 0 && mins < 3600)
-    return 'h'
+    return 'age-h'
   if (mins >= 3600 && mins <= 43220)
-    return 'd'
-  return 'M'
+    return 'age-d'
+  return 'age-M'
 }
 
 function sparkpoints(el, ary, daily) {
@@ -218,7 +218,13 @@ const ListFollow = ({ match }) => ({follows}, actions) => {
   let tags = {}, imps = {}
   let viewable = Object.values(follows.all).filter(follow => {
     let ftags = (follow.tags || [house])
-    ftags.forEach(k => tags[k] = true)
+    ftags.forEach(k => {
+      let lastPost = (follow.posts && follow.posts[0]), at = tags[k]
+      if (!at)
+        tags[k] = at = 0
+      if (lastPost && follow.importance === 0 && at < lastPost.updatedAt)
+        tags[k] = lastPost.updatedAt
+    })
     let isShown = ftags.includes(tag)
     if (isShown) imps[follow.importance] = true
     return isShown
@@ -229,10 +235,10 @@ const ListFollow = ({ match }) => ({follows}, actions) => {
 
   return <div id="follows">
     <ul id="tags">
-    {tagTabs.map(t => <li><Link to={`/tag/${t}`} class={t == tag ? 'active' : null}>{t}</Link></li>)}
+    {tagTabs.map(t => <li class={timeDarkness(tags[t], now)}><Link to={`/tag/${t}`} class={t == tag ? 'active ' : null}>{t}</Link></li>)}
     </ul>
     <ul id="imps">
-    {Importances.map(sel => (imps[sel[0]] && (sel[0] == imp ? <li class='active'>{sel[1]}</li> : <li><Link to={`/tag/${tag}?importance=${sel[0]}`}>{sel[1]}</Link></li>)))}
+    {Importances.map(sel => (imps[sel[0]] ? (sel[0] == imp ? <li class='active'>{sel[1]}</li> : <li><Link to={`/tag/${tag}?importance=${sel[0]}`}>{sel[1]}</Link></li>) : (sel[0] === 0 && <li>{sel[1]}</li>)))}
     </ul>
     <ol>{viewable.map(follow => {
         let lastPost = (follow.posts && follow.posts[0]), tags = []
@@ -244,7 +250,7 @@ const ListFollow = ({ match }) => ({follows}, actions) => {
 
         let linkUrl = follow.fetchesContent ? `/view/${follow.id}` : follow.url
         let id = `follow-${follow.id}`
-        return <li key={id} class={`age-${dk || "X"}`}>
+        return <li key={id} class={dk || 'age-X'}>
           <a name={id}></a>
           <h3>
             <Link to={linkUrl}>
