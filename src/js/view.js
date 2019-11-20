@@ -229,7 +229,7 @@ const ListFollow = ({ match }) => ({follows}, actions) => {
     if (isShown) imps[follow.importance] = true
     return isShown
   }).sort((a, b) => (a.importance - b.importance) || (lastPostTime(b) - lastPostTime(a)))
-  let imp = match.params.importance || (viewable.length > 0 ? viewable[0].importance : 0)
+  let imp = match.params.importance || 0
   let tagTabs = Object.keys(tags).filter(t => t != house).sort()
   tagTabs.unshift(house)
 
@@ -238,7 +238,9 @@ const ListFollow = ({ match }) => ({follows}, actions) => {
     {tagTabs.map(t => <li class={timeDarkness(tags[t], now)}><Link to={`/tag/${t}`} class={t == tag ? 'active ' : null}>{t}</Link></li>)}
     </ul>
     <ul id="imps">
-    {Importances.map(sel => (imps[sel[0]] ? (sel[0] == imp ? <li class='active'>{sel[1]}</li> : <li><Link to={`/tag/${tag}?importance=${sel[0]}`}>{sel[1]}</Link></li>) : (sel[0] === 0 && <li>{sel[1]}</li>)))}
+    {Importances.map(sel => (sel[0] == imp ? <li class='active'>{sel[1]}</li> :
+      (imps[sel[0]] ? <li><Link to={`/tag/${tag}?importance=${sel[0]}`}>{sel[1]}</Link></li> :
+        (sel[0] === 0 && <li>{sel[1]}</li>))))}
     </ul>
     <ol>{viewable.map(follow => {
         let lastPost = (follow.posts && follow.posts[0]), tags = []
