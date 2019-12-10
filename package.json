@@ -1,12 +1,46 @@
 {
   "name": "fraidycat",
+  "description": "Follow blogs, wikis, YouTube, Twitter, Reddit, Instagram and the like... from a distance.",
+  "homepage": "https://fraidyc.at/",
+  "main": "src/electron.js",
+  "productName": "Fraidycat",
+  "author": {
+    "name": "Kicks Condor",
+    "email": "kicks@kickscondor.com"
+  },
+  "repository": {
+    "url": "https://github.com/kickscondor/fraidycat"
+  },
+  "version": "1.0.4",
   "scripts": {
-    "start": "parcel src/index.html",
+    "start": "electron ./src",
     "start:firefox": "web-ext run --source-dir ./build/webext/",
-    "build": "fsbin emptyDir build/dat && fsbin copy src/root build/dat && cross-env STORAGE=dat parcel build src/index.html --no-cache -d build/dat",
+    "electron": "fsbin emptyDir build/electron && fsbin copy src/root build/electron && cross-env STORAGE=electron parcel build src/index.html --target=electron --public-url ./ -d build/electron && electron-builder -mwl",
+    "electron:windows": "fsbin emptyDir build/electron && fsbin copy src/root build/electron && cross-env STORAGE=electron parcel build src/index.html --target=electron --public-url ./ -d build/electron && electron-builder -w",
+    "dat": "fsbin emptyDir build/dat && fsbin copy src/root build/dat && cross-env STORAGE=dat parcel build src/index.html --no-cache -d build/dat",
     "webext": "fsbin emptyDir build/webext && fsbin copy src/root build/webext  && cross-env STORAGE=webext parcel build src/manifest.json -d build/webext",
     "webext:lint": "web-ext lint --source-dir ./build/webext/",
     "webext:safe": "find build/webext -type f -name '*.js' | xargs sed -i 's/\\([=:]\\)Function(/\\1(/g'"
+  },
+  "build": {
+    "appId": "at.fraidyc",
+    "files": [
+      "src/electron.*",
+      "build/electron/**/*"
+    ],
+    "mac": {
+      "target": "dmg",
+      "icon": "src/images/logo.png"
+    },
+    "win": {
+      "target": "nsis",
+      "icon": "src/images/logo.png"
+    },
+    "linux": {
+      "target": "deb",
+      "icon": "src/images/logo.png",
+      "category": "News"
+    }
   },
   "dependencies": {
     "@fnando/sparkline": "^0.3.10",
@@ -35,6 +69,8 @@
   "devDependencies": {
     "babel-core": "^6.26.3",
     "babel-preset-stage-0": "^6.24.1",
+    "electron": "^7.1.2",
+    "electron-builder": "^21.2.0",
     "node-sass": "^4.13.0",
     "parcel-plugin-web-extension": "^1.5.2",
     "web-ext": "^3.2.0",

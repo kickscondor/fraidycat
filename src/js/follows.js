@@ -10,8 +10,10 @@ let storage = null
 
 if (process.env.STORAGE === 'dat') {
   storage = require('./storage/dat')
-} else {
+} else if (process.env.STORAGE === 'webext') {
   storage = require('./storage/webext')
+} else {
+  storage = require('./storage/node')
 }
 
 import { applyOperation } from 'fast-json-patch'

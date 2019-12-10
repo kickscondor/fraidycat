@@ -106,7 +106,6 @@ module.exports = async function () {
   } else {
     dat = new DatArchive(dat)
   }
-  
   // dat.watch('~/settings.json')
   // dat.addEventListener('changed', ({path}) => {
   //   dat.readFile(path).then(data =>

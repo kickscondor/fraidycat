@@ -1,11 +1,10 @@
 //
-// webext/background.js
+// src/background.js
 //
 import 'babel-polyfill'
-import { responseToObject } from './js/util'
 const browser = require('webextension-polyfill')
-const storage = require('./js/storage/webext')
 const mixin = require('./js/storage')
+const storage = require('./storage/webext')
 
 //
 // This script runs in the background, fetching feeds and communicating

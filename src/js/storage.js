@@ -43,12 +43,9 @@ function isOutOfDate(follow, fetched) {
   } else if (imp < 2) {
     // Daily check is hourly.
     return age > (60 * 60 * 1000)
-  } else if (imp < 60) {
-    // Monthly checks are once a day.
-    return age > (24 * 60 * 60 * 1000)
   } else {
-    // Older is a check once a week.
-    return age > (7 * 24 * 60 * 60 * 1000)
+    // Longer checks are once or twice a day.
+    return age > (12 * 60 * 60 * 1000)
   }
 }
 
