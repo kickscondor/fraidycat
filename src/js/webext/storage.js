@@ -179,6 +179,14 @@ class WebextStorage {
     browser.runtime.sendMessage(obj)
   }
 
+  command(action, data) {
+    this.sendMessage({action, data})
+  }
+
+  update(data, receiver) {
+    this.sendMessage({action: 'updated', data, receiver})
+  }
+
   //
   // Called once to initialize the background script
   //

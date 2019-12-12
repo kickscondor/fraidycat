@@ -2,7 +2,7 @@
   "name": "fraidycat",
   "description": "Follow blogs, wikis, YouTube, Twitter, Reddit, Instagram and the like... from a distance.",
   "homepage": "https://fraidyc.at/",
-  "main": "build/electron/electron-index.js",
+  "main": "build/electron/js/electron/main.js",
   "productName": "Fraidycat",
   "author": {
     "name": "Kicks Condor",
@@ -15,8 +15,8 @@
   "scripts": {
     "start": "electron ./src",
     "start:firefox": "web-ext run --source-dir ./build/webext/",
-    "electron": "fsbin emptyDir build/electron && fsbin copy src/root build/electron && cross-env STORAGE=electron parcel build src/electron-index.js src/index.html src/electron.html --target=electron --public-url ./ -d build/electron && electron-builder -mwl",
-    "electron:windows": "fsbin emptyDir build/electron && fsbin copy src/root build/electron && cross-env STORAGE=electron parcel build src/electron-index.js src/index.html src/electron.html --target=electron --public-url ./ -d build/electron && electron-builder -w",
+    "electron": "fsbin emptyDir build/electron && fsbin copy src/root build/electron && cross-env STORAGE=electron parcel build src/js/electron/main.js src/index.html src/background.html --target=electron --public-url ./ -d build/electron && electron-builder -mwl",
+    "electron:windows": "fsbin emptyDir build/electron && fsbin copy src/root build/electron && cross-env STORAGE=electron parcel build src/js/electron/main.js src/index.html src/background.html --target=electron --public-url ./ -d build/electron && electron-builder -w",
     "dat": "fsbin emptyDir build/dat && fsbin copy src/root build/dat && cross-env STORAGE=dat parcel build src/index.html --no-cache -d build/dat",
     "webext": "fsbin emptyDir build/webext && fsbin copy src/root build/webext  && cross-env STORAGE=webext parcel build src/manifest.json -d build/webext",
     "webext:lint": "web-ext lint --source-dir ./build/webext/",

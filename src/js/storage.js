@@ -441,12 +441,4 @@ module.exports = {
     this.write({update: true, follows: [follow.id]})
     this.update({op: 'subscription', follow}, sender)
   },
-
-  command(action, data) {
-    this.sendMessage({action, data})
-  },
-
-  update(data, receiver) {
-    this.sendMessage({action: 'updated', data, receiver})
-  }
 }

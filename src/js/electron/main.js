@@ -2,7 +2,7 @@
 // src/electron-index.js
 //
 // import 'babel-polyfill'
-import images from './images/*.png'
+import images from '../../images/*.png'
 const { Worker, isMainThread, parentPort } = require('worker_threads')
 const { app, BrowserWindow, ipcMain, webContents, Menu, Tray } = require('electron')
 const path = require('path')
@@ -12,7 +12,7 @@ const path = require('path')
 //
 let bg, win
 let template = [
-  { role: 'appMenu' },
+  ...(process.platform === 'darwin' ? [{ role: 'appMenu' }] : []),
   { role: 'fileMenu' },
   { role: 'editMenu' },
   {
@@ -47,7 +47,7 @@ function createWindow() {
     show: false
   })
 
-  bg.loadURL(`file://${path.join(__dirname, "electron.html")}`)
+  bg.loadURL(`file://${path.resolve(__dirname, "../../background.html")}`)
 
   win = new BrowserWindow({
     width: 900,
@@ -56,7 +56,7 @@ function createWindow() {
   })
 
   Menu.setApplicationMenu(Menu.buildFromTemplate(template))
-  win.loadURL(`file://${path.join(__dirname, "index.html")}`)
+  win.loadURL(`file://${path.resolve(__dirname, "../../index.html")}`)
   win.on("closed", () => (win = null))
 }
 
@@ -73,7 +73,7 @@ ipcMain.handle("fraidy", (e, msg) => {
 })
 
 app.on("ready", () => {
-  let tray = new Tray(path.join(__dirname, images['favicon-64']))
+  let tray = new Tray(path.resolve(__dirname, "../../", images['favicon-64']))
   const contextMenu = Menu.buildFromTemplate([
     { label: 'Background', click: function () { bg.show() } },
     { label: 'Exit', click: function () { app.quit() } }

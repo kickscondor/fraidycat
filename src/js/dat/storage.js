@@ -93,9 +93,12 @@ class DatStorage {
     this.updated = fn
   }
 
-  sendMessage(obj) {
-    if (!this.updated(obj.data))
-      return this[obj.action](obj.data)
+  command(action, data) {
+    return this[action](data)
+  }
+
+  update(data, receiver) {
+    this.updated(data)
   }
 }
 
