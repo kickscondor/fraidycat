@@ -48,6 +48,7 @@
     "@kickscondor/router": "^0.7.3",
     "@kickscondor/umbrellajs": "^3.1.2",
     "@shelacek/ubjson": "^1.0.1",
+    "about-window": "^1.13.2",
     "babel-plugin-transform-react-jsx": "^6.24.1",
     "babel-polyfill": "^6.26.0",
     "babel-preset-env": "^1.7.0",

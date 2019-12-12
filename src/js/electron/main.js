@@ -6,6 +6,7 @@ import images from '../../images/*.png'
 const { Worker, isMainThread, parentPort } = require('worker_threads')
 const { app, BrowserWindow, ipcMain, webContents, Menu, Tray } = require('electron')
 const path = require('path')
+const openAboutWindow = require('about-window').default
 
 //
 // Manage window open/close
@@ -23,7 +24,7 @@ let template = [
       { role: 'toggledevtools' },
       {
         label: 'Background Window',
-        click: function() { bg.show(); }
+        click: () => bg.show()
       },
       { type: 'separator' },
       { role: 'resetzoom' },
@@ -36,7 +37,8 @@ let template = [
   { role: 'windowMenu' },
   { role: 'help',
     submenu: [
-      { label: 'About Fraidycat' }
+      { label: 'About Fraidycat',
+        click: () => openAboutWindow(path.resolve(__dirname, "../../", images['flatcat-512'])) }
     ]
   }
 ]
@@ -52,12 +54,25 @@ function createWindow() {
   win = new BrowserWindow({
     width: 900,
     height: 680,
-    webPreferences: {nodeIntegration: true}
+    webPreferences: {nodeIntegration: true},
+    icon: path.resolve(__dirname, "../../", images['flatcat-32'])
   })
 
   Menu.setApplicationMenu(Menu.buildFromTemplate(template))
   win.loadURL(`file://${path.resolve(__dirname, "../../index.html")}`)
-  win.on("closed", () => (win = null))
+  win.on("close", ev => {
+    if (app.isQuiting) {
+      win = null
+    } else {
+      ev.preventDefault()
+      win.hide()
+    }
+    return false
+  })
+  win.on("minimize", ev => {
+    ev.preventDefault()
+    win.hide()
+  })
 }
 
 ipcMain.handle("fraidy", (e, msg) => {
@@ -72,14 +87,19 @@ ipcMain.handle("fraidy", (e, msg) => {
   }
 })
 
+var tray
 app.on("ready", () => {
-  let tray = new Tray(path.resolve(__dirname, "../../", images['favicon-64']))
+  tray = new Tray(path.resolve(__dirname, "../../", images['flatcat-32']))
   const contextMenu = Menu.buildFromTemplate([
-    { label: 'Background', click: function () { bg.show() } },
-    { label: 'Exit', click: function () { app.quit() } }
+    { label: 'Fraidycat', click: () => win.show() },
+    { label: 'Quit', click: () => {
+      app.isQuiting = true
+      app.quit() 
+    } }
   ])
   tray.setToolTip('Fraidycat')
   tray.setContextMenu(contextMenu)
+  tray.on("click", () => win.show())
   createWindow()
 })
 

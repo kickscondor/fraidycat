@@ -6,8 +6,8 @@
   "description": "Follow from afar.",
   "homepage_url": "https://fraidyc.at/",
   "icons": {
-    "32": "images/favicon-32.png",
-    "64": "images/favicon-64.png"
+    "32": "images/flatcat-32.png",
+    "64": "images/flatcat-64.png"
   },
 
   "options_ui": {
@@ -22,9 +22,9 @@
   "browser_action": {
     "default_title": "Fraidycat",
     "default_icon": {
-      "16": "images/favicon.png",
-      "32": "images/favicon-32.png",
-      "64": "images/favicon-64.png"
+      "16": "images/flatcat.png",
+      "32": "images/flatcat-32.png",
+      "64": "images/flatcat-64.png"
     }
   },
   "permissions": ["http://*/", "https://*/", "storage", "tabs", "unlimitedStorage"],
