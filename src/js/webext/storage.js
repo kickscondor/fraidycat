@@ -164,34 +164,38 @@ class WebextStorage {
   //
   receiveMessage(fn) {
     browser.runtime.onMessage.addListener((msg, sender, resp) => {
+      if (msg.receiver && msg.receiver != this.id)
+        return
       if (msg.data)
-        msg.data = this.decode(msg.data, jsonDateParser)
-      return fn(msg)
+        msg.data = this.decode(msg.data)
+      fn(msg)
     })
   }
 
   sendMessage(obj) {
+    obj.sender = obj.id
     if (obj.data)
       obj.data = this.encode(obj.data)
-    return new Promise((resolve, reject) => {
-      browser.runtime.sendMessage(obj).then(resp => {
-        if (resp && resp.error)
-          reject(resp.error)
-        else
-          resolve(resp)
-      })
-    })
+    browser.runtime.sendMessage(obj)
   }
 
-  command(action, data) {
-    if (action === 'setup') {
-      this.receiveMessage(msg => {
-        if (msg.action === 'update')
-          return data(msg.data)
-      })
-      return this.sendMessage({action})
-    }
-    return this.sendMessage({action, data})
+  //
+  // Called once to initialize the background script
+  //
+  backgroundSetup() {
+    browser.storage.onChanged.addListener((dict, area) => {
+      if (area !== "sync")
+        return
+      // console.log([area, dict])
+      let changes = {}
+      for (let path in dict)
+        changes[path] = dict[path].newValue
+      this.onSync(changes)
+    })
+
+    browser.browserAction.onClicked.addListener(tab => {
+      browser.tabs.create({url: "index.html"})
+    })
   }
 }
 

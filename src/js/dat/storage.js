@@ -89,8 +89,13 @@ class DatStorage {
   // is already backgrounded), we just do straight method calls. No need for
   // a messaging API.
   //
-  command(action, obj) {
-    return this[action](obj)
+  receiveMessage(fn) {
+    this.updated = fn
+  }
+
+  sendMessage(obj) {
+    if (!this.updated(obj.data))
+      return this[obj.action](obj.data)
   }
 }
 

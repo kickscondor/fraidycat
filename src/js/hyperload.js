@@ -1,7 +1,7 @@
 import { location } from "@kickscondor/router"
 
 let locationOpts = {}
-if (process.env.STORAGE === 'webext') {
+if (process.env.STORAGE !== 'dat') {
   locationOpts = {hashRouting: true}
 }
 

@@ -2,9 +2,8 @@
 // src/background.js
 //
 import 'babel-polyfill'
-const browser = require('webextension-polyfill')
 const mixin = require('./js/storage')
-const storage = require('./storage/webext')
+const storage = require('./js/storage-platform')
 
 //
 // This script runs in the background, fetching feeds and communicating
@@ -15,29 +14,10 @@ let start = async function () {
   let local = await storage()
   Object.assign(local, mixin)
   console.log(`Started up Fraidycat background script. (${local.id})`)
-
-  local.setup(data => {
-    local.sendMessage({action: 'update', data}).
-      catch(err => console.log(err))
-  })
-
   local.receiveMessage(msg => {
-    if (msg.action !== 'update')
-      return local[msg.action](msg.data)
+    if (msg.action !== 'updated')
+      local[msg.action](msg.data, msg.sender)
   })
-
-  browser.storage.onChanged.addListener((dict, area) => {
-    if (area !== "sync")
-      return
-    // console.log([area, dict])
-    let changes = {}
-    for (let path in dict)
-      changes[path] = dict[path].newValue
-    local.onSync(changes)
-  })
+  local.backgroundSetup()
 }
 start()
-
-browser.browserAction.onClicked.addListener(tab => {
-  browser.tabs.create({url: "index.html"})
-})

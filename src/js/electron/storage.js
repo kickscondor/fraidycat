@@ -1,13 +1,15 @@
+const { remote, ipcRenderer } = require('electron')
 import { responseToObject } from '../util'
 import { jsonDateParser } from "json-date-parser"
 const fs = require('fs')
 const path = require('path')
-const util = require("util")
+const util = require('util')
 
 class NodeStorage {
-  constructor(session, ipc) {
+  constructor(session) {
     this.session = session
-    this.ipc = ipc
+    this.id = remote.getCurrentWebContents().id
+    this.appPath = path.join(remote.app.getPath('userData'), 'File Storage')
   }
 
   //
@@ -24,7 +26,7 @@ class NodeStorage {
   //
   // I/O functions.
   //
-  fetch(resource, init) {
+  async fetch(url, options) {
     let req = new Request(url, options)
     return fetch(req).then(responseToObject)
   }
@@ -46,9 +48,10 @@ class NodeStorage {
     return window.localStorage.setItem(key, this.encode(def))
   }
 
-  async readFile(path, raw) {
+  async readFile(dest, raw) {
+    dest = path.join(this.appPath, dest)
     return new Promise((resolve, reject) => {
-      fs.readFile(path, (err, data) => {
+      fs.readFile(dest, (err, data) => {
         if (err) {
           reject(err)
         } else {
@@ -59,6 +62,7 @@ class NodeStorage {
   }
 
   async writeFile(dest, obj, raw) {
+    dest = path.join(this.appPath, dest)
     await this.mkdir(path.dirname(dest))
     let data = raw ? obj : this.encode(obj)
     return new Promise((resolve, reject) => {
@@ -86,34 +90,29 @@ class NodeStorage {
   //
   // Messaging functions.
   //
+  // The 'fraidy' channel is how messages are sent. Replies are made - on
+  // 'fraidy-<id>' channel to the sender.
+  //
   receiveMessage(fn) {
-    this.ipc.handle('fraidycat', async (event, ...args) => {
-      let msg = this.decode(args[0], jsonDateParser)
-      return fn(msg)
+    ipcRenderer.on('fraidy', (e, msg) => {
+      console.log(msg)
+      if (msg.data)
+        msg.data = this.decode(msg.data)
+      fn(msg)
     })
   }
 
   sendMessage(obj) {
-    return this.ipc.invoke('fraidycat', this.encode(obj))
+    obj.sender = this.id
+    if (obj.data)
+      obj.data = this.encode(obj.data)
+    return ipcRenderer.invoke('fraidy', obj)
   }
 
-
-  //
-  // Needs to be backgrounded?
-  //
-  command(action, data) {
-    if (action === 'setup') {
-      this.receiveMessage(msg => {
-        if (msg.action === 'update')
-          return data(msg.data)
-      })
-      return this.sendMessage({action})
-    }
-    return this.sendMessage({action, data})
-  }
+  backgroundSetup() { }
 }
 
-module.exports = async function (ipc) {
+module.exports = async function () {
   let session = Math.random().toString(36)
-  return new NodeStorage(session, ipc)
+  return new NodeStorage(session)
 }

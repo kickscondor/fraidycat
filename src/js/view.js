@@ -10,7 +10,7 @@ const url = require('url')
 
 import sparkline from '@fnando/sparkline'
 
-const CAN_ARCHIVE = (process.env.STORAGE != 'webext')
+const CAN_ARCHIVE = (process.env.STORAGE === 'dat')
 
 const FormFreeze = (e) => {
   e.preventDefault()

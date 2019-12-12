@@ -6,15 +6,7 @@
 // platform-specific handling. (On Dat, this is all done in the foreground;
 // in a web extension, it's done in the background page.)
 //
-let storage = null
-
-if (process.env.STORAGE === 'dat') {
-  storage = require('./storage/dat')
-} else if (process.env.STORAGE === 'webext') {
-  storage = require('./storage/webext')
-} else {
-  storage = require('./storage/node')
-}
+const storage = require('./storage-platform')
 
 import { applyOperation } from 'fast-json-patch'
 
@@ -27,23 +19,44 @@ export default ({
     //
     init: () => async (state, {update}) => {
       let local = await storage()
-      local.command('setup', update)
+      local.receiveMessage(msg => {
+        if (msg.action === 'updated') {
+          update(msg.data)
+          return true
+        }
+      })
+      local.command('setup')
       state.local = local
     },
 
     //
     // Receive updates from the background process.
     //
-    update: (patch) => (state) => {
+    update: (patch) => (state, {location}) => {
       // console.log([state, patch])
-      return patch.op ? applyOperation(state, patch) : patch
-    },
-
-    //
-    // Go to a follow's tag/importance page.
-    //
-    goToFollow: follow => (_, {location}) => {
-      location.go(`/${follow.tags && `tag/${follow.tags[0]}`}?importance=${follow.importance}`)
+      if (patch.op === 'discovery') {
+        location.go("/add-feed")
+        return {feeds: {list: patch.feeds, site: patch.follow}}
+      } else if (patch.op === 'subscription') {
+        location.go(`/${patch.follow.tags && patch.follow.tags[0] &&
+          `tag/${patch.follow.tags[0]}`}?importance=${patch.follow.importance}`)
+      } else if (patch.op === 'exported') {
+        var data = "data:" + patch.mimeType +
+          ";charset=UTF-8," + encodeURIComponent(patch.contents)
+        var link = document.createElement('a')
+        link.setAttribute('download', 'fraidycat.' + patch.format)
+        link.setAttribute('href', data)
+        document.body.appendChild(link)
+        link.click()
+        document.body.removeChild(link)
+      } else if (patch.op === 'error') {
+        location.go("/")
+        alert(patch.message)
+      } else if (patch.op) {
+        return applyOperation(state, patch)
+      } else {
+        return patch
+      }
     },
 
     //
@@ -51,27 +64,14 @@ export default ({
     //
     save: follow => ({local}, {location, goToFollow, set}) => {
       follow.editedAt = new Date()
-      local.command("save", follow).then(feeds => {
-        if (feeds) {
-          set({feeds: {list: feeds, site: follow}})
-          location.go("/add-feed")
-        } else {
-          goToFollow(follow)
-        }
-      }).catch(msg => {
-        location.go("/")
-        alert(`${follow.url} is ${msg}`)
-      })
+      local.command("save", follow)
     },
 
     //
     // Subscribe to follows from a list found within an HTML page.
     //
     subscribe: fc => async ({local}, {goToFollow, location}) => {
-      let errors = await local.command("subscribe", fc)
-      goToFollow(fc.site)
-      if (errors.length > 0)
-        alert(errors.join("\n"))
+      local.command("subscribe", fc)
     },
 
     //
@@ -94,7 +94,6 @@ export default ({
     confirmRemove: follow => ({local}, {location}) => {
       if (confirm("Delete " + follow.url + "?")) {
         local.command("remove", follow)
-        location.go("/")
       }
     },
 
@@ -107,7 +106,7 @@ export default ({
         let r = new FileReader()
         r.onload = async function (o) {
           let contents = o.target.result, format = e.target.name
-          await local.command("importFrom", {format, contents})
+          local.command("importFrom", {format, contents})
           if (window.location.pathname === "/settings.html")
             window.close()
           else
@@ -121,16 +120,7 @@ export default ({
     // Export follows to OPML.
     //
     exportTo: (format) => ({local}) => {
-      local.command("exportTo", format).then(opml => {
-        var data = "data:" + opml.mimeType +
-          ";charset=UTF-8," + encodeURIComponent(opml.contents)
-        var link = document.createElement('a')
-        link.setAttribute('download', 'fraidycat.' + format)
-        link.setAttribute('href', data)
-        document.body.appendChild(link)
-        link.click()
-        document.body.removeChild(link)
-      })
+      local.command("exportTo", {format})
     },
   }
 })

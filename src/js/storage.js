@@ -50,17 +50,11 @@ function isOutOfDate(follow, fetched) {
 }
 
 module.exports = {
-  setup(update) {
+  setup(msg, sender) {
     let obj = {started: true}
-    if (typeof(update) !== 'function') {
-      obj.all = this.all
-      this.update(obj)
-      return
-    }
-
     Object.assign(this, {all: {}, updating: [], fetched: {},
       common: {settings: {broadcast: false}, follows: {}, index: {}, maxIndex: 0},
-      postCache: new quicklru({maxSize: 1000}), update})
+      postCache: new quicklru({maxSize: 1000})})
 
     this.readFile('/follows.json').
       then(all => obj.all = all).catch(e => console.log(e)).
@@ -69,11 +63,11 @@ module.exports = {
           if (saved)
             Object.assign(this, saved)
           Object.assign(this, obj)
-          update(obj)
+          this.update(obj, sender)
           this.readSynced('follows').
-            then(inc => this.sync(Object.assign(inc, {firstLoad: true}))).
+            then(inc => this.sync(inc, true)).
             catch(e => console.log(e)).
-            finally(_ => setInterval(() => this.poll(), 200))
+            finally(_ => setInterval(this.poll, 200))
         })
       })
   },
@@ -132,8 +126,8 @@ module.exports = {
   // Update local follows with anything added from synced sources (other
   // browsers, other dats owned by the user) or removed as well.
   //
-  async sync(inc) {
-    let updated = false, updateSettings = false, follows = []
+  async sync(inc, updateSettings) {
+    let updated = false, follows = []
     if ('follows' in inc) {
       if ('index' in inc)
         Object.assign(this.common.index, inc.index)
@@ -160,12 +154,11 @@ module.exports = {
       }
     }
 
-    if ('firstLoad' in inc) {
+    if (updateSettings) {
       for (let id in this.all) {
         if (!inc.follows || !inc.follows[id]) {
           this.notifyFollow(this.all[id])
           follows.push(id)
-          updateSettings = true
         }
       }
     }
@@ -265,24 +258,24 @@ module.exports = {
       })
       xml.write(data.contents)
       if (follows.length > 0)
-        this.sync({follows})
+        this.sync({follows}, true)
     } else {
 
       //
       // Import all settings from a JSON file.
       //
-      this.sync(this.decode(data.contents))
+      this.sync(this.decode(data.contents), true)
     }
   },
 
   //
   // Export to OPML
   //
-  async exportTo(format) {
+  async exportTo(msg, sender) {
     let outlines = []
     let mimeType = null, contents = null
 
-    if (format === 'opml') {
+    if (msg.format === 'opml') {
       //
       // Export follows (not all settings) to OPML.
       //
@@ -299,7 +292,7 @@ module.exports = {
       }
       contents = og({title: "Fraidycat Follows", dateCreated: new Date()}, outlines)
 
-    } else if (format === 'html') {
+    } else if (msg.format === 'html') {
       //
       // Export to HTML similar to Firefox bookmarks.
       //
@@ -350,7 +343,7 @@ module.exports = {
       mimeType = 'application/json'
       contents = this.encode(this.common)
     }
-    return {mimeType, contents}
+    this.update({op: 'exported', format: msg.format, mimeType, contents}, sender)
   },
 
   //
@@ -370,7 +363,7 @@ module.exports = {
       return feeds
     
     if (!savedId && this.all[follow.id])
-      throw 'already a subscription of yours.'
+      throw `${follow.url} is already a subscription of yours.`
 
     this.markFetched(follow)
     this.all[follow.id] = follow
@@ -378,17 +371,25 @@ module.exports = {
     this.notifyFollow(follow)
   },
 
-  async save(follow) {
-    let feeds = await this.refresh(follow)
-    if (!feeds)
-      this.write({update: true, follows: [follow.id]})
-    return feeds
+  async save(follow, sender) {
+    try {
+      let feeds = await this.refresh(follow)
+      if (feeds) {
+        this.update({op: 'discovery', feeds, follow}, sender)
+      } else {
+        this.write({update: true, follows: [follow.id]})
+        this.update({op: 'subscription', follow}, sender)
+      }
+    } catch (e) {
+      console.log(e)
+      this.update({op: 'error', message: e.message}, sender)
+    }
   },
 
   //
   // Subscribe to (possibly) several from a list of feeds for a site.
   //
-  async subscribe(fc) {
+  async subscribe(fc, sender) {
     // console.log(fc)
     let site = fc.site, list = fc.list, follows = []
     let sel = list.filter(feed => feed.selected), errors = []
@@ -412,7 +413,11 @@ module.exports = {
     }
     if (follows.length > 0)
       this.write({update: true, follows})
-    return errors
+    if (errors.length > 0) {
+      this.update({op: 'error', message: errors.join("\n")}, sender)
+    } else {
+      this.update({op: 'subscription', follow: site}, sender)
+    }
   },
 
   //
@@ -429,10 +434,19 @@ module.exports = {
   //
   // Remove a follow.
   //
-  async remove(follow) {
+  async remove(follow, sender) {
     delete this.all[follow.id]
     this.common.follows[follow.id] = {deleted: true, editedAt: new Date()}
     this.update({op: 'remove', path: `/all/${follow.id}`})
     this.write({update: true, follows: [follow.id]})
+    this.update({op: 'subscription', follow}, sender)
+  },
+
+  command(action, data) {
+    this.sendMessage({action, data})
+  },
+
+  update(data, receiver) {
+    this.sendMessage({action: 'updated', data, receiver})
   }
 }

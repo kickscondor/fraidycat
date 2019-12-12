@@ -27,7 +27,7 @@
       "64": "images/favicon-64.png"
     }
   },
-  "permissions": ["http://*/", "https://*/", "storage", "tabs"],
+  "permissions": ["http://*/", "https://*/", "storage", "tabs", "unlimitedStorage"],
 
   "browser_specific_settings": {
     "gecko": {
