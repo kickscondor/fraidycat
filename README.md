@@ -151,6 +151,17 @@ To use Fraidycat, click on the 'F' icon in the browser toolbar.
 (Be aware that syncing may not work when using the extension in this way - it
 does in Chrome, though.)
 
+### Windows / Max / Linux Standalone
+
+To build the Electron app:
+
+    npm install
+    npm run electron
+
+A `dist` directory will contain the appropriate installers.
+
+(Syncing is not supported in the standalone apps yet.)
+
 ### License
 
 Fraidycat is distributed under the Blue Oak Model License 1.0.0.
