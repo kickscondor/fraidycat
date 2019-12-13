@@ -15,34 +15,35 @@
   "scripts": {
     "start": "electron ./src",
     "start:firefox": "web-ext run --source-dir ./build/webext/",
-    "electron": "fsbin emptyDir build/electron && fsbin copy src/root build/electron && cross-env STORAGE=electron parcel build src/js/electron/main.js src/index.html src/background.html --target=electron --public-url ./ -d build/electron && electron-builder -mwl",
-    "electron:windows": "fsbin emptyDir build/electron && fsbin copy src/root build/electron && cross-env STORAGE=electron parcel build src/js/electron/main.js src/index.html src/background.html --target=electron --public-url ./ -d build/electron && electron-builder -w",
-    "dat": "fsbin emptyDir build/dat && fsbin copy src/root build/dat && cross-env STORAGE=dat parcel build src/index.html --no-cache -d build/dat",
-    "webext": "fsbin emptyDir build/webext && fsbin copy src/root build/webext  && cross-env STORAGE=webext parcel build src/manifest.json -d build/webext",
+    "electron": "fsbin emptyDir build/electron && fsbin copy src/root/electron build/electron && cross-env parcel build src/js/electron/main.js src/index.html src/background.html --target=electron --public-url ./ -d build/electron && electron-builder -mwl",
+    "electron:windows": "fsbin emptyDir build/electron && fsbin copy src/root/electron build/electron && cross-env parcel build src/js/electron/main.js src/index.html src/background.html --target=electron --public-url ./ -d build/electron && electron-builder -w",
+    "dat": "fsbin emptyDir build/dat && fsbin copy src/root/dat build/dat && cross-env STORAGE=dat parcel build src/index.html --no-cache -d build/dat",
+    "webext": "fsbin emptyDir build/webext && fsbin copy src/root/webext build/webext && cross-env STORAGE=webext parcel build src/manifest.json -d build/webext",
     "webext:lint": "web-ext lint --source-dir ./build/webext/",
     "webext:safe": "find build/webext -type f -name '*.js' | xargs sed -i 's/\\([=:]\\)Function(/\\1(/g'"
   },
   "build": {
     "appId": "at.fraidyc",
+    "copyright": "by Kicks Condor",
     "files": [
       "build/electron/**/*"
     ],
     "mac": {
+      "category": "public.app-category.news",
       "target": "dmg",
-      "icon": "src/images/logo.png"
+      "icon": "src/images/flatcat-512.png"
     },
     "win": {
       "target": "nsis",
-      "icon": "src/images/logo.png"
+      "icon": "src/images/flatcat-512.png"
     },
     "linux": {
       "target": "deb",
-      "icon": "src/images/logo.png",
+      "icon": "src/images/flatcat-512.png",
       "category": "News"
     }
   },
   "dependencies": {
-    "@fnando/sparkline": "^0.3.10",
     "@kickscondor/elasticlunr": "^0.9.8",
     "@kickscondor/emoji-button": "^2.1.4",
     "@kickscondor/router": "^0.7.3",

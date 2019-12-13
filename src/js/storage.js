@@ -67,7 +67,7 @@ module.exports = {
           this.readSynced('follows').
             then(inc => this.sync(inc, true)).
             catch(e => console.log(e)).
-            finally(_ => setInterval(this.poll, 200))
+            finally(_ => setInterval(() => this.poll(), 200))
         })
       })
   },
@@ -381,8 +381,7 @@ module.exports = {
         this.update({op: 'subscription', follow}, sender)
       }
     } catch (e) {
-      console.log(e)
-      this.update({op: 'error', message: e.message}, sender)
+      this.update({op: 'error', message: e}, sender)
     }
   },
 
@@ -408,7 +407,7 @@ module.exports = {
           follows.push(follow.id)
         }
       } catch (msg) {
-        errors.push(`${follow.url} is ${msg}`)
+        errors.push(msg)
       }
     }
     if (follows.length > 0)

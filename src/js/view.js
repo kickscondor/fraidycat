@@ -5,10 +5,9 @@ import { Link, Route, Switch } from '@kickscondor/router'
 import globe from '../images/globe.svg'
 import images from '../images/*.png'
 import EmojiButton from '@kickscondor/emoji-button'
-import u from '@kickscondor/umbrellajs'
 const url = require('url')
-
-import sparkline from '@fnando/sparkline'
+const sparkline = require('./sparkline')
+import u from '@kickscondor/umbrellajs'
 
 const CAN_ARCHIVE = (process.env.STORAGE === 'dat')
 
@@ -242,48 +241,55 @@ const ListFollow = ({ match }) => ({follows}, actions) => {
       (imps[sel[0]] ? <li><Link to={`/tag/${tag}?importance=${sel[0]}`}>{sel[1]}</Link></li> :
         (sel[0] === 0 && <li>{sel[1]}</li>))))}
     </ul>
-    <ol>{viewable.map(follow => {
-        let lastPost = (follow.posts && follow.posts[0]), tags = []
-        let ago = lastPost && timeAgo(lastPost.updatedAt, now)
-        let dk = lastPost && timeDarkness(lastPost.updatedAt, now)
-        let daily = follow.importance < 7
-        if (follow.importance != imp)
-          return
+    {viewable.length > 0 ?
+      <ol>{viewable.map(follow => {
+          let lastPost = (follow.posts && follow.posts[0]), tags = []
+          let ago = lastPost && timeAgo(lastPost.updatedAt, now)
+          let dk = lastPost && timeDarkness(lastPost.updatedAt, now)
+          let daily = follow.importance < 7
+          if (follow.importance != imp)
+            return
 
-        let linkUrl = follow.fetchesContent ? `/view/${follow.id}` : follow.url
-        let id = `follow-${follow.id}`
-        return <li key={id} class={dk || 'age-X'}>
-          <a name={id}></a>
-          <h3>
-            <Link to={linkUrl}>
-              <img class="favicon" src={url.resolve(follow.url, follow.photo || '/favicon.ico')}
-                onerror={e => e.target.src=globe} width="20" height="20" />
-            </Link>
-            <Link class="url" to={linkUrl}>{followTitle(follow)}</Link>
-            {ago && <span class="latest">{ago}</span>}
-            <span title={`graph of the last ${daily ? 'two' : 'six'} months`}>
-              <svg class="sparkline"
-                width="120" height="20" stroke-width="2"
-                oncreate={el => sparkpoints(el, follow.activity, daily)}></svg></span>
-              <Link to={`/edit/${follow.id}`} class="edit" title="edit"><img src={images['270f']} /></Link>
-          </h3>
-          <div class="extra trunc">
-            <div class="post">{follow.posts &&
-              <ol class="title">{follow.posts.map(f => {
-                let postAge = timeAgo(f.updatedAt, now)
-                return <li class={`age-${postAge.slice(-1)}`}>{follow.fetchesContent ? f.title : <a href={f.url}>{f.title}</a>}
-                  <span>{timeAgo(f.updatedAt, now)}</span>
-                </li>
-              })}</ol>}
-              {!follow.fetchesContent && <a class="collapse" href="#"
-                onclick={e => {e.preventDefault(); u(e.target).closest(".extra").toggleClass("trunc")}}>
-                  <span class="enter">&#x2ba8;</span>
-                  <span class="close">&#x1f7ab;</span>
-                  </a>}
+          let linkUrl = follow.fetchesContent ? `/view/${follow.id}` : follow.url
+          let id = `follow-${follow.id}`
+          return <li key={id} class={dk || 'age-X'}>
+            <a name={id}></a>
+            <h3>
+              <Link to={linkUrl}>
+                <img class="favicon" src={url.resolve(follow.url, follow.photo || '/favicon.ico')}
+                  onerror={e => e.target.src=globe} width="20" height="20" />
+              </Link>
+              <Link class="url" to={linkUrl}>{followTitle(follow)}</Link>
+              {ago && <span class="latest">{ago}</span>}
+              <span title={`graph of the last ${daily ? 'two' : 'six'} months`}>
+                <svg class="sparkline"
+                  width="120" height="20" stroke-width="2"
+                  oncreate={el => sparkpoints(el, follow.activity, daily)}></svg></span>
+                <Link to={`/edit/${follow.id}`} class="edit" title="edit"><img src={images['270f']} /></Link>
+            </h3>
+            <div class="extra trunc">
+              <div class="post">{follow.posts &&
+                <ol class="title">{follow.posts.map(f => {
+                  let postAge = timeAgo(f.updatedAt, now)
+                  return <li class={`age-${postAge.slice(-1)}`}>{follow.fetchesContent ? f.title : <a href={f.url}>{f.title}</a>}
+                    <span>{timeAgo(f.updatedAt, now)}</span>
+                  </li>
+                })}</ol>}
+                {!follow.fetchesContent && <a class="collapse" href="#"
+                  onclick={e => {e.preventDefault(); u(e.target).closest(".extra").toggleClass("trunc")}}>
+                    <span class="enter">&#x2ba8;</span>
+                    <span class="close">&#x1f7ab;</span>
+                    </a>}
+              </div>
             </div>
-          </div>
-        </li>
-      })}</ol>
+          </li>
+        })}</ol> :
+        <div class="intro">
+          <h3>Ready?</h3>
+          <p>Let's get Fraidycat going, yeah?</p>
+          <p>Click the <Link to="/add" class="pink" title="Add a Follow">&#xff0b;</Link> button to add someone!</p>
+          <p>Or, click the <Link to="/settings" title="Settings">&#x2699;&#xfe0f;</Link> to import a bunch.</p>
+        </div>}
   </div>
 }
 
@@ -324,6 +330,17 @@ const ChangeSettings = ({ match, setup }) => (_, {follows}) => {
   </div>
 }
 
+if (process.env.STORAGE === 'electron') {
+  window.addEventListener('mouseover', e => {
+    if (e.target.nodeName === "A" && e.target.href && e.target.host !== window.location.host) {
+      u('footer p').text(e.target.href)
+      u('footer').addClass('show')
+    }
+  })
+  window.addEventListener('mouseout', e =>
+    e.target.nodeName === "A" && u('footer').removeClass('show'))
+}
+
 export default (state, actions) => {
   let settings = window.location.pathname === "/settings.html"
   return (state.follows.started &&
@@ -349,5 +366,8 @@ export default (state, actions) => {
           <Route render={settings ? ChangeSettings : ListFollow} />
         </Switch>
       </section>
+      <footer>
+        <p>&nbsp;</p>
+      </footer>
     </article>)
 }

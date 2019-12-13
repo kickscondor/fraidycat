@@ -3,12 +3,14 @@
 // and a forked router (@kickscondor/router). This allows me to use the same
 // code for Beaker Browser and the web extension.
 //
+import './environment'
 import { h, app } from 'hyperapp'
 import { hyperload } from './hyperload'
 import 'babel-polyfill'
 
 import follows from './follows'
 import views from './view'
+import images from '../images/*.png'
 
 const {state, actions, view} = hyperload({
   modules: {follows},

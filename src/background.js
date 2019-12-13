@@ -1,6 +1,7 @@
 //
 // src/background.js
 //
+import './js/environment'
 import 'babel-polyfill'
 const mixin = require('./js/storage')
 const storage = require('./js/storage-platform')

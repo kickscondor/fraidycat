@@ -214,7 +214,7 @@ async function rss(options, storage, meta, follow, res) {
     if (feeds.length == 0) feeds = maybeFeeds
     if (feeds.length == 1) {
       meta.feed = normalizeFeedUrl(meta.feed, feeds[0].href)
-      return await feedme_get(rss, storage, meta, follow, {})
+      return await feedme_get(rss, options, storage, meta, follow, {})
     }
     return feeds
   }
@@ -256,7 +256,9 @@ async function twitter(options, storage, meta, follow, res) {
   doc.find('div.tweet').each(tweet => { tweet = u(tweet)
     let item_url = url.resolve(meta.feed, tweet.attr('data-permalink-path').toString())
     let item_time = new Date(tweet.find('span[data-time]').attr('data-time') * 1000)
-    let item = {description: tweet.find('p.tweet-text').html(),
+    let desc = tweet.find('p.tweet-text')
+    desc.find('a').before(' ')
+    let item = {description: desc.html(),
       publishedAt: item_time, updatedAt: item_time}
     add_post(storage, meta, follow, item_url, item, now)
   })
@@ -297,9 +299,9 @@ async function soundcloud(options, storage, meta, follow, res) {
   let doc = u('<div>').html(res.body)
   let article = u('<div>').html(doc.find('noscript:not(.errorPage__inner)').html())
   // console.log(article)
-  meta.title = doc.find('title').text()
-  meta.photos = {avatar: doc.find('meta[property="twitter:image"]').attr('content')}
-  meta.description = doc.find('div.truncatedUserDescription__content').html()
+  meta.title = article.find('h1').text()
+  meta.photos = {avatar: article.find('img[itemprop="image"]').text()}
+  meta.description = article.find('p[itemprop="description"]').html()
   article.find('article.audible').each(n => { n = u(n)
     let a = n.find('a[itemprop="url"]')
     let item_url = url.resolve(meta.feed, a.attr('href'))
@@ -375,7 +377,27 @@ async function feedme_get(fn, options, storage, meta, follow, lastFetch) {
       hdrs['If-Modified-Since'] = lastFetch.modified
   }
 
-  let res = await storage.fetch(meta.feed, {headers: hdrs, credentials: 'omit'}), feeds = null
+  let res, feeds = null
+  try {
+    res = await storage.fetch(meta.feed, {headers: hdrs, credentials: 'omit'})
+  } catch (e) {
+    if (e.message === "net::ERR_NAME_NOT_RESOLVED") {
+      throw `Could not find host ${url.parse(meta.feed).host}`
+    } else if (e.message === "net::ERR_PROXY_CONNECTION_FAILED") {
+      throw "Proxy connection failed"
+    } else if (e.message === "net::ERR_CONNECTION_RESET") {
+      throw "Connection was reset"
+    } else if (e.message === "net::ERR_CONNECTION_CLOSE") {
+      throw "Connection closed"
+    } else if (e.message === "net::ERR_INTERNET_DISCONNECTED") {
+      throw "Internet disconnected, check your wires"
+    } else if (e.message === "net::ERR_CONNECTION_TIMED_OUT") {
+      throw "Connection timed out"
+    } else {
+      throw e.message
+    }
+  }
+
   // console.log([meta.feed, res, lastFetch])
   if (res.status == 304) {
     console.log(`${meta.feed} hasn't changed.`)

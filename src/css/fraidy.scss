@@ -15,7 +15,7 @@ h1 {
 }
 
 #fraidy {
-  padding: 20px;
+  padding: 20px 20px 60px 20px;
   min-height: 96vh;
 }
 
@@ -25,7 +25,29 @@ article {
   padding: 0 20px;
 }
 
-#menu {
+footer {
+  background: #345;
+  color: white;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  z-index: 2;
+  display: none;
+
+  &.show {
+    display: block;
+  }
+
+  p {
+    font-size: .9rem;
+    font-weight: normal;
+    margin: 0;
+    padding: 4px;
+  }
+}
+
+#menu,
+div.intro {
   ul {
     margin-top: -40px;
     float: right;
@@ -51,6 +73,17 @@ article {
   }
 }
 
+div.intro {
+  margin: 40px auto;
+  max-width: 400px;
+  text-align: center;
+
+  h3 {
+    font-size: 2rem;
+    color: #f59;
+  }
+}
+
 #follows {
   ol {
     list-style: none;
@@ -63,6 +96,10 @@ article {
     
     &:hover {
       border-bottom: dotted 1px #700;
+    }
+
+    &:last-child {
+      border-bottom: none;
     }
 
     & > a {
@@ -96,27 +133,32 @@ article {
       margin-right: 6px;
       text-align: center;
       background-color: #FDC;
-      border-top: solid 4px #FDC;
 
       &.age-m,
       &.age-h {
-        border-top: solid 4px #9DB;
+        a {
+          border-top: solid 4px #9DB;
+        }
       }
 
       &.age-d,
       &.age-w {
-        border-top: solid 4px #CDD;
+        a {
+          border-top: solid 4px #CDD;
+        }
       }
 
       a {
-        padding: 6px 20px 3px 20px;
+        padding: 3px 20px;
         text-decoration: none;
+        border-top: solid 4px #FDC;
       }
 
       a.active {
         background-color: #F7F7E7;
         border: solid 3px #FA9;
         border-bottom: 0;
+        padding-top: 6px;
       }
     }
   }

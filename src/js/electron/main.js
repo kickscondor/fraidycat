@@ -2,46 +2,17 @@
 // src/electron-index.js
 //
 // import 'babel-polyfill'
+import '../../js/environment'
 import images from '../../images/*.png'
 const { Worker, isMainThread, parentPort } = require('worker_threads')
-const { app, BrowserWindow, ipcMain, webContents, Menu, Tray } = require('electron')
+const { app, BrowserWindow, ipcMain, webContents, Menu, shell, Tray } = require('electron')
 const path = require('path')
 const openAboutWindow = require('about-window').default
 
 //
 // Manage window open/close
 //
-let bg, win
-let template = [
-  ...(process.platform === 'darwin' ? [{ role: 'appMenu' }] : []),
-  { role: 'fileMenu' },
-  { role: 'editMenu' },
-  {
-    label: "View",
-    submenu: [
-      { role: 'reload' },
-      { role: 'forcereload' },
-      { role: 'toggledevtools' },
-      {
-        label: 'Background Window',
-        click: () => bg.show()
-      },
-      { type: 'separator' },
-      { role: 'resetzoom' },
-      { role: 'zoomin' },
-      { role: 'zoomout' },
-      { type: 'separator' },
-      { role: 'togglefullscreen' }
-    ]
-  },
-  { role: 'windowMenu' },
-  { role: 'help',
-    submenu: [
-      { label: 'About Fraidycat',
-        click: () => openAboutWindow(path.resolve(__dirname, "../../", images['flatcat-512'])) }
-    ]
-  }
-]
+var bg, win
 
 function createWindow() {
   bg = new BrowserWindow({
@@ -54,14 +25,27 @@ function createWindow() {
   win = new BrowserWindow({
     width: 900,
     height: 680,
+    show: false,
     webPreferences: {nodeIntegration: true},
     icon: path.resolve(__dirname, "../../", images['flatcat-32'])
   })
 
-  Menu.setApplicationMenu(Menu.buildFromTemplate(template))
+  //
+  // Open links in the default browser.
+  //
+  win.webContents.on("will-navigate", (e, url) => {
+    if (url !== e.sender.getURL()) {
+      e.preventDefault()
+      shell.openExternal(url)
+    }
+  })
   win.loadURL(`file://${path.resolve(__dirname, "../../index.html")}`)
+  win.once("ready-to-show", () => {
+    win.setMenu(null) // DEBUG
+    win.show()
+  })
   win.on("close", ev => {
-    if (app.isQuiting) {
+    if (app.isQuitting) {
       win = null
     } else {
       ev.preventDefault()
@@ -75,42 +59,56 @@ function createWindow() {
   })
 }
 
-ipcMain.handle("fraidy", (e, msg) => {
-  if (msg.receiver) {
-    webContents.fromId(msg.receiver).send('fraidy', msg)
-  } else {
-    for (var wc of webContents.getAllWebContents()) {
-      if (wc.id !== msg.sender) {
-        wc.send('fraidy', msg)
+var canRun = app.requestSingleInstanceLock()
+if (!canRun) {
+  app.quit()
+} else {
+  app.on('second-instance', () => {
+    if (win) {
+      if (win.isMinimized()) win.restore()
+      win.focus()
+    }
+  })
+
+  ipcMain.handle("fraidy", (e, msg) => {
+    if (msg.receiver) {
+      webContents.fromId(msg.receiver).send('fraidy', msg)
+    } else {
+      for (var wc of webContents.getAllWebContents()) {
+        if (wc.id !== msg.sender) {
+          wc.send('fraidy', msg)
+        }
       }
     }
-  }
-})
+  })
 
-var tray
-app.on("ready", () => {
-  tray = new Tray(path.resolve(__dirname, "../../", images['flatcat-32']))
-  const contextMenu = Menu.buildFromTemplate([
-    { label: 'Fraidycat', click: () => win.show() },
-    { label: 'Quit', click: () => {
-      app.isQuiting = true
-      app.quit() 
-    } }
-  ])
-  tray.setToolTip('Fraidycat')
-  tray.setContextMenu(contextMenu)
-  tray.on("click", () => win.show())
-  createWindow()
-})
-
-app.on("window-all-closed", () => {
-  if (process.platform !== "darwin") {
-    app.quit()
-  }
-})
-
-app.on("activate", () => {
-  if (win === null) {
+  var tray
+  app.once("ready", () => {
+    tray = new Tray(path.resolve(__dirname, "../../", images['flatcat-32']))
+    const contextMenu = Menu.buildFromTemplate([
+      { label: 'Fraidycat', click: () => win.show() },
+      // { label: 'Background', click: () => bg.show() }, // DEBUG
+      { label: 'About', click: () => openAboutWindow(path.resolve(__dirname, "../../", images['flatcat-512'])) },
+      { label: 'Quit', click: () => {
+        app.isQuitting = true
+        app.quit() 
+      } }
+    ])
+    tray.setToolTip('Fraidycat')
+    tray.setContextMenu(contextMenu)
+    tray.on("click", () => win.show())
     createWindow()
-  }
-})
+  })
+
+  app.on("window-all-closed", () => {
+    if (process.platform !== "darwin") {
+      app.quit()
+    }
+  })
+
+  app.on("activate", () => {
+    if (win === null) {
+      createWindow()
+    }
+  })
+}
