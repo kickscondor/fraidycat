@@ -6,6 +6,7 @@
 import { jsonDateParser } from "json-date-parser"
 import { responseToObject } from '../util'
 const browser = require("webextension-polyfill");
+const frago = require('../frago')
 const path = require('path')
 
 class WebextStorage {
@@ -96,66 +97,14 @@ class WebextStorage {
   // Loads synced data, building the index as we go.
   //
   mergeSynced(items, subkey) {
-    let master = {[subkey]: {}, index: {}, maxIndex: 0}
-    for (let k in items) {
-      let km = k.split('/'), data = this.decode(items[k])
-      if (km[0] === subkey) {
-        let n = Number(km[1])
-        if (n > master.maxIndex)
-          master.maxIndex = n
-        for (let id in data)
-          master.index[id] = n
-        Object.assign(master[km[0]], data)
-      } else {
-        master[km[0]] = data
-      }
-    }
-    return master
+    return frago.merge(items, subkey, this.decode)
   }
 
-  async writeSynced(subkey, ids, obj) {
-    //
-    // Build all the parts in advance.
-    //
-    let synced = {}, parts = []
-    for (let k in obj.follows) {
-      let i = obj.index[k]
-      if (typeof(i) === 'undefined')
-        obj.index[k] = i = obj.maxIndex
-      let s = synced[`${subkey}/${i}`] || {}
-      s[k] = obj[subkey][k]
-      synced[`${subkey}/${i}`] = s
-      if (ids.includes(k) && !parts.includes(i))
-        parts.push(i)
-    }
-
-    //
-    // Attempt to save each piece - if it fails, take off an item and try again.
-    //
-    for (let i = 0; i <= obj.maxIndex; i++) {
-      if (parts.includes(i)) {
-        let k = `${subkey}/${i}`
-        try {
-					await browser.storage.sync.set({[k]: this.encode(synced[k]),
-            id: this.encode([this.id, new Date()])})
-        } catch (e) {
-          let id = Object.keys(synced[k]).pop()
-          delete synced[k][id]
-          if (i === obj.maxIndex) {
-            obj.maxIndex++
-					  synced[`${subkey}/${obj.maxIndex}`] = {}
-          }
-          if (!parts.includes(obj.maxIndex))
-						parts.push(obj.maxIndex)
-          obj.index[id] = obj.maxIndex
-
-					synced[`${subkey}/${obj.maxIndex}`][id] = obj[subkey][id]
-          i--
-        }
-      }
-    }
-
-    return await browser.storage.sync.set({settings: this.encode(obj.settings),
+  async writeSynced(items, subkey, ids) {
+    await frago.separate(items, subkey, ids, (k, v) =>
+      browser.storage.sync.set({[k]: this.encode(v),
+        id: this.encode([this.id, new Date()])}))
+    await browser.storage.sync.set({settings: this.encode(items.settings),
       id: this.encode([this.id, new Date()])})
   }
 

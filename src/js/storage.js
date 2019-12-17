@@ -18,7 +18,7 @@
 // instance to pull down feeds and operate independently. This allows the
 // instance to run alone, with no syncing, should the user want it that way.
 //
-import { followTitle, house, Importances } from './util'
+import { followTitle, house, Importances, urlToID, urlToNormal } from './util'
 import feedycat from './feedycat'
 import u from '@kickscondor/umbrellajs'
 
@@ -222,7 +222,7 @@ module.exports = {
       //
       // Import follows from the OPML - everything that's missing.
       //
-      let follows = [], parents = []
+      let follows = {}, parents = []
       let xml = sax.createStream(false, {lowercasetags: true}), currentTag = null
       xml.on('opentag', node => {
         if (node.name == 'outline') {
@@ -242,9 +242,9 @@ module.exports = {
 
             if (tags.length == 0)
               tags = null
-
-            follows.push({url, tags, importance, title: node.attributes.title,
-              editedAt: new Date(node.attributes.created)})
+            follows[urlToID(urlToNormal(url))] =
+              {url, tags, importance, title: node.attributes.title,
+                editedAt: new Date(node.attributes.created)}
           }
 
           if (!node.isSelfClosing) {
@@ -257,7 +257,7 @@ module.exports = {
         }
       })
       xml.write(data.contents)
-      if (follows.length > 0)
+      if (Object.keys(follows).length > 0)
         this.sync({follows}, true)
     } else {
 
@@ -425,7 +425,7 @@ module.exports = {
   async write(opts) {
     this.writeFile('/follows.json', this.all).then(() => {
       if (opts.update) {
-        this.writeSynced('follows', opts.follows, this.common)
+        this.writeSynced(this.common, 'follows', opts.follows)
       }
     })
   },

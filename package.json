@@ -15,6 +15,7 @@
   "scripts": {
     "start": "electron ./src",
     "start:firefox": "web-ext run --source-dir ./build/webext/",
+    "test": "ava",
     "electron": "fsbin emptyDir build/electron && fsbin copy src/root/electron build/electron && cross-env parcel build src/js/electron/main.js src/index.html src/background.html --target=electron --public-url ./ -d build/electron && electron-builder -mwl",
     "electron:windows": "fsbin emptyDir build/electron && fsbin copy src/root/electron build/electron && cross-env parcel build src/js/electron/main.js src/index.html src/background.html --target=electron --public-url ./ -d build/electron && electron-builder -w",
     "dat": "fsbin emptyDir build/dat && fsbin copy src/root/dat build/dat && cross-env STORAGE=dat parcel build src/index.html --no-cache -d build/dat",
@@ -69,6 +70,7 @@
     "yarn": "^1.19.1"
   },
   "devDependencies": {
+    "ava": "^2.4.0",
     "babel-core": "^6.26.3",
     "babel-preset-stage-0": "^6.24.1",
     "electron": "^7.1.2",

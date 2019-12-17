@@ -80,7 +80,7 @@ class DatStorage {
     return this.readFile("/sync/" + subkey + ".json")
   }
 
-  async writeSynced(subkey, ids, obj) {
+  async writeSynced(obj, subkey, ids) {
     return this.writeFile("/sync/" + subkey + ".json", obj)
   }
 
