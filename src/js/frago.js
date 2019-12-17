@@ -15,7 +15,7 @@ module.exports = {
   // entries one-by-one.
   //
   merge(items, subkey, decode = null) {
-    let master = {[subkey]: {}, index: {}, maxIndex: 0}
+    let master = {[subkey]: {}, index: {}}
     for (let k in items) {
       let km = k.split('/'), data = items[k]
       if (decode) {
@@ -23,8 +23,6 @@ module.exports = {
       }
       if (km[0] === subkey) {
         let n = Number(km[1])
-        if (n > master.maxIndex)
-          master.maxIndex = n
         for (let id in data)
           master.index[id] = n
         Object.assign(master[km[0]], data)
@@ -37,7 +35,7 @@ module.exports = {
 
   //
   // Separate the master 'items' object into parts. The 'subkey' indicates with
-  // subkey contains the object to separate. The 'index' and 'maxIndex' keys
+  // subkey contains the object to separate. The 'index' keys
   // from the above 'merge' function are also expected.
   //
   async separate(items, subkey, ids = null, save = null) {
@@ -45,11 +43,13 @@ module.exports = {
     // Built each full part. We may need to save the individual part once it's
     // time to shift things around.
     //
-    let synced = {}, parts = []
+    let synced = {}, parts = [], maxIndex = 0
     for (let k in items[subkey]) {
       let i = items.index[k]
       if (typeof(i) === 'undefined')
         items.index[k] = i = 0
+      if (i > maxIndex)
+        maxIndex = i
       let id = `${subkey}/${i}`
       let s = synced[id] || {}
       s[k] = items[subkey][k]
@@ -61,23 +61,25 @@ module.exports = {
     //
     // Attempt to save each piece - if it fails, take off an item and try again.
     //
-    for (let i = 0; i <= items.maxIndex; i++) {
+    for (let i = 0; i <= maxIndex; i++) {
       if (parts.includes(i)) {
         let k = `${subkey}/${i}`
         try {
 					await save(k, synced[k])
         } catch (e) {
           let id = Object.keys(synced[k]).pop()
+					let maxk = `${subkey}/${i + 1}`
           delete synced[k][id]
-          if (i === items.maxIndex) {
-            items.maxIndex++
-					  synced[`${subkey}/${items.maxIndex}`] = {}
+          if (i === maxIndex) {
+            maxIndex++
+            if (!(maxk in synced))
+              synced[maxk] = {}
           }
           if (!parts.includes(i + 1))
 						parts.push(i + 1)
           items.index[id] = i + 1
 
-					synced[`${subkey}/${i + 1}`][id] = items[subkey][id]
+					synced[maxk][id] = items[subkey][id]
           i--
         }
       }

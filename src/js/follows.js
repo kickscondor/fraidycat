@@ -54,7 +54,9 @@ export default ({
         location.go("/")
         alert(patch.message)
       } else if (patch.op) {
-        return applyOperation(state, patch)
+        try {
+          return applyOperation(state, patch)
+        } catch {}
       } else {
         return patch
       }

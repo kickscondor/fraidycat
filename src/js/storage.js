@@ -27,6 +27,10 @@ const quicklru = require('quick-lru')
 const sax = require('sax')
 const url = require('url')
 
+const SYNC_FULL = 1
+const SYNC_PARTIAL = 2
+const SYNC_EXTERNAL = 3
+
 function fetchedAt(fetched, id) {
   let fetch = fetched[id]
   return fetch ? fetch.at : 0
@@ -51,9 +55,14 @@ function isOutOfDate(follow, fetched) {
 
 module.exports = {
   setup(msg, sender) {
+    if (this.started) {
+      this.update({started: true, all: this.all}, sender)
+      return
+    }
+
     let obj = {started: true}
     Object.assign(this, {all: {}, updating: [], fetched: {},
-      common: {settings: {broadcast: false}, follows: {}, index: {}, maxIndex: 0},
+      common: {settings: {broadcast: false}, follows: {}, index: {}},
       postCache: new quicklru({maxSize: 1000})})
 
     this.readFile('/follows.json').
@@ -65,7 +74,7 @@ module.exports = {
           Object.assign(this, obj)
           this.update(obj, sender)
           this.readSynced('follows').
-            then(inc => this.sync(inc, true)).
+            then(inc => this.sync(inc, SYNC_FULL)).
             catch(e => console.log(e)).
             finally(_ => setInterval(() => this.poll(), 200))
         })
@@ -102,7 +111,7 @@ module.exports = {
         this.updating = this.updating.filter(follow => follow != oldest)
         if (lastFetch.status != 304) {
           this.update({op: 'replace', path: `/all/${oldest.id}`, value: oldest})
-          this.write({update: false, follows: [oldest.id]})
+          this.write({update: false})
         }
       }
     }
@@ -118,7 +127,7 @@ module.exports = {
   onSync(changes) {
     if (changes.id[0] !== this.id) {
       let obj = this.mergeSynced(changes, 'follows')
-      this.sync(obj)
+      this.sync(obj, SYNC_PARTIAL)
     }
   },
 
@@ -126,49 +135,73 @@ module.exports = {
   // Update local follows with anything added from synced sources (other
   // browsers, other dats owned by the user) or removed as well.
   //
-  async sync(inc, updateSettings) {
+  // Here are the possible sync events that happen:
+  // * SYNC_FULL: On startup, the sync list is read and merged with the master
+  //   list. (For example, follows on other browsers may have happened on other
+  //   PCs while this PC was shutdown.) Only missing follows should also be
+  //   merged back - in case a sync failed previously. Or perhaps we just
+  //   logged in.
+  // * SYNC_PARTIAL: In the 'onSync' message above, we'll often receive
+  //   partial updates. In this case, we only add updates, since we can't
+  //   see the rest of the sync.
+  // * SYNC_EXTERNAL: On import, everything runs through sync, since the format
+  //   is the same. In this case, an outgoing sync will be forced if any changes
+  //   at all are made (new entries OR missing entries) because the source is an
+  //   external file, not the sync.
+  //
+  // See also the `write` method. When follows are added, edited or removed,
+  // the changes are pushed to the sync through there.
+  //
+  async sync(inc, syncType) {
     let updated = false, follows = []
     if ('follows' in inc) {
       if ('index' in inc)
         Object.assign(this.common.index, inc.index)
 
       for (let id in inc.follows) {
-        let current = this.all[id], incoming = inc.follows[id]
-        if (!(id in this.common.follows))
-          this.common.follows[id] = inc.follows[id]
+        let current = this.all[id], incoming = inc.follows[id], notify = false
+         if (!(id in this.common.follows))
+           this.common.follows[id] = inc.follows[id]
         if (!current || current.editedAt < incoming.editedAt) {
           if (incoming.deleted) {
-            if (current) {
-              delete this.all[id]
-              this.update({op: 'remove', path: `/all/${id}`})
-            }
+            delete this.all[id]
+            this.common.follows[id] = incoming
+            this.update({op: 'remove', path: `/all/${id}`})
+            follows.push(id)
           } else {
             if (current)
               incoming.id = id
             await this.refresh(incoming).
               catch(msg => console.log(`${incoming.url} is ${msg}`))
+            if (syncType === SYNC_EXTERNAL) {
+              notify = true
+            }
           }
-          follows.push(id)
           updated = true
+        } else if (current.editedAt > incoming.editedAt) {
+          if (syncType !== SYNC_EXTERNAL) {
+            notify = true
+          }
+        }
+
+        if (notify) {
+          follows.push(id)
+          this.notifyFollow(this.all[id])
         }
       }
     }
 
-    if (updateSettings) {
+    if (syncType === SYNC_FULL) {
       for (let id in this.all) {
         if (!inc.follows || !inc.follows[id]) {
-          this.notifyFollow(this.all[id])
           follows.push(id)
+          this.notifyFollow(this.all[id])
         }
       }
     }
 
-    if (updated || updateSettings) {
-      this.write({update: updateSettings, follows})
-    }
-
-    if ('settings' in inc) {
-      Object.assign(this.common.settings, inc.settings)
+    if (updated || follows.length > 0) {
+      this.write({update: follows.length > 0, follows})
     }
   },
 
@@ -258,13 +291,13 @@ module.exports = {
       })
       xml.write(data.contents)
       if (Object.keys(follows).length > 0)
-        this.sync({follows}, true)
+        this.sync({follows}, SYNC_EXTERNAL)
     } else {
 
       //
       // Import all settings from a JSON file.
       //
-      this.sync(this.decode(data.contents), true)
+      this.sync(this.decode(data.contents), SYNC_EXTERNAL)
     }
   },
 

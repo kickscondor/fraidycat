@@ -101,11 +101,12 @@ class WebextStorage {
   }
 
   async writeSynced(items, subkey, ids) {
+    // console.log(["OUTGOING", items, ids])
     await frago.separate(items, subkey, ids, (k, v) =>
       browser.storage.sync.set({[k]: this.encode(v),
         id: this.encode([this.id, new Date()])}))
-    await browser.storage.sync.set({settings: this.encode(items.settings),
-      id: this.encode([this.id, new Date()])})
+    // await browser.storage.sync.set({settings: this.encode(items.settings),
+    //   id: this.encode([this.id, new Date()])})
   }
 
   //
@@ -143,7 +144,8 @@ class WebextStorage {
     browser.storage.onChanged.addListener((dict, area) => {
       if (area !== "sync")
         return
-      // console.log([area, dict])
+      // console.log(["INCOMING", area, dict])
+
       let changes = {}
       for (let path in dict)
         changes[path] = dict[path].newValue

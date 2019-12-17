@@ -15,6 +15,7 @@ let start = async function () {
   let local = await storage()
   Object.assign(local, mixin)
   console.log(`Started up Fraidycat background script. (${local.id})`)
+  local.setup()
   local.receiveMessage(msg => {
     if (msg.action !== 'updated')
       local[msg.action](msg.data, msg.sender)
