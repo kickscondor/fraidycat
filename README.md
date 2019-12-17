@@ -14,17 +14,18 @@
             | ||   | ||
             '-''   '-''                            :. :.
 
-**Fraidycat** is a browser extension for Firefox or Chrome - or a Dat website
-that can be used in the Beaker Browser - that can be used to follow folks on
-a variety of platforms. But rather than showing you a traditional 'inbox' or 'feed'
-view of all the incoming posts - Fraidycat braces itself against this unbridled
-firehose! - you are shown an overview of who is active and a brief summary of
-their activity.
+**Fraidycat** is a browser extension for Firefox or Chrome - or an Electron
+app - that can be used to follow folks on a variety of platforms. But rather
+than showing you a traditional 'inbox' or 'feed' view of all the incoming
+posts - Fraidycat braces itself against this unbridled firehose! - you are
+shown an overview of who is active and a brief summary of their activity.
 
 * Official Add-on for Firefox:
   [Download](https://addons.mozilla.org/en-US/firefox/addon/fraidycat/)
 * Official Extension for Chrome:
   [Download](https://chrome.google.com/webstore/detail/fraidycat/hecfkgekabkkhiidlinmifelhdooeool)
+* Official Packages for Linux, Windows and Mac OS X:
+  [Download](https://github.com/kickscondor/fraidycat/releases)
 
 Here is my Fraidycat home page from October 25th, 2019:
 
@@ -49,7 +50,7 @@ along the top of the main page lets you select the tag to view. You then narrow
 down by importance - tags can be checked in 'real-time' or 'daily', 'weekly',
 'monthly' and 'yearly'.
 
-Follows are show in dark green if they have been updated in the past two days,
+Follows are shown in dark green if they have been updated in the past two days,
 a plain cyan if they are up to a month old and in an unassuming light brown if they
 are over a month old. A small graph of activity over the past year is displayed - in
 pink (if showing the previous two months of activity) or in gray (if
@@ -64,7 +65,7 @@ different computers.
 Here is a current list of what is fully supported:
 
 * **Feeds (RSS, Atom, JSON Feed).** It will discover any feeds attached to the
-  URL you supply. Many sites not listed (like Mastodono, micro.blog,
+  URL you supply. Many sites not listed (like Mastodon, micro.blog,
   Wikipedia, Kickstarter or Stack Overflow) will automatically work because
   of this. (*ALL SITES SHOULD SUPPORT THIS COME ON FRIENDS! IT'S TOO EASY!*)
 * **TiddlyWiki.** As odd as this seems, I use this heavily to follow wikis
@@ -99,8 +100,7 @@ So, if you are using Firefox, you must be signed in as the same user with the
 same browser and Fraidycat installed on both machines.
 
 You can really only get sync support if you install from an official web store
-(*Fraidycat not available there yet*) or if you install [from source](#Installation)
-in Chrome.
+or if you install [from source](#Installation) in Chrome.
 
 Be aware that each browser will fetch feeds independently - so they may fall out
 of sync as they try to stay updated. However, every time you add or edit or
@@ -115,9 +115,10 @@ Fraidycat lets you assign an 'importance' to your feeds. They are:
 * **Daily.** ("I usually just check in as part of a morning routine.") Fraidycat
   will actually check this every 1-2 hours.
 * **Weekly** and **Monthly.** ("My visits here are only occassional" or "This follow doesn't
-  update much.") Checks are done every 1-2 days for both.
+  update much.") Checks are done at least once a day.
 * **Yearly.** ("I don't keep up with this, but I don't want to lose it either.")
-  Checks are done every one or two weeks.
+  Also checked at least once a day. So, when you get around to checking these,
+  they should be up-to-date.
 
 Fraidycat attempts to send ETags and Last-Modified headers so that feeds aren't
 actually refetched if they haven't changed.
@@ -125,11 +126,11 @@ actually refetched if they haven't changed.
 ## Installation
 
 Presently I really only encourage use of Fraidycat as a web extension for
-Firefox and Chrome. (I also use it with Vivaldi - works great.) Beaker still
+Firefox and Chrome. (I also use it with Vivaldi - works great.) The Electron
+app works, but lacks support for syncing between machines, which is rather
+crucial. I also have a proof-of-concept Dat website - but Beaker still
 needs to release some fixes I have submitted - only then I will feel okay
 promoting it on the Dat network.
-
-I will begin releasing public builds on November 4th, 2019.
 
 ### Firefox / Chrome Web Extension
 
