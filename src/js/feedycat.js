@@ -250,8 +250,9 @@ async function site_rss(options, storage, meta, follow, res) {
 async function twitter(options, storage, meta, follow, res) {
   let now = new Date()
   let doc = u('<div>').html(res.body)
-  meta.title = doc.find('h1').text()
-  meta.photos = {avatar: doc.find('img.ProfileAvatar-image').attr('src')}
+  let avatar = doc.find('img.ProfileAvatar-image')
+  meta.title = avatar.attr('alt')
+  meta.photos = {avatar: avatar.attr('src')}
   meta.description = doc.find('p.ProfileHeaderCard-bio').html()
   doc.find('div.tweet').each(tweet => { tweet = u(tweet)
     let item_url = url.resolve(meta.feed, tweet.attr('data-permalink-path').toString())
