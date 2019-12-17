@@ -238,8 +238,8 @@ const ListFollow = ({ match }) => ({follows}, actions) => {
     </ul>
     <ul id="imps">
     {Importances.map(sel => (sel[0] == imp ? <li class='active'>{sel[1]}</li> :
-      (imps[sel[0]] ? <li><Link to={`/tag/${tag}?importance=${sel[0]}`}>{sel[1]}</Link></li> :
-        (sel[0] === 0 && <li>{sel[1]}</li>))))}
+      ((imps[sel[0]] || sel[0] === 0) &&
+        <li><Link to={`/tag/${tag}?importance=${sel[0]}`}>{sel[1]}</Link></li>)))}
     </ul>
     {viewable.length > 0 ?
       <ol>{viewable.map(follow => {
