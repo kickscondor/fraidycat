@@ -19,6 +19,11 @@ const about = () => openAboutWindow({
   }
 })
 
+const quit = () => {
+  app.isQuitting = true
+  app.quit() 
+}
+
 function link(label, url)
 {
   return { label, click: () => shell.openExternal(url) }
@@ -28,7 +33,7 @@ const template = [
   ...(isMac ? [{
     label: app.name,
     submenu: [
-      { label: 'About Firefox', click: about },
+      { label: 'About Fraidycat', click: about },
       { type: 'separator' },
       { role: 'services' },
       { type: 'separator' },
@@ -36,7 +41,7 @@ const template = [
       { role: 'hideothers' },
       { role: 'unhide' },
       { type: 'separator' },
-      { role: 'quit' }
+      { role: 'quit', click: quit }
     ]
   }] : []),
   { role: 'fileMenu' },
@@ -172,10 +177,7 @@ if (!canRun) {
       { label: 'Fraidycat', click: () => win.show() },
       // { label: 'Background', click: () => bg.show() }, // DEBUG
       { label: 'About', click: about },
-      { label: 'Quit', click: () => {
-        app.isQuitting = true
-        app.quit() 
-      } }
+      { label: 'Quit', click: quit }
     ])
     tray.setToolTip('Fraidycat')
     tray.setContextMenu(contextMenu)
