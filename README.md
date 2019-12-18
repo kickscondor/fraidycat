@@ -99,6 +99,9 @@ The only way to sync your follows at the moment is through your browser account.
 So, if you are using Firefox, you must be signed in as the same user with the
 same browser and Fraidycat installed on both machines.
 
+**Sync support is not sophisticated! It cannot do complex merging of changes.
+It also may take a few minutes for a browser to update from a sync.**
+
 You can really only get sync support if you install from an official web store
 or if you install [from source](#Installation) in Chrome.
 

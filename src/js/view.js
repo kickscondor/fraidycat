@@ -35,7 +35,7 @@ const FollowForm = (isNew) => ({follows}, actions) => {
 
     <div>
       <label for="importance">Importance</label> 
-      <select id="importance" name="importance" onchange={e => follow.importance = e.target.options[e.target.selectedIndex].value}>
+      <select id="importance" name="importance" onchange={e => follow.importance = Number(e.target.options[e.target.selectedIndex].value)}>
       {Importances.map(imp => 
         <option value={imp[0]} selected={imp[0] == follow.importance}>{imp[1]}</option>)}
       </select>
@@ -45,7 +45,7 @@ const FollowForm = (isNew) => ({follows}, actions) => {
       <label for="tags" class="optional">Tag(s) &mdash; separate with spaces</label>
       <input type="text" id="tags" value={follow.tags ? follow.tags.join(' ') : ''}
         oninput={e => e.target.value ? (follow.tags = e.target.value.trim().split(/\s+/)) : (delete follow.tags)} />
-      <a href="#" onclick={e => {
+      <a href="#" class="emoji" onclick={e => {
         e.preventDefault()
         picker.pickerVisible ? picker.hidePicker() : picker.showPicker(e)
       }}>&#128513;</a>
@@ -217,10 +217,11 @@ const ListFollow = ({ match }) => ({follows}, actions) => {
   let tags = {}, imps = {}
   let viewable = Object.values(follows.all).filter(follow => {
     let ftags = (follow.tags || [house])
+    let lastPost = (follow.posts && follow.posts[0])
     ftags.forEach(k => {
-      let lastPost = (follow.posts && follow.posts[0]), at = tags[k]
+      let at = tags[k]
       if (!at)
-        tags[k] = at = 0
+        tags[k] = at = new Date(0)
       if (lastPost && follow.importance === 0 && at < lastPost.updatedAt)
         tags[k] = lastPost.updatedAt
     })

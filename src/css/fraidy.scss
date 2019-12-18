@@ -352,10 +352,6 @@ div.intro {
       li {
         display: inline-block;
 
-        span {
-          display: none;
-        }
-
         &::after {
           color: #ECA;
           content: " /\0000a0";
@@ -450,6 +446,10 @@ input, textarea {
 input[type="checkbox"] {
   float: left;
   padding-right: 10px;
+}
+
+a.emoji {
+  text-decoration: none;
 }
 
 @media only screen and (min-width: 600px) {
