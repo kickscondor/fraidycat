@@ -41,7 +41,7 @@ const template = [
       { role: 'hideothers' },
       { role: 'unhide' },
       { type: 'separator' },
-      { role: 'quit', click: quit }
+      { label: 'Quit Fraidycat', accelerator: 'CmdOrCtrl+Q', click: quit }
     ]
   }] : []),
   { role: 'fileMenu' },
@@ -183,6 +183,12 @@ if (!canRun) {
     tray.setContextMenu(contextMenu)
     tray.on("click", () => win.show())
     createWindow()
+  })
+
+  app.on("quit", () => {
+    if (isMac) {
+      app.isQuitting = true
+    }
   })
 
   app.on("window-all-closed", () => {
