@@ -9,6 +9,23 @@ const { app, BrowserWindow, ipcMain, webContents, Menu, shell, Tray } = require(
 const path = require('path')
 const openAboutWindow = require('about-window').default
 
+const selectionMenu = Menu.buildFromTemplate([
+  {role: 'copy'},
+  {type: 'separator'},
+  {role: 'selectall'},
+])
+
+const inputMenu = Menu.buildFromTemplate([
+  {role: 'undo'},
+  {role: 'redo'},
+  {type: 'separator'},
+  {role: 'cut'},
+  {role: 'copy'},
+  {role: 'paste'},
+  {type: 'separator'},
+  {role: 'selectall'},
+])
+
 //
 // Manage window open/close
 //
@@ -31,6 +48,19 @@ function createWindow() {
   })
 
   //
+  // Add context menu to text inputs. (by gabriel)
+  // https://github.com/electron/electron/issues/4068#issuecomment-274159726
+  //
+  win.webContents.on('context-menu', (e, props) => {
+    const { selectionText, isEditable } = props
+    if (isEditable) {
+      inputMenu.popup(win)
+    } else if (selectionText && selectionText.trim() !== '') {
+      selectionMenu.popup(win)
+    }
+  })
+
+  //
   // Open links in the default browser.
   //
   win.webContents.on("will-navigate", (e, url) => {
@@ -39,6 +69,7 @@ function createWindow() {
       shell.openExternal(url)
     }
   })
+
   win.loadURL(`file://${path.resolve(__dirname, "../../index.html")}`)
   win.once("ready-to-show", () => {
     win.setMenu(null) // DEBUG
