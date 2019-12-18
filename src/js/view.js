@@ -16,14 +16,16 @@ const FormFreeze = (e) => {
   u('button', e.target).each(ele => ele.disabled = true)
 }
 
-const FollowForm = (match, isNew) => ({follows}, actions) => {
+const FollowForm = (match, setup, isNew) => ({follows}, actions) => {
   let follow = follows.editing
   let picker = new EmojiButton()
-  if ('tag' in match.params) {
-    follow.tags = [match.params.tag]
-  }
-  if ('importance' in match.params) {
-    follow.importance = Number(match.params.importance)
+  if (setup) {
+    if ('tag' in match.params) {
+      follow.tags = [match.params.tag]
+    }
+    if ('importance' in match.params) {
+      follow.importance = Number(match.params.importance)
+    }
   }
   picker.on('emoji', ch => {
     if (follow.tags) { follow.tags.push(ch) } else { follow.tags = [ch] }
@@ -84,7 +86,7 @@ const EditFollowById = ({ match, setup }) => ({follows}) => {
   return <div id="edit-feed">
     <h2>Edit a Follow</h2>
     <p>URL: {follows.editing.url}</p>
-    {FollowForm(match, false)}
+    {FollowForm(match, setup, false)}
   </div>
 }
 
@@ -96,7 +98,7 @@ const AddFollow = ({ match, setup }) => ({follows}) => {
     <h2>Add a Follow</h2>
     <p>What blog, wiki or social account do you want to follow?</p>
     <p class="note"><em>This can also be a Twitter or Instagram feed, a YouTube channel, a subreddit, a Soundcloud.</em></p>
-    {FollowForm(match, true)}
+    {FollowForm(match, setup, true)}
   </div>
 }
 
@@ -280,7 +282,7 @@ const ListFollow = ({ location, match }) => ({follows}, actions) => {
               <div class="post">{follow.posts &&
                 <ol class="title">{follow.posts.map(f => {
                   let postAge = timeAgo(f.updatedAt, now)
-                  return <li class={`age-${postAge.slice(-1)}`}>{follow.fetchesContent ? f.title : <a href={f.url}>{f.title}</a>}
+                  return <li class={timeDarkness(f.updatedAt, now)}>{follow.fetchesContent ? f.title : <a href={f.url}>{f.title}</a>}
                     <span>{timeAgo(f.updatedAt, now)}</span>
                   </li>
                 })}</ol>}
