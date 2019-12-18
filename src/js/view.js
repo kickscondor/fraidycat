@@ -237,7 +237,9 @@ const ListFollow = ({ location, match }) => ({follows}, actions) => {
     if (isShown) imps[follow.importance] = true
     return isShown
   }).sort((a, b) => (a.importance - b.importance) || (lastPostTime(b) - lastPostTime(a)))
-  let imp = match.params.importance || 0
+  let impa = Object.keys(imps)
+  let imp = match.params.importance || (impa.length > 0 ? Math.min(...impa) : 0)
+  viewable = viewable.filter(follow => (follow.importance == imp))
   let tagTabs = Object.keys(tags).filter(t => t != house).sort()
   tagTabs.unshift(house)
   let addLink = '/add?tag=' + encodeURIComponent(tag) + '&importance=' + imp
@@ -258,9 +260,6 @@ const ListFollow = ({ location, match }) => ({follows}, actions) => {
           let ago = lastPost && timeAgo(lastPost.updatedAt, now)
           let dk = lastPost && timeDarkness(lastPost.updatedAt, now)
           let daily = follow.importance < 7
-          if (follow.importance != imp)
-            return
-
           let linkUrl = follow.fetchesContent ? `/view/${follow.id}` : follow.url
           let id = `follow-${follow.id}`
           return <li key={id} class={dk || 'age-X'}>
@@ -300,6 +299,7 @@ const ListFollow = ({ location, match }) => ({follows}, actions) => {
           <p>Let's get Fraidycat going, yeah?</p>
           <p>Click the <Link to={addLink} class="pink" title="Add a Follow">&#xff0b;</Link> button to add someone!</p>
           <p>Or, click the <Link to="/settings" title="Settings">&#x2699;&#xfe0f;</Link> to import a bunch.</p>
+          <p><em>Hey! Follows added to this <strong>Real-time</strong> page will highlight the tab when there are new posts!</em></p>
         </div>}
   </div>
 }

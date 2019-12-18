@@ -136,13 +136,15 @@ div.intro {
 
       &.age-m,
       &.age-h {
+        background: linear-gradient(#ADB, #FDC);
         a {
-          border-top: solid 4px #9DB;
+          border-top: solid 4px #ADB;
         }
       }
 
       &.age-d,
       &.age-w {
+        background: linear-gradient(#CDD, #FDC);
         a {
           border-top: solid 4px #CDD;
         }
