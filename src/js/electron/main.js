@@ -9,6 +9,58 @@ const { app, BrowserWindow, ipcMain, webContents, Menu, shell, Tray } = require(
 const path = require('path')
 const openAboutWindow = require('about-window').default
 
+const isMac = process.platform === 'darwin'
+
+const about = () => openAboutWindow({
+  icon_path: path.resolve(__dirname, "../../", images['flatcat-512']),
+  win_options: {
+    autoHideMenuBar: true,
+    resizable: false
+  }
+})
+
+function link(label, url)
+{
+  return { label, click: () => shell.openExternal(url) }
+}
+
+const template = [
+  ...(isMac ? [{
+    label: app.name,
+    submenu: [
+      { label: 'About Firefox', click: about },
+      { type: 'separator' },
+      { role: 'services' },
+      { type: 'separator' },
+      { role: 'hide' },
+      { role: 'hideothers' },
+      { role: 'unhide' },
+      { type: 'separator' },
+      { role: 'quit' }
+    ]
+  }] : []),
+  { role: 'fileMenu' },
+  { role: 'editMenu' },
+  {
+    label: 'View',
+    submenu: [
+      { role: 'resetzoom' },
+      { role: 'zoomin' },
+      { role: 'zoomout' }
+    ]
+  },
+  {
+    role: 'help',
+    submenu: [
+      link('Fraidyc.at', 'https://fraidyc.at/'),
+      link('Search Issues', 'https://github.com/kickscondor/fraidycat/issues')
+    ]
+  }
+]
+
+const menu = Menu.buildFromTemplate(template)
+Menu.setApplicationMenu(menu)
+
 const selectionMenu = Menu.buildFromTemplate([
   {role: 'copy'},
   {type: 'separator'},
@@ -72,7 +124,7 @@ function createWindow() {
 
   win.loadURL(`file://${path.resolve(__dirname, "../../index.html")}`)
   win.once("ready-to-show", () => {
-    win.setMenu(null) // DEBUG
+    win.setMenuBarVisibility(false)
     win.show()
   })
   win.on("close", ev => {
@@ -119,7 +171,7 @@ if (!canRun) {
     const contextMenu = Menu.buildFromTemplate([
       { label: 'Fraidycat', click: () => win.show() },
       // { label: 'Background', click: () => bg.show() }, // DEBUG
-      { label: 'About', click: () => openAboutWindow(path.resolve(__dirname, "../../", images['flatcat-512'])) },
+      { label: 'About', click: about },
       { label: 'Quit', click: () => {
         app.isQuitting = true
         app.quit() 
@@ -132,7 +184,7 @@ if (!canRun) {
   })
 
   app.on("window-all-closed", () => {
-    if (process.platform !== "darwin") {
+    if (!isMac) {
       app.quit()
     }
   })
