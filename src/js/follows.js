@@ -10,6 +10,7 @@ const storage = require('./storage-platform')
 const { alert, confirm } = require('./dialogs')
 
 import { applyOperation } from 'fast-json-patch'
+import u from '@kickscondor/umbrellajs'
 
 export default ({
   state: {all: {}, started: false},
@@ -51,7 +52,7 @@ export default ({
         link.click()
         document.body.removeChild(link)
       } else if (patch.op === 'error') {
-        location.go("/")
+        u('form button').each(ele => ele.disabled = false)
         alert(patch.message)
       } else if (patch.op) {
         try {
