@@ -9,7 +9,7 @@ assignees: kickscondor
 
 **Before you start.**
 <!-- Replace [ ] with [x] to mark the below.-->
-* [ ] I have checked the [Rejected Features] page.
+* [ ] I have checked the [Rejected Features](https://github.com/kickscondor/fraidycat/wiki/Rejected-Features) page.
 * [ ] I have searched the issue tracker for a feature request that matches the one I want to file, without success.
 
 **My great idea for Fraidycat is:**
