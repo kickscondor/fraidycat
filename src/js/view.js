@@ -16,9 +16,15 @@ const FormFreeze = (e) => {
   u('button', e.target).each(ele => ele.disabled = true)
 }
 
-const FollowForm = (isNew) => ({follows}, actions) => {
+const FollowForm = (match, isNew) => ({follows}, actions) => {
   let follow = follows.editing
   let picker = new EmojiButton()
+  if ('tag' in match.params) {
+    follow.tags = [match.params.tag]
+  }
+  if ('importance' in match.params) {
+    follow.importance = Number(match.params.importance)
+  }
   picker.on('emoji', ch => {
     if (follow.tags) { follow.tags.push(ch) } else { follow.tags = [ch] }
     actions.follows.set({follow})
@@ -78,7 +84,7 @@ const EditFollowById = ({ match, setup }) => ({follows}) => {
   return <div id="edit-feed">
     <h2>Edit a Follow</h2>
     <p>URL: {follows.editing.url}</p>
-    {FollowForm(false)}
+    {FollowForm(match, false)}
   </div>
 }
 
@@ -90,7 +96,7 @@ const AddFollow = ({ match, setup }) => ({follows}) => {
     <h2>Add a Follow</h2>
     <p>What blog, wiki or social account do you want to follow?</p>
     <p class="note"><em>This can also be a Twitter or Instagram feed, a YouTube channel, a subreddit, a Soundcloud.</em></p>
-    {FollowForm(true)}
+    {FollowForm(match, true)}
   </div>
 }
 
@@ -211,7 +217,7 @@ const ViewFollowById = ({ match }) => ({follows}, actions) => {
     </div>
 }
 
-const ListFollow = ({ match }) => ({follows}, actions) => {
+const ListFollow = ({ location, match }) => ({follows}, actions) => {
   let now = new Date()
   let tag = match.params.tag ? match.params.tag : house
   let tags = {}, imps = {}
@@ -232,6 +238,8 @@ const ListFollow = ({ match }) => ({follows}, actions) => {
   let imp = match.params.importance || 0
   let tagTabs = Object.keys(tags).filter(t => t != house).sort()
   tagTabs.unshift(house)
+  let addLink = '/add?tag=' + encodeURIComponent(tag) + '&importance=' + imp
+  u('a.pink').attr('href', (location.hashRouting ? '#!' : '') + addLink)
 
   return <div id="follows">
     <ul id="tags">
@@ -288,7 +296,7 @@ const ListFollow = ({ match }) => ({follows}, actions) => {
         <div class="intro">
           <h3>Ready?</h3>
           <p>Let's get Fraidycat going, yeah?</p>
-          <p>Click the <Link to="/add" class="pink" title="Add a Follow">&#xff0b;</Link> button to add someone!</p>
+          <p>Click the <Link to={addLink} class="pink" title="Add a Follow">&#xff0b;</Link> button to add someone!</p>
           <p>Or, click the <Link to="/settings" title="Settings">&#x2699;&#xfe0f;</Link> to import a bunch.</p>
         </div>}
   </div>
