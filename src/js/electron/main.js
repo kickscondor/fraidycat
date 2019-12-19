@@ -11,6 +11,8 @@ const openAboutWindow = require('about-window').default
 
 const isMac = process.platform === 'darwin'
 
+var bg = null, win = null
+
 const about = () => openAboutWindow({
   icon_path: path.resolve(__dirname, "../../", images['flatcat-512']),
   win_options: {
@@ -44,7 +46,15 @@ const template = [
       { label: 'Quit Fraidycat', accelerator: 'CmdOrCtrl+Q', click: quit }
     ]
   }] : []),
-  { role: 'fileMenu' },
+  {
+    label: 'File',
+    submenu: [
+      { label: 'Show', accelerator: 'CmdOrCtrl+N',
+        click: () => win && win.show() },
+      { label: 'Hide', accelerator: 'CmdOrCtrl+W',
+        click: () => win && win.hide() }
+    ]
+  },
   { role: 'editMenu' },
   {
     label: 'View',
@@ -86,8 +96,6 @@ const inputMenu = Menu.buildFromTemplate([
 //
 // Manage window open/close
 //
-var bg, win
-
 function createWindow() {
   bg = new BrowserWindow({
     webPreferences: {nodeIntegration: true},
@@ -172,16 +180,18 @@ if (!canRun) {
 
   var tray
   app.once("ready", () => {
-    tray = new Tray(path.resolve(__dirname, "../../", images['flatcat-32']))
-    const contextMenu = Menu.buildFromTemplate([
-      { label: 'Fraidycat', click: () => win.show() },
-      // { label: 'Background', click: () => bg.show() }, // DEBUG
-      { label: 'About', click: about },
-      { label: 'Quit', click: quit }
-    ])
-    tray.setToolTip('Fraidycat')
-    tray.setContextMenu(contextMenu)
-    tray.on("click", () => win.show())
+    if (!isMac) {
+      tray = new Tray(path.resolve(__dirname, "../../", images['flatcat-32']))
+      const contextMenu = Menu.buildFromTemplate([
+        { label: 'Fraidycat', click: () => win.show() },
+        // { label: 'Background', click: () => bg.show() }, // DEBUG
+        { label: 'About', click: about },
+        { label: 'Quit', click: quit }
+      ])
+      tray.setToolTip('Fraidycat')
+      tray.setContextMenu(contextMenu)
+      tray.on("click", () => win.show())
+    }
     createWindow()
   })
 
