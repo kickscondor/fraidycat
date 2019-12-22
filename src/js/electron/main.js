@@ -1,6 +1,9 @@
 //
 // src/electron-index.js
 //
+// Electron-specific customizations and window dressing. Also, notification of
+// updates are down at the end.
+//
 // import 'babel-polyfill'
 import '../../js/environment'
 import images from '../../images/*.png'
@@ -8,9 +11,14 @@ const { Worker, isMainThread, parentPort } = require('worker_threads')
 const { app, BrowserWindow, ipcMain, webContents, Menu, shell, Tray } = require('electron')
 const path = require('path')
 const openAboutWindow = require('about-window').default
+const log = require('electron-log')
+const { autoUpdater } = require('electron-updater')
 
 const isMac = process.platform === 'darwin'
 
+//
+// Setup the common actions and menus that may be used.
+//
 var bg = null, win = null
 
 const about = () => openAboutWindow({
@@ -76,6 +84,10 @@ const template = [
 const menu = Menu.buildFromTemplate(template)
 Menu.setApplicationMenu(menu)
 
+//
+// This is the context menu on input boxes, for copy/paste and such.
+// Attached down in createWindow().
+//
 const selectionMenu = Menu.buildFromTemplate([
   {role: 'copy'},
   {type: 'separator'},
@@ -149,12 +161,12 @@ function createWindow() {
     }
     return false
   })
-  win.on("minimize", ev => {
-    ev.preventDefault()
-    win.hide()
-  })
 }
 
+//
+// Ensure there is only one Fraidycat window running. Fetching all of these
+// feeds is taxing and work shouldn't be duplicated.
+//
 var canRun = app.requestSingleInstanceLock()
 if (!canRun) {
   app.quit()
@@ -166,6 +178,10 @@ if (!canRun) {
     }
   })
 
+  //
+  // Central messaging channel. The two foreground and background pass messages
+  // through here.
+  //
   ipcMain.handle("fraidy", (e, msg) => {
     if (msg.receiver) {
       webContents.fromId(msg.receiver).send('fraidy', msg)
@@ -178,6 +194,10 @@ if (!canRun) {
     }
   })
 
+  //
+  // On Windows and Linux, a systray icon is used to keep the app in the
+  // background and allow follows to update there.
+  //
   var tray
   app.once("ready", () => {
     if (!isMac) {
@@ -193,6 +213,7 @@ if (!canRun) {
       tray.on("click", () => win.show())
     }
     createWindow()
+    autoUpdater.checkForUpdates()
   })
 
   app.on("quit", () => {
@@ -213,3 +234,9 @@ if (!canRun) {
     }
   })
 }
+
+//
+// Update notifications setup and debug
+//
+autoUpdater.logger = log
+// autoUpdater.logger.transports.file.level = 'info'

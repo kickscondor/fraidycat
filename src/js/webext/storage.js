@@ -142,9 +142,13 @@ class WebextStorage {
   //
   backgroundSetup() {
     browser.storage.onChanged.addListener((dict, area) => {
-      if (area !== "sync")
+      if (area !== "sync" || !('id' in dict))
         return
-      // console.log(["INCOMING", area, dict])
+
+      // Only handle messages from other IDs.
+      let sender = this.decode(dict.id.newValue)
+      if (sender[0] === this.id)
+        return
 
       let changes = {}
       for (let path in dict)

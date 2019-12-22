@@ -55,15 +55,21 @@ function isOutOfDate(follow, fetched) {
 
 module.exports = {
   setup(msg, sender) {
+    let obj = {started: true, updating: {}}
     if (this.started) {
-      this.update({started: true, all: this.all}, sender)
+      this.update(Object.assign(obj, {all: this.all}), sender)
       return
     }
 
-    let obj = {started: true}
-    Object.assign(this, {all: {}, updating: [], fetched: {},
+    Object.assign(this, {all: {}, fetched: {},
       common: {settings: {broadcast: false}, follows: {}, index: {}},
       postCache: new quicklru({maxSize: 1000})})
+
+    let pollFreq = 1000
+    let pollFn = () => {
+      this.poll()
+      setTimeout(pollFn, pollFreq)
+    }
 
     this.readFile('/follows.json').
       then(all => obj.all = all).catch(e => console.log(e)).
@@ -76,7 +82,7 @@ module.exports = {
           this.readSynced('follows').
             then(inc => this.sync(inc, SYNC_FULL)).
             catch(e => console.log(e)).
-            finally(_ => setInterval(() => this.poll(), 200))
+            finally(_ => setTimeout(pollFn, pollFreq))
         })
       })
   },
@@ -97,24 +103,59 @@ module.exports = {
   // Periodically update a follow.
   //
   async poll() {
-    let qual = Object.values(this.all).
-      filter(follow => !this.updating.includes(follow) && isOutOfDate(follow, this.fetched))
-    if (qual.length > 0) {
-      let oldest = qual.reduce((old, follow) =>
-        (fetchedAt(this.fetched, old.id) || 0) > (fetchedAt(this.fetched, follow.id) || 0) ? follow : old)
-      if (oldest) {
-        let lastFetch = this.fetched[oldest.id]
-        this.updating.push(oldest)
-        console.log(`Updating ${followTitle(oldest)}`)
-        await feedycat(this, oldest, lastFetch)
-        this.markFetched(oldest)
-        this.updating = this.updating.filter(follow => follow != oldest)
-        if (lastFetch.status != 304) {
-          this.update({op: 'replace', path: `/all/${oldest.id}`, value: oldest})
-          this.write({update: false})
-        }
+    let maxToQueue = 5
+    for (let id in this.all) {
+      if (!maxToQueue)
+        break
+      let upd = this.updating[id]
+      if (upd && !upd.done)
+        continue
+      let follow = this.all[id]
+      if (!isOutOfDate(follow, this.fetched))
+        continue
+
+      // let oldest = qual.reduce((old, follow) =>
+      //   (fetchedAt(this.fetched, id) || 0) > (fetchedAt(this.fetched, id) || 0) ? follow : old)
+      let lastFetch = this.fetched[id]
+      try { await this.fetchfeed(follow, lastFetch) } catch {}
+      if (lastFetch.status != 304) {
+        this.update({op: 'replace', path: `/all/${id}`, value: follow})
+        this.write({update: false})
+      }
+      maxToQueue--
+    }
+  },
+
+  noteUpdate(list, isDone) {
+    for (let id of list) {
+      this.updating[id] = {startedAt: new Date(), done: isDone}
+    }
+    let clearAll = false
+    for (let id in this.updating) {
+      clearAll = true
+      if (!this.updating[id].done) {
+        clearAll = false
+        break
       }
     }
+    if (clearAll) {
+      this.updating = {}
+    }
+    this.update({op: 'replace', path: '/updating', value: this.updating})
+  },
+
+  async fetchfeed(follow, lastFetch) {
+    let id = follow.id || urlToID(urlToNormal(follow.url))
+    this.noteUpdate([id], false)
+    console.log(`Updating ${followTitle(follow)}`)
+    let feeds
+    try {
+      feeds = await feedycat(this, follow, lastFetch)
+      this.markFetched(follow)
+    } finally {
+      this.noteUpdate([id], true)
+    }
+    return feeds
   },
 
   //
@@ -125,10 +166,8 @@ module.exports = {
   // Update pieces of the follows list that have changed (from other browsers).
   //
   onSync(changes) {
-    if (changes.id[0] !== this.id) {
-      let obj = this.mergeSynced(changes, 'follows')
-      this.sync(obj, SYNC_PARTIAL)
-    }
+    let obj = this.mergeSynced(changes, 'follows')
+    this.sync(obj, SYNC_PARTIAL)
   },
 
   //
@@ -154,20 +193,24 @@ module.exports = {
   //
   async sync(inc, syncType) {
     let updated = false, follows = []
+    console.log(inc)
     if ('follows' in inc) {
       if ('index' in inc)
         Object.assign(this.common.index, inc.index)
 
+      this.noteUpdate(Object.keys(inc.follows), false)
       for (let id in inc.follows) {
         let current = this.all[id], incoming = inc.follows[id], notify = false
          if (!(id in this.common.follows))
            this.common.follows[id] = inc.follows[id]
         if (!current || current.editedAt < incoming.editedAt) {
           if (incoming.deleted) {
-            delete this.all[id]
             this.common.follows[id] = incoming
-            this.update({op: 'remove', path: `/all/${id}`})
-            follows.push(id)
+            if (current) {
+              delete this.all[id]
+              this.update({op: 'remove', path: `/all/${id}`})
+              follows.push(id)
+            }
           } else {
             if (current)
               incoming.id = id
@@ -188,6 +231,7 @@ module.exports = {
           follows.push(id)
           this.notifyFollow(this.all[id])
         }
+        this.noteUpdate([id], true)
       }
     }
 
@@ -391,14 +435,13 @@ module.exports = {
     }
     follow.updatedAt = new Date()
 
-    let feeds = await feedycat(this, follow)
+    let feeds = await this.fetchfeed(follow)
     if (feeds)
       return feeds
     
     if (!savedId && this.all[follow.id])
       throw `${follow.url} is already a subscription of yours.`
 
-    this.markFetched(follow)
     this.all[follow.id] = follow
     this.update({op: 'replace', path: `/all/${follow.id}`, value: follow})
     this.notifyFollow(follow)

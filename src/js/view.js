@@ -354,14 +354,38 @@ if (process.env.STORAGE === 'electron') {
 
 export default (state, actions) => {
   let settings = window.location.pathname === "/settings.html"
-  return (state.follows.started &&
-    <article>
+  if (!state.follows.started)
+    return ''
+
+  //
+  // Report progress on follows that are currently updating.
+  //
+  let upd = state.follows.updating, urgent = state.follows.urgent
+  let updDone = 0, updTotal = 0, note = null, last = new Date()
+  for (let id in upd) {
+    let f = upd[id]
+    updTotal++
+    if (f.done) {
+      updDone++
+    } else if (!note || f.startedAt < last) {
+      note = id.substring(0, id.length - 9)
+      last = f.startedAt
+    }
+  }
+
+  return <article>
       <header>
         <h1><Link to="/"><img src={images['fc']} alt="Fraidycat" title="Fraidycat" /></Link></h1>
       </header>
       <section>
         <div id="menu">
           {!settings && <ul>
+            {updTotal > 2 ?
+              <li id="notice">
+                <div class="progress"><div style={`width: ${Math.round((updDone / updTotal) * 100)}%`}></div></div>
+                <p>{note}</p>
+              </li> :
+              (urgent && <li id="notice"><p class="urgent">{urgent}</p></li>)}
             <li><Link to="/add" class="pink" title="Add a Follow">&#xff0b;</Link></li>
             <li><Link to="/settings" title="Settings">&#x2699;&#xfe0f;</Link></li>
           </ul>}
@@ -380,5 +404,5 @@ export default (state, actions) => {
       <footer>
         <p>&nbsp;</p>
       </footer>
-    </article>)
+    </article>
 }

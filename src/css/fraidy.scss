@@ -56,7 +56,8 @@ div.intro {
   }
 
   li {
-    display: inline;
+    display: inline-block;
+    vertical-align: top;
   }
 
   a {
@@ -69,6 +70,41 @@ div.intro {
       border-radius: 18px;
       font-weight: bold;
       color: white;
+    }
+  }
+}
+
+#notice {
+  text-align: center;
+  color: #975;
+  width: 30vw;
+  max-width: 220px;
+  overflow: hidden;
+  white-space: nowrap;
+
+  div.progress {
+    margin: 4px 10px;
+    height: 6px;
+    background-color: #DDC;
+
+    div {
+      width: 0;
+      background-color: #975;
+      height: 100%;
+    }
+  }
+
+  p {
+    display: inline;
+    font-size: 1rem;
+
+    &.urgent {
+      font-weight: bold;
+      color: #F09;
+    }
+
+    a {
+      text-decoration: underline;
     }
   }
 }

@@ -24,7 +24,9 @@
     "dat": "fsbin emptyDir build/dat && fsbin copy src/root/dat build/dat && cross-env STORAGE=dat parcel build src/index.html --no-cache -d build/dat",
     "webext": "fsbin emptyDir build/webext && cross-env STORAGE=webext parcel build src/manifest.json -d build/webext",
     "webext:lint": "web-ext lint --source-dir ./build/webext/",
-    "webext:safe": "find build/webext -type f -name '*.js' | xargs sed -i 's/\\([=:]\\)Function(/\\1(/g'"
+    "webext:safe": "find build/webext -type f -name '*.js' | xargs sed -i 's/\\([=:]\\)Function(/\\1(/g'",
+    "publish": "build --win --linux -p always",
+    "publish:mac": "build --mac -p always"
   },
   "build": {
     "appId": "at.fraidyc",
@@ -45,7 +47,12 @@
       "target": "deb",
       "icon": "src/images/flatcat-512.png",
       "category": "News"
-    }
+    },
+    "publish": [{
+      "provider": "github",
+      "owner": "kickscondor",
+      "repo": "fraidycat"
+    }]
   },
   "dependencies": {
     "@kickscondor/elasticlunr": "^0.9.8",
@@ -60,6 +67,7 @@
     "babel-preset-es2015": "^6.24.1",
     "cross-env": "^6.0.3",
     "electron-process": "^0.2.0",
+    "electron-updater": "^4.2.0",
     "fast-json-patch": "^3.0.0-1",
     "feedme": "^1.2.0",
     "fsbin": "^1.0.9",
