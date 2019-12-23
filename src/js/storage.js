@@ -215,11 +215,14 @@ module.exports = {
             } else {
               if (current)
                 incoming.id = id
-              await this.refresh(incoming).catch(() => {})
+              try {
+                await this.refresh(incoming)
+                if (syncType === SYNC_EXTERNAL) {
+                  current = this.all[id]
+                  notify = true
+                }
+              } catch {}
               // catch(msg => console.log(`${incoming.url} is ${msg}`))
-              if (syncType === SYNC_EXTERNAL) {
-                notify = true
-              }
             }
             updated = true
           } else if (current.editedAt > incoming.editedAt) {
@@ -228,9 +231,9 @@ module.exports = {
             }
           }
 
-          if (notify) {
+          if (notify && current) {
             follows.push(id)
-            this.notifyFollow(this.all[id])
+            this.notifyFollow(current)
           }
         } finally {
           this.noteUpdate([id], true)
