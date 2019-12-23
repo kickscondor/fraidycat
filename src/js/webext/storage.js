@@ -126,7 +126,7 @@ class WebextStorage {
     obj.sender = obj.id
     if (obj.data)
       obj.data = this.encode(obj.data)
-    browser.runtime.sendMessage(obj)
+    browser.runtime.sendMessage(obj).catch(_ => {})
   }
 
   command(action, data) {

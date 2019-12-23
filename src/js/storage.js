@@ -193,7 +193,7 @@ module.exports = {
   //
   async sync(inc, syncType) {
     let updated = false, follows = []
-    console.log(inc)
+    // console.log(inc)
     if ('follows' in inc) {
       if ('index' in inc)
         Object.assign(this.common.index, inc.index)
