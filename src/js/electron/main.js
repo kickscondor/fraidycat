@@ -11,7 +11,6 @@ const { Worker, isMainThread, parentPort } = require('worker_threads')
 const { app, BrowserWindow, ipcMain, webContents, Menu, shell, Tray } = require('electron')
 const path = require('path')
 const openAboutWindow = require('about-window').default
-const log = require('electron-log')
 const { autoUpdater } = require('electron-updater')
 
 const isMac = process.platform === 'darwin'
@@ -183,7 +182,9 @@ if (!canRun) {
   // through here.
   //
   ipcMain.handle("fraidy", (e, msg) => {
-    if (msg.receiver) {
+    if (msg.action === 'autoUpdateApproved') {
+      autoUpdater.quitAndInstall()
+    } else if (msg.receiver) {
       webContents.fromId(msg.receiver).send('fraidy', msg)
     } else {
       for (var wc of webContents.getAllWebContents()) {
@@ -204,7 +205,11 @@ if (!canRun) {
       tray = new Tray(path.resolve(__dirname, "../../", images['flatcat-32']))
       const contextMenu = Menu.buildFromTemplate([
         { label: 'Fraidycat', click: () => win.show() },
-        // { label: 'Background', click: () => bg.show() }, // DEBUG
+        { label: 'Update', click: () => {
+          for (var wc of webContents.getAllWebContents()) {
+            wc.send('fraidy', {action: 'autoUpdate', data: {version: '1.0.7'}})
+          } } },
+        { label: 'Background', click: () => bg.show() }, // DEBUG
         { label: 'About', click: about },
         { label: 'Quit', click: quit }
       ])
@@ -213,7 +218,7 @@ if (!canRun) {
       tray.on("click", () => win.show())
     }
     createWindow()
-    autoUpdater.checkForUpdates()
+    autoUpdater.checkForUpdatesAndNotify()
   })
 
   app.on("quit", () => {
@@ -238,5 +243,15 @@ if (!canRun) {
 //
 // Update notifications setup and debug
 //
-autoUpdater.logger = log
-// autoUpdater.logger.transports.file.level = 'info'
+autoUpdater.on('error', error => console.log((error.stack || error).toString()))
+
+autoUpdater.on('update-not-available', () => {
+  setTimeout(() => autoUpdater.checkForUpdatesAndNotify(),
+    1000 * 60 * 15)
+})
+
+autoUpdater.on('update-downloaded', info => {
+  for (var wc of webContents.getAllWebContents()) {
+    wc.send('fraidy', {action: 'autoUpdate', data: {version: info.version}})
+  }
+})

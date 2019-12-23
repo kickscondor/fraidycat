@@ -385,7 +385,8 @@ export default (state, actions) => {
                 <div class="progress"><div style={`width: ${Math.round((updDone / updTotal) * 100)}%`}></div></div>
                 <p>{note}</p>
               </li> :
-              (urgent && <li id="notice"><p class="urgent">{urgent}</p></li>)}
+              (urgent && <li id="notice"><p class="urgent"><a href="#" onclick={e => {
+                e.preventDefault(); urgent.approve()}}>{urgent.note}</a></p></li>)}
             <li><Link to="/add" class="pink" title="Add a Follow">&#xff0b;</Link></li>
             <li><Link to="/settings" title="Settings">&#x2699;&#xfe0f;</Link></li>
           </ul>}

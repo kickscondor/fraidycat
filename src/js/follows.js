@@ -126,5 +126,10 @@ export default ({
     exportTo: (format) => ({local}) => {
       local.command("exportTo", {format})
     },
+
+    autoUpdate: (info) => ({local, set}) => {
+      return {urgent: {note: `Update to version ${info.version}`,
+        approve: () => {local.command("autoUpdateApproved"); set({urgent: null})}}}
+    }
   }
 })
