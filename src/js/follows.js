@@ -34,7 +34,7 @@ export default ({
     //
     // Receive updates from the background process.
     //
-    update: (patch) => (state, {location}) => {
+    update: (patch) => (state, {location, set}) => {
       // console.log([state, patch])
       if (patch.op === 'discovery') {
         location.go("/add-feed")
@@ -51,6 +51,13 @@ export default ({
         document.body.appendChild(link)
         link.click()
         document.body.removeChild(link)
+      } else if (patch.op === 'autoUpdate') {
+        return {urgent: {note: `Update to version ${patch.version}`,
+          approve: () => {
+            state.local.command("autoUpdateApproved")
+            set({urgent: null})
+          }
+        }}
       } else if (patch.op === 'error') {
         u('form button').each(ele => ele.disabled = false)
         alert(patch.message)
@@ -125,11 +132,6 @@ export default ({
     //
     exportTo: (format) => ({local}) => {
       local.command("exportTo", {format})
-    },
-
-    autoUpdate: (info) => ({local, set}) => {
-      return {urgent: {note: `Update to version ${info.version}`,
-        approve: () => {local.command("autoUpdateApproved"); set({urgent: null})}}}
     }
   }
 })

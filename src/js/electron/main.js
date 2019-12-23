@@ -11,8 +11,15 @@ const { Worker, isMainThread, parentPort } = require('worker_threads')
 const { app, BrowserWindow, ipcMain, webContents, Menu, shell, Tray } = require('electron')
 const path = require('path')
 const openAboutWindow = require('about-window').default
+const { autoUpdater } = require('electron-updater')
 
 const isMac = process.platform === 'darwin'
+const DEBUG = false
+
+//
+// Without this, uncaught errors (esp in electron-updater) will become alerts.
+//
+process.on('uncaughtException', e => console.log(e))
 
 //
 // Setup the common actions and menus that may be used.
@@ -79,8 +86,10 @@ const template = [
   }
 ]
 
-const menu = Menu.buildFromTemplate(template)
-Menu.setApplicationMenu(menu)
+if (!DEBUG) {
+  const menu = Menu.buildFromTemplate(template)
+  Menu.setApplicationMenu(menu)
+}
 
 //
 // This is the context menu on input boxes, for copy/paste and such.
@@ -147,7 +156,7 @@ function createWindow() {
 
   win.loadURL(`file://${path.resolve(__dirname, "../../index.html")}`)
   win.once("ready-to-show", () => {
-    win.setMenuBarVisibility(false)
+    if (!DEBUG) { win.setMenuBarVisibility(false) }
     win.show()
   })
   win.on("close", ev => {
@@ -181,7 +190,9 @@ if (!canRun) {
   // through here.
   //
   ipcMain.handle("fraidy", (e, msg) => {
-    if (msg.receiver) {
+    if (msg.action === 'autoUpdateApproved') {
+      autoUpdater.quitAndInstall()  
+    } else if (msg.receiver) {
       webContents.fromId(msg.receiver).send('fraidy', msg)
     } else {
       for (var wc of webContents.getAllWebContents()) {
@@ -197,11 +208,18 @@ if (!canRun) {
   // background and allow follows to update there.
   //
   var tray
-  app.once("ready", () => {
+  app.once("ready", async () => {
     if (!isMac) {
       tray = new Tray(path.resolve(__dirname, "../../", images['flatcat-32']))
       const contextMenu = Menu.buildFromTemplate([
         { label: 'Fraidycat', click: () => win.show() },
+        ...(DEBUG ? [
+          { label: 'Update', click: () => {	
+            for (var wc of webContents.getAllWebContents()) {	
+              wc.send('fraidy', {action: 'updated', data:
+                JSON.stringify({op: 'autoUpdate', version: '1.0.8'})})	
+            } } },	
+          { label: 'Background', click: () => bg.show() }] : []),
         { label: 'About', click: about },
         { label: 'Quit', click: quit }
       ])
@@ -210,6 +228,7 @@ if (!canRun) {
       tray.on("click", () => win.show())
     }
     createWindow()
+    autoUpdater.checkForUpdatesAndNotify()
   })
 
   app.on("quit", () => {
@@ -230,3 +249,18 @@ if (!canRun) {
     }
   })
 }
+
+//	
+// Update notifications setup and debug	
+//	
+autoUpdater.on('update-not-available', () => {	
+  setTimeout(() => autoUpdater.checkForUpdatesAndNotify(),	
+    1000 * 60 * 15)	
+})	
+
+autoUpdater.on('update-downloaded', info => {	
+  for (var wc of webContents.getAllWebContents()) {	
+    wc.send('fraidy', {action: 'updated', data:
+      JSON.stringify({op: 'autoUpdate', version: info.version})})	
+  }	
+})

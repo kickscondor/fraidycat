@@ -147,7 +147,7 @@ module.exports = {
   async fetchfeed(follow, lastFetch) {
     let id = follow.id || urlToID(urlToNormal(follow.url))
     this.noteUpdate([id], false)
-    console.log(`Updating ${followTitle(follow)}`)
+    // console.log(`Updating ${followTitle(follow)}`)
     let feeds
     try {
       feeds = await feedycat(this, follow, lastFetch)
@@ -200,38 +200,41 @@ module.exports = {
 
       this.noteUpdate(Object.keys(inc.follows), false)
       for (let id in inc.follows) {
-        let current = this.all[id], incoming = inc.follows[id], notify = false
-         if (!(id in this.common.follows))
-           this.common.follows[id] = inc.follows[id]
-        if (!current || current.editedAt < incoming.editedAt) {
-          if (incoming.deleted) {
-            this.common.follows[id] = incoming
-            if (current) {
-              delete this.all[id]
-              this.update({op: 'remove', path: `/all/${id}`})
-              follows.push(id)
+        try {
+          let current = this.all[id], incoming = inc.follows[id], notify = false
+          if (!(id in this.common.follows))
+            this.common.follows[id] = inc.follows[id]
+          if (!current || current.editedAt < incoming.editedAt) {
+            if (incoming.deleted) {
+              this.common.follows[id] = incoming
+              if (current) {
+                delete this.all[id]
+                this.update({op: 'remove', path: `/all/${id}`})
+                follows.push(id)
+              }
+            } else {
+              if (current)
+                incoming.id = id
+              await this.refresh(incoming).catch(() => {})
+              // catch(msg => console.log(`${incoming.url} is ${msg}`))
+              if (syncType === SYNC_EXTERNAL) {
+                notify = true
+              }
             }
-          } else {
-            if (current)
-              incoming.id = id
-            await this.refresh(incoming).
-              catch(msg => console.log(`${incoming.url} is ${msg}`))
-            if (syncType === SYNC_EXTERNAL) {
+            updated = true
+          } else if (current.editedAt > incoming.editedAt) {
+            if (syncType !== SYNC_EXTERNAL) {
               notify = true
             }
           }
-          updated = true
-        } else if (current.editedAt > incoming.editedAt) {
-          if (syncType !== SYNC_EXTERNAL) {
-            notify = true
-          }
-        }
 
-        if (notify) {
-          follows.push(id)
-          this.notifyFollow(this.all[id])
+          if (notify) {
+            follows.push(id)
+            this.notifyFollow(this.all[id])
+          }
+        } finally {
+          this.noteUpdate([id], true)
         }
-        this.noteUpdate([id], true)
       }
     }
 
@@ -515,5 +518,5 @@ module.exports = {
     this.update({op: 'remove', path: `/all/${follow.id}`})
     this.write({update: true, follows: [follow.id]})
     this.update({op: 'subscription', follow}, sender)
-  },
+  }
 }

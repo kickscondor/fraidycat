@@ -74,6 +74,17 @@ div.intro {
   }
 }
 
+#urgent p {
+  font-size: 1rem;
+  font-weight: bold;
+  display: inline;
+
+  a {
+    color: #F09;
+    text-decoration: underline;
+  }
+}
+
 #notice {
   text-align: center;
   color: #975;
@@ -97,16 +108,6 @@ div.intro {
   p {
     display: inline;
     font-size: 0.9rem;
-
-    &.urgent {
-      font-size: 1rem;
-      font-weight: bold;
-      color: #F09;
-    }
-
-    a {
-      text-decoration: underline;
-    }
   }
 }
 

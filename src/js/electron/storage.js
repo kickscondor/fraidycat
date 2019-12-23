@@ -95,7 +95,7 @@ class NodeStorage {
   //
   receiveMessage(fn) {
     ipcRenderer.on('fraidy', (e, msg) => {
-      console.log(msg)
+      // console.log(msg)
       if (msg.data)
         msg.data = this.decode(msg.data)
       fn(msg)
