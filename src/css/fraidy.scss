@@ -24,6 +24,8 @@ $themes: (
     sparkfreshfill: #FFC0CB,
     sparkoldline: #9999BB,
     sparkoldfill: #ACC0CB,
+    notice: #997755,
+    progress: #DDDDCC,
   ),
   dark: (
     background: #080818,
@@ -50,6 +52,8 @@ $themes: (
     sparkfreshfill: #003F34,
     sparkoldline: #BB9999,
     sparkoldfill: #2B2C10,
+    notice: #FFFFCC,
+    progress: #997755,
   ),
 );
 
@@ -76,6 +80,14 @@ body {
   padding: 0;
 }
 
+#fraidy {
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 80px;
+  right: 0;
+}
+
 h1 {
   margin: 0;
 
@@ -86,11 +98,10 @@ h1 {
 
 article {
   /* max-width: 780px; */
-  margin: 0 auto;
   padding: 20px 40px 60px 40px;
   font-family: 'Signika';
   font-size: 1.1rem;
-  min-height: 80vh;
+  min-height: 100%;
 
   @include themed() {
     color: t('plain');
@@ -168,21 +179,23 @@ div.intro {
 
 #notice {
   text-align: center;
-  color: #975;
   width: 30vw;
   max-width: 220px;
   overflow: hidden;
   white-space: nowrap;
 
-  div.progress {
-    margin: 4px 10px;
-    height: 6px;
-    background-color: #DDC;
+  @include themed() {
+    color: t('notice');
+    div.progress {
+      margin: 4px 10px;
+      height: 6px;
+      background-color: t('progress');
 
-    div {
-      width: 0;
-      background-color: #975;
-      height: 100%;
+      div {
+        width: 0;
+        background-color: t('notice');
+        height: 100%;
+      }
     }
   }
 
@@ -548,6 +561,12 @@ div.intro {
 #feed-select {
   li {
     list-style: none;
+  }
+}
+
+#add-feed {
+  button {
+    margin-right: 12px;
   }
 }
 
