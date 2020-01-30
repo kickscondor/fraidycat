@@ -25,7 +25,7 @@
     "webext": "fsbin emptyDir build/webext && cross-env STORAGE=webext parcel build src/manifest.json -d build/webext",
     "webext:lint": "web-ext lint --source-dir ./build/webext/",
     "webext:safe": "find build/webext -type f -name '*.js' | xargs sed -i 's/\\([=:]\\)Function(/\\1(/g'",
-    "publish": "electron-builder -mwl -p always",
+    "publish": "electron-builder -wl -p always",
     "publish:windows": "electron-builder -w -p always"
   },
   "build": {

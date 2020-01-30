@@ -1,9 +1,79 @@
+$themes: (
+  light: (
+    background: #F7F7E7,
+    plain: #000000,
+    link: #0000EE,
+    visited: #551199,
+    color: #663300,
+    title: #888866,
+    latest: #FFEFD5,
+    span: #555533,
+    tab: #FFDDCC,
+    titleold: #007777,
+    latestold: #559999,
+    spanold: #337799,
+    tabold: #AADDBB,
+    titlefresh: #003333,
+    latestfresh: #118844,
+    spanfresh: #559900,
+    tabfresh: #CCDDDD,
+    border: #FFAA99,
+    button: #EECCAA,
+    rule: #CC7777,
+    sparkfreshline: #FF0099,
+    sparkfreshfill: #FFC0CB,
+    sparkoldline: #9999BB,
+    sparkoldfill: #ACC0CB,
+  ),
+  dark: (
+    background: #080818,
+    plain: #FFEEEE,
+    link: #DDFFFF,
+    visited: #FFDDFF,
+    color: #CCEEEE,
+    title: #CCBBBB,
+    latest: #000000,
+    span: #887777,
+    tab: #003333,
+    titleold: #CCDDAA,
+    latestold: #779955,
+    spanold: #779955,
+    tabold: #AADDBB,
+    titlefresh: #FFCCCC,
+    latestfresh: #EE77BB,
+    spanfresh: #EE77BB,
+    tabfresh: #FF99DD,
+    border: #005566,
+    button: #003F34,
+    rule: #005566,
+    sparkfreshline: #00FFFF,
+    sparkfreshfill: #003F34,
+    sparkoldline: #BB9999,
+    sparkoldfill: #2B2C10,
+  ),
+);
+
+@mixin themed() {
+  @each $theme, $map in $themes {
+    $theme-map: map-get($themes, $theme) !global;
+    @media (prefers-color-scheme: #{$theme}) {
+      .theme--auto & {
+        @content;
+      }
+    }
+    .theme--#{$theme} & {
+      @content;
+    }
+  }
+}
+
+@function t($key) {
+  @return map-get($theme-map, $key);
+}
+
 body {
-  font-family: 'Signika';
-  background-color: #F7F7E7;
   margin: 0;
   padding: 0;
-  font-size: 1.1rem;
 }
 
 h1 {
@@ -14,15 +84,26 @@ h1 {
   }
 }
 
-#fraidy {
-  padding: 20px 20px 60px 20px;
-  min-height: 80vh;
-}
-
 article {
   /* max-width: 780px; */
   margin: 0 auto;
-  padding: 0 20px;
+  padding: 20px 40px 60px 40px;
+  font-family: 'Signika';
+  font-size: 1.1rem;
+  min-height: 80vh;
+
+  @include themed() {
+    color: t('plain');
+    background-color: t('background');
+
+    a {
+      color: t('link');
+    }
+
+    a:visited {
+      color: t('visited');
+    }
+  }
 }
 
 footer {
@@ -129,13 +210,12 @@ div.intro {
   }
 
   & > ol > li {
-    border-bottom: dotted 1px #C77;
     position: relative;
-    
-    &:hover {
-      border-bottom: dotted 1px #700;
-    }
 
+    @include themed() {
+      border-bottom: dotted 1px t('rule');
+    }
+    
     &:last-child {
       border-bottom: none;
     }
@@ -161,44 +241,48 @@ div.intro {
   }
 
   #tags {
-    border-bottom: solid 4px #FA9;
     width: 100%;
     margin-bottom: 12px;
+
+    @include themed() {
+      border-bottom: solid 4px t('border');
+    }
 
     li {
       font-family: monospace;
       font-size: 2rem;
       margin-right: 6px;
       text-align: center;
-      background-color: #FDC;
 
-      &.age-m,
-      &.age-h {
-        background: linear-gradient(#ADB, #FDC);
-        a {
-          border-top: solid 4px #ADB;
+      @include themed() {
+        background-color: t('tab');
+
+        &.age-m,
+        &.age-h {
+          a {
+            border-top: solid 4px t('tabfresh');
+          }
         }
-      }
 
-      &.age-d,
-      &.age-w {
-        background: linear-gradient(#CDD, #FDC);
-        a {
-          border-top: solid 4px #CDD;
+        &.age-d,
+        &.age-w {
+          a {
+            border-top: solid 4px t('tabold');
+          }
         }
-      }
 
-      a {
-        padding: 0px 20px 4px 20px;
-        text-decoration: none;
-        border-top: solid 4px #FDC;
-      }
+        a {
+          padding: 0px 20px 4px 20px;
+          text-decoration: none;
+          border-top: solid 4px t('tab');
+        }
 
-      a.active {
-        background-color: #F7F7E7;
-        border: solid 4px #FA9;
-        border-bottom: 0;
-        padding-top: 8px;
+        a.active {
+          padding-top: 8px;
+          border: solid 4px t('border');
+          background-color: t('background');
+          border-bottom: 0;
+        }
       }
     }
   }
@@ -211,7 +295,9 @@ div.intro {
     margin-right: 6px;
 
     a {
-      color: #620;
+      @include themed() {
+        color: t('color');
+      }
     }
 
     &.active {
@@ -255,30 +341,35 @@ div.intro {
 
   .latest {
     border-radius: 4px;
-    background-color: #888866;
-    color: #FFEFD5;
     font-size: .9rem;
     padding: 4px;
     cursor: default;
   }
 
-  li.age-d,
-  li.age-w {
-    h3 a {
-      color: #007777;
-    }
+  @include themed() {
     .latest {
-      background-color: #559999;
+      background-color: t('title');
+      color: t('latest');
     }
-  }
 
-  li.age-m,
-  li.age-h {
-    h3 a {
-      color: #003333;
+    li.age-d,
+    li.age-w {
+      h3 a {
+        color: t('titleold');
+      }
+      .latest {
+        background-color: t('latestold');
+      }
     }
-    .latest {
-      background-color: #118844;
+
+    li.age-m,
+    li.age-h {
+      h3 a {
+        color: t('titlefresh');
+      }
+      .latest {
+        background-color: t('latestfresh');
+      }
     }
   }
 
@@ -289,11 +380,13 @@ div.intro {
   }
 
   h3 img.favicon {
-    background-color: #ECA;
     margin-bottom: -6px;
     margin-top: 6px;
     border-radius: 4px;
-    border: solid 2px #ECA;
+    @include themed() {
+      background-color: t('button');
+      border: solid 2px t('button');
+    }
   }
 
   div.extra {
@@ -317,8 +410,10 @@ div.intro {
         margin-bottom: 6px;
 
         a {
-          color: #630;
           text-decoration: none;
+          @include themed() {
+            color: t('color');
+          }
         }
 
         // a:visited {
@@ -330,25 +425,27 @@ div.intro {
           text-decoration: underline;
         }
 
-        span {
-          margin-left: 8px;
-          font-size: 0.9rem;
-          color: #553;
-        }
-
-        &.age-d,
-        &.age-w {
+        @include themed() {
           span {
-            color: #379;
-            font-weight: bold;
+            margin-left: 8px;
+            font-size: 0.9rem;
+            color: t('span');
           }
-        }
 
-        &.age-m,
-        &.age-h {
-          span {
-            color: #590;
-            font-weight: bold;
+          &.age-d,
+          &.age-w {
+            span {
+              color: t('spanold');
+              font-weight: bold;
+            }
+          }
+
+          &.age-m,
+          &.age-h {
+            span {
+              color: t('spanfresh');
+              font-weight: bold;
+            }
           }
         }
       }
@@ -357,9 +454,7 @@ div.intro {
     a.collapse {
       user-select: none;
       display: inline-block;
-      background-color: #579;
       border-radius: 7px;
-      color: #FED;
       font-weight: bold;
       font-size: 14px;
       baseline-shift: -3px;
@@ -367,11 +462,18 @@ div.intro {
       padding: 0px 6px 0 4px;
       margin: 0px 6px;
       overflow: hidden;
+      background-color: #579;
+
+      @include themed() {
+        color: t('color');
+      }
     }
   }
 
   div.trunc {
-    color: #975;
+    @include themed() {
+      color: #975;
+    }
 
     .enter {
       display: inline;
@@ -393,8 +495,11 @@ div.intro {
         display: inline-block;
 
         &::after {
-          color: #ECA;
           content: " /\0000a0";
+
+          @include themed() {
+            color: t('button');
+          }
         }
         
         &:last-child::after {
@@ -404,14 +509,16 @@ div.intro {
     }
   }
 
-  .sparkline-d {
-    stroke: #FF0099;
-    fill: #FFC0CB;
-  }
+  @include themed() {
+    .sparkline-d {
+      stroke: t('sparkfreshline');
+      fill: t('sparkfreshfill');
+    }
 
-  .sparkline-w {
-    stroke: #9999BB;
-    fill: #ACC0CB; /* rgba(255, 192, 203, .3); */
+    .sparkline-w {
+      stroke: t('sparkoldline');
+      fill: t('sparkoldfill'); /* rgba(255, 192, 203, .3); */
+    }
   }
 }
 
@@ -461,11 +568,14 @@ div.err {
 }
 
 label {
-  color: #620;
   font-size: 1.1rem;
   font-weight: bold;
   display: block;
   margin: 8px 0;
+
+  @include themed() {
+    color: t('color');
+  }
 }
 
 label.optional {
