@@ -12,6 +12,8 @@ const path = require('path')
 class WebextStorage {
   constructor(id) {
     this.id = id 
+    this.dom = new DOMParser()
+    this.userAgent = 'X-FC-User-Agent'
   }
 
   //
@@ -26,11 +28,46 @@ class WebextStorage {
   }
 
   //
+  // HTML traversal and string building.
+  //
+  innerHtml(node) {
+    let v = node.value || node.nodeValue
+    if (v) return v
+
+    if (node.hasChildNodes())
+    {
+      v = ''
+      for (let c = 0; c < node.childNodes.length; c++) {
+        let n = node.childNodes[c]
+        v += n.value || n.nodeValue || n.innerHTML
+      }
+    }
+    return v
+  }
+
+  xpath(doc, node, path, asText, ns) {
+    let lookup = null
+    if (ns) lookup = (pre) => ns[pre]
+    let result = doc.evaluate(path, node, lookup, 4, null), list = []
+    if (result) {
+      while (true) {
+        let node = result.iterateNext()
+        if (node) {
+          list.push(asText ? innerHtml(node) : node)
+        } else {
+          break
+        }
+      }
+    }
+    return list
+  }
+
+  //
   // I/O functions.
   //
   async fetch(url, options) {
     let req = new Request(url, options)
-    return fetch(req).then(responseToObject)
+    return fetch(req)
   }
 
   async mkdir(dest) {
@@ -156,8 +193,32 @@ class WebextStorage {
       this.onSync(changes)
     })
 
+    let extUrl = browser.extension.getURL("/")
+    let rewriteUserAgentHeader = e => {
+      if (e.tabId === -1 && e.initiator && extUrl && extUrl.startsWith(e.initiator)) {
+        let hdrs = [], ua = null
+        for (var header of e.requestHeaders) {
+          let name = header.name.toLowerCase()
+          if (name === "x-fc-user-agent") {
+            ua = header
+          } else if (name !== "user-agent") {
+            hdrs.push(header)
+          }
+        }
+
+        if (ua !== null) {
+          hdrs.push({name: 'User-Agent', value: ua.value})
+          return {requestHeaders: hdrs}
+        }
+      }
+      return {requestHeaders: e.requestHeaders}
+    }
+
+    browser.webRequest.onBeforeSendHeaders.addListener(rewriteUserAgentHeader,
+      {urls: ["<all_urls>"], types: ["xmlhttprequest"]}, ["blocking", "requestHeaders"])
+
     browser.browserAction.onClicked.addListener(tab => {
-      browser.tabs.create({url: "index.html"})
+      browser.tabs.create({url: "https://fraidyc.at/s/"})
     })
   }
 }

@@ -2,8 +2,7 @@
 // src/js/storage.js
 //
 // The logic behind adding, removing, fetching and syncing follows.
-// So the central flow of everything is here. Specifics on handling
-// different sources is in src/js/feedycat.js.
+// So the central flow of everything is here.
 //
 // The overall architecture of Fraidycat looks like this:
 //
@@ -18,8 +17,7 @@
 // instance to pull down feeds and operate independently. This allows the
 // instance to run alone, with no syncing, should the user want it that way.
 //
-import { followTitle, house, Importances, urlToID, urlToNormal } from './util'
-import feedycat from './feedycat'
+import { followTitle, house, Importances, urlToFeed, urlToID, urlToNormal } from './util'
 import u from '@kickscondor/umbrellajs'
 
 const og = require('opml-generator')
@@ -79,24 +77,20 @@ module.exports = {
             Object.assign(this, saved)
           Object.assign(this, obj)
           this.update(obj, sender)
-          this.readSynced('follows').
-            then(inc => this.sync(inc, SYNC_FULL)).
-            catch(e => console.log(e)).
-            finally(_ => setTimeout(pollFn, pollFreq))
+          this.fetch("https://fraidyc.at/defs/social.json").
+            then(soc => soc.text()).
+            then(txt =>
+              defs = JSON.parse(txt)
+              this.scraper = new fraidyscrape(defs, this.dom, this.xpath,
+                {useragent: this.userAgent})
+
+              this.readSynced('follows').
+                then(inc => this.sync(inc, SYNC_FULL)).
+                catch(e => console.log(e)).
+                finally(_ => setTimeout(pollFn, pollFreq))
+            })
         })
       })
-  },
-
-  //
-  // Store metadata about last fetch, last caching data for a follow.
-  //
-  markFetched(follow) {
-    if (follow.response) {
-      this.fetched[follow.id] = Object.assign(follow.response,
-        {at: new Date(), delay: 0.5 + (Math.random() * 0.5)})
-      this.localSet('fraidycat', {fetched: this.fetched})
-      delete follow.response
-    }
   },
 
   //
@@ -116,12 +110,13 @@ module.exports = {
 
       // let oldest = qual.reduce((old, follow) =>
       //   (fetchedAt(this.fetched, id) || 0) > (fetchedAt(this.fetched, id) || 0) ? follow : old)
-      let lastFetch = this.fetched[id]
-      try { await this.fetchfeed(follow, lastFetch) } catch {}
-      if (lastFetch.status != 304) {
-        this.update({op: 'replace', path: `/all/${id}`, value: follow})
-        this.write({update: false})
-      }
+      try {
+        let feed = await this.fetchfeed(follow)
+        if (feed.status != 304) {
+          this.update({op: 'replace', path: `/all/${id}`, value: follow})
+          this.write({update: false})
+        }
+      } catch {}
       maxToQueue--
     }
   },
@@ -144,18 +139,105 @@ module.exports = {
     this.update({op: 'replace', path: '/updating', value: this.updating})
   },
 
-  async fetchfeed(follow, lastFetch) {
+  async scrape(meta) {
+    let req, last
+    let tasks = scraper.detect(meta.feed || meta.url)
+    while (req = scraper.nextRequest(tasks)) {
+      // console.log(req)
+      try {
+        //
+        // 'no-cache' is used to ensure that, at minimum, a conditional request
+        // is sent to check for changed content.
+        //
+        let res = await this.fetch(req.url,
+          Object.assign(req.options, {cache: 'no-cache'}))
+        // console.log(res)
+        if (!res.ok) {
+          throw `${req.url} is giving a ${res.status} error.`
+        }
+
+        let obj = await scraper.scrape(tasks, req, res)
+        last = obj.out
+        last.status = res.status
+      } catch (e) {
+        throw e.message
+      }
+    }
+
+    meta.title = last.title
+
+    return last
+  },
+
+  async refetch(follow) {
+    let meta = {createdAt: new Date(), url: follow.url, posts: []}
+    if (follow.id) {
+      try {
+        meta = await this.readFile(`/feeds/${follow.id}.json`)
+      } catch (e) {}
+    }
+
+    let feed = await this.scrape(meta)
+    if (feed.sources && feed.sources.length > 0) {
+      if (feed.sources.length == 1) {
+        meta.feed = feed.sources[0].url
+        feed = await this.scrape(meta)
+      }
+    }
+
+    follow.url = meta.url
+    follow.feed = meta.feed
+    follow.id = urlToID(urlToNormal(meta.feed))
+    follow.actualTitle = meta.title
+    if (meta.photos)
+      follow.photo = meta.photos['16x16'] || meta.photos['icon'] || Object.values(meta.photos)[0]
+    follow.posts = meta.posts.slice(0, POSTS_IN_MAIN_INDEX)
+
+    //
+    // Build the 'activity' array - most recent first, then trim
+    // off empty items from the history.
+    let arr = [], len = 0
+    arr.length = ACTIVITY_IN_MAIN_INDEX 
+    arr.fill(0)
+    meta.posts.find(post => {
+      let daysAgo = Math.floor((now - post.updatedAt) / 86400000)
+      if (daysAgo >= 0 && daysAgo < ACTIVITY_IN_MAIN_INDEX)
+        arr[daysAgo]++
+      return daysAgo >= ACTIVITY_IN_MAIN_INDEX
+    })
+    for (len = ACTIVITY_IN_MAIN_INDEX - 1; len >= 0; len--) {
+      if (arr[len] != 0)
+        break
+    }
+    if (len > 0) {
+      arr.splice(len + 1)
+    }
+    follow.activity = arr
+    storage.writeFile(`/feeds/${follow.id}.json`, meta)
+
+
+    if (feed.posts) {
+      feed.posts = feed.posts.filter(a => 'publishedAt' in a).
+        sort((a, b) => b.publishedAt - a.publishedAt).slice(0, 20)
+    }
+
+    return feed
+  },
+
+  async fetchfeed(follow) {
     let id = follow.id || urlToID(urlToNormal(follow.url))
     this.noteUpdate([id], false)
     // console.log(`Updating ${followTitle(follow)}`)
-    let feeds
+    let feed
     try {
-      feeds = await feedycat(this, follow, lastFetch)
-      this.markFetched(follow)
+      feed = await this.refetch(follow)
+      this.fetched[follow.id] =
+        {at: new Date(), delay: 0.5 + (Math.random() * 0.5)})
+      this.localSet('fraidycat', {fetched: this.fetched})
     } finally {
       this.noteUpdate([id], true)
     }
-    return feeds
+    return feed
   },
 
   //
@@ -441,9 +523,9 @@ module.exports = {
     }
     follow.updatedAt = new Date()
 
-    let feeds = await this.fetchfeed(follow)
-    if (feeds)
-      return feeds
+    let feed = await this.fetchfeed(follow)
+    if (feed.sources)
+      return feed.sources
     
     if (!savedId && this.all[follow.id])
       throw `${follow.url} is already a subscription of yours.`

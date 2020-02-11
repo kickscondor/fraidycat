@@ -33,6 +33,10 @@ export function getMaxIndex (index) {
   return Math.max(...vals)
 }
 
+export function urlToFeed(abs, href) {
+  return normalizeUrl(url.resolve(abs, href), {stripWWW: false, stripHash: true, removeTrailingSlash: false})
+}
+
 export function urlToNormal (link) {
   return normalizeUrl(link, {stripProtocol: true, removeDirectoryIndex: true, stripHash: true})
 }
