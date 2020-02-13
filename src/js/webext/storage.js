@@ -5,15 +5,33 @@
 //
 import { jsonDateParser } from "json-date-parser"
 import { responseToObject } from '../util'
-const browser = require("webextension-polyfill");
+const browser = require("webextension-polyfill")
 const frago = require('../frago')
 const path = require('path')
+
+function innerHtml(node) {
+  let v = node.value || node.nodeValue
+  if (v) return v
+
+  if (node.hasChildNodes())
+  {
+    v = ''
+    for (let c = 0; c < node.childNodes.length; c++) {
+      let n = node.childNodes[c]
+      v += n.value || n.nodeValue || n.innerHTML
+    }
+  }
+  return v
+}
 
 class WebextStorage {
   constructor(id) {
     this.id = id 
     this.dom = new DOMParser()
     this.userAgent = 'X-FC-User-Agent'
+    this.tabs = {}
+    this.baseHref = browser.runtime.getURL ?
+      browser.runtime.getURL('/').slice(0, -1) : ''
   }
 
   //
@@ -30,21 +48,6 @@ class WebextStorage {
   //
   // HTML traversal and string building.
   //
-  innerHtml(node) {
-    let v = node.value || node.nodeValue
-    if (v) return v
-
-    if (node.hasChildNodes())
-    {
-      v = ''
-      for (let c = 0; c < node.childNodes.length; c++) {
-        let n = node.childNodes[c]
-        v += n.value || n.nodeValue || n.innerHTML
-      }
-    }
-    return v
-  }
-
   xpath(doc, node, path, asText, ns) {
     let lookup = null
     if (ns) lookup = (pre) => ns[pre]
@@ -149,29 +152,39 @@ class WebextStorage {
   //
   // Messaging functions.
   //
-  receiveMessage(fn) {
-    browser.runtime.onMessage.addListener((msg, sender, resp) => {
-      if (msg.receiver && msg.receiver != this.id)
-        return
-      if (msg.data)
-        msg.data = this.decode(msg.data)
-      fn(msg)
+  server(fn) {
+    browser.runtime.onMessage.addListener(async (msg, sender) => {
+      if (sender.tab) {
+        msg.sender = sender.tab.id
+        this.tabs[sender.tab.id] = new Date()
+        if (msg.data)
+          msg.data = this.decode(msg.data)
+        fn(msg)
+      }
+      return true
     })
   }
 
-  sendMessage(obj) {
-    obj.sender = obj.id
-    if (obj.data)
-      obj.data = this.encode(obj.data)
-    browser.runtime.sendMessage(obj).catch(_ => {})
+  client(fn) {
+    browser.runtime.onMessage.addListener(async (msg) => {
+      fn(this.decode(msg))
+      return true
+    })
   }
 
   command(action, data) {
-    this.sendMessage({action, data})
+    if (data)
+      data = this.encode(data)
+    browser.runtime.sendMessage({action, data}).then(console.log, console.error)
   }
 
   update(data, receiver) {
-    this.sendMessage({action: 'updated', data, receiver})
+    data = this.encode(data)
+    let tabs = (receiver ? [receiver] : Object.keys(this.tabs))
+    for (let id of tabs) {
+      browser.tabs.sendMessage(Number(id), data).
+        catch(e => delete this.tabs[id])
+    }
   }
 
   //
@@ -214,12 +227,12 @@ class WebextStorage {
       return {requestHeaders: e.requestHeaders}
     }
 
-    browser.webRequest.onBeforeSendHeaders.addListener(rewriteUserAgentHeader,
-      {urls: ["<all_urls>"], types: ["xmlhttprequest"]}, ["blocking", "requestHeaders"])
-
     browser.browserAction.onClicked.addListener(tab => {
       browser.tabs.create({url: "https://fraidyc.at/s/"})
     })
+
+    browser.webRequest.onBeforeSendHeaders.addListener(rewriteUserAgentHeader,
+      {urls: ["<all_urls>"], types: ["xmlhttprequest"]}, ["blocking", "requestHeaders"])
   }
 }
 

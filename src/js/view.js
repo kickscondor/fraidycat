@@ -35,7 +35,7 @@ const FollowForm = (match, setup, isNew) => ({follows}, actions) => {
   return follow && <form class="follow" onsubmit={FormFreeze}>
     {isNew &&
       <div>
-        <label for="url">URL <img src={images['supported']} /></label>
+        <label for="url">URL <img src={follows.baseHref + images['supported']} /></label>
         <input type="text" id="url" name="url" value={follow.url} autocorrect="off" autocapitalize="none"
           oninput={e => follow.url = e.target.value} />
         <p class="note">(Also see <a href="https://rss.app/">RSS.app</a> and <a href="https://rssbox.herokuapp.com">RSS Box</a> for other services.)</p>
@@ -116,7 +116,7 @@ const AddFeed = () => ({follows, settings}, actions) => {
         <form class="feeds" onsubmit={FormFreeze}>
         <ul>
         {list.map(feed =>
-          <li><input type="checkbox" onclick={e => feed.selected = e.target.checked} value={feed.href} /> {feed.title}</li>)}
+          <li><input type="checkbox" onclick={e => feed.selected = e.target.checked} value={feed.url} /> {feed.title}<br /><em>{feed.url}</em></li>)}
         </ul>
         <button onclick={_ => actions.follows.subscribe(follows.feeds)}>Subscribe</button>
         </form>
@@ -140,7 +140,7 @@ function timeAgo(from_time, to_time) {
     return '1d'
   if (mins >= 2881 && mins <= 43220)
     return Math.round(mins / 1440) + 'd'
-  if (mins >= 43201 && mins <= 86400)
+  if (mins >= 43221 && mins <= 86400)
     return '1M'
   if (mins >= 86401 && mins <= 525960)
     return Math.round(mins / 43200) + 'M'
@@ -185,19 +185,15 @@ function sparkpoints(el, ary, daily) {
 }
 
 function lastPostTime(follow) {
+  let lastPostAt = new Date(0)
   if (follow.posts) {
     let lastPost = follow.posts[0]
     if (lastPost)
-      return lastPost.updatedAt
+      lastPostAt = lastPost.updatedAt
+    if (follow.status && follow.status.at > lastPostAt)
+      lastPostAt = follow.status.at
   }
-  return new Date(0)
-}
-
-function rewriteUrl(a, base) {
-  if (a.href && !a.href.match(/^[a-z]+:\/\//))
-    a.href = base + "/" + a.href
-  if (a.src && !a.src.match(/^[a-z]+:\/\//))
-    a.src = base + "/" + a.src
+  return lastPostAt
 }
 
 const ViewFollowById = ({ match }) => ({follows}, actions) => {
@@ -257,8 +253,12 @@ const ListFollow = ({ location, match }) => ({follows}, actions) => {
     {viewable.length > 0 ?
       <ol>{viewable.map(follow => {
           let lastPost = (follow.posts && follow.posts[0]), tags = []
-          let ago = lastPost && timeAgo(lastPost.updatedAt, now)
-          let dk = lastPost && timeDarkness(lastPost.updatedAt, now)
+          let lastPostAt = lastPost.updatedAt
+          if (follow.status && follow.status.at > lastPostAt) {
+            lastPostAt = follow.status.at
+          }
+          let ago = lastPost && timeAgo(lastPostAt, now)
+          let dk = lastPost && timeDarkness(lastPostAt, now)
           let daily = follow.importance < 7
           let linkUrl = follow.fetchesContent ? `/view/${follow.id}` : follow.url
           let id = `follow-${follow.id}`
@@ -267,15 +267,16 @@ const ListFollow = ({ location, match }) => ({follows}, actions) => {
             <h3>
               <Link to={linkUrl}>
                 <img class="favicon" src={url.resolve(follow.url, follow.photo || '/favicon.ico')}
-                  onerror={e => e.target.src=globe} width="20" height="20" />
+                  onerror={e => e.target.src=follows.baseHref + globe} width="20" height="20" />
               </Link>
               <Link class="url" to={linkUrl}>{followTitle(follow)}</Link>
+              {follow.status && follow.status.type === 'live' && <span class="live" title={follow.status.text}>&#x25cf; LIVE</span>}
               {ago && <span class="latest">{ago}</span>}
               <span title={`graph of the last ${daily ? 'two' : 'six'} months`}>
                 <svg class="sparkline"
                   width="120" height="20" stroke-width="2"
                   oncreate={el => sparkpoints(el, follow.activity, daily)}></svg></span>
-                <Link to={`/edit/${follow.id}`} class="edit" title="edit"><img src={images['270f']} /></Link>
+                <Link to={`/edit/${follow.id}`} class="edit" title="edit"><img src={follows.baseHref + images['270f']} /></Link>
             </h3>
             <div class="extra trunc">
               <div class="post">{follow.posts &&
@@ -375,7 +376,7 @@ export default (state, actions) => {
 
   return <article>
       <header>
-        <h1><Link to="/"><img src={images['fc']} alt="Fraidycat" title="Fraidycat" /></Link></h1>
+        <h1><Link to="/"><img src={state.follows.baseHref + images['fc']} alt="Fraidycat" title="Fraidycat" /></Link></h1>
       </header>
       <section>
         <div id="menu">

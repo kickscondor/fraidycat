@@ -11,7 +11,7 @@
   "repository": {
     "url": "https://github.com/kickscondor/fraidycat"
   },
-  "version": "1.0.7",
+  "version": "1.1.0",
   "scripts": {
     "start": "electron ./src",
     "start:firefox": "web-ext run --source-dir ./build/webext/",
@@ -71,15 +71,19 @@
     "electron-updater": "^4.2.0",
     "fast-json-patch": "^3.0.0-1",
     "feedme": "^1.2.0",
-    "fraidyscrape": "^1.0.0",
+    "fraidyscrape": "file:../fraidyscrape",
     "fsbin": "^1.0.9",
     "hyperapp": "^1.2.9",
     "json-date-parser": "^1.0.1",
+    "jsonpath": "^1.0.2",
+    "node-fetch": "^2.6.0",
     "normalize-url": "^4.5.0",
     "opml-generator": "^1.1.1",
     "parcel-bundler": "^1.12.4",
     "quick-lru": "^4.0.1",
     "taggle": "^1.14.4",
+    "xmldom": "^0.2.1",
+    "xpath": "0.0.27",
     "yarn": "^1.19.1"
   },
   "devDependencies": {

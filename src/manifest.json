@@ -2,7 +2,7 @@
   "manifest_version": 2,
   "name": "Fraidycat",
   "key": "hecfkgekabkkhiidlinmifelhdooeool",
-  "version": "1.0.7",
+  "version": "1.1.0",
   "description": "Follow from afar.",
   "homepage_url": "https://fraidyc.at/",
   "icons": {
@@ -13,9 +13,12 @@
   "options_ui": {
     "page": "settings.html"
   },
-  "web_accessible_resources": [
-    "index.html"
-  ],
+  "content_scripts": [{
+    "matches": ["https://fraidyc.at/s/"],
+    "js": ["js/index.js"],
+    "css": ["css/fraidy.scss"]
+  }],
+  "web_accessible_resources": ["images/*.png", "images/*.svg"],
   "background": {
     "scripts": ["background.js"]
   },
@@ -27,7 +30,8 @@
       "64": "images/flatcat-64.png"
     }
   },
-  "permissions": ["http://*/", "https://*/", "storage", "tabs", "unlimitedStorage"],
+  "permissions": ["http://*/", "https://*/", "storage", "tabs",
+    "unlimitedStorage", "webRequest", "webRequestBlocking"],
 
   "browser_specific_settings": {
     "gecko": {

@@ -11,6 +11,7 @@ import 'babel-polyfill'
 import follows from './follows'
 import views from './view'
 import images from '../images/*.png'
+import '../css/fraidy.scss'
 
 const {state, actions, view} = hyperload({
   modules: {follows},

@@ -5,6 +5,7 @@ $themes: (
     link: #0000EE,
     visited: #551199,
     color: #663300,
+    hover: #007799,
     title: #888866,
     latest: #FFEFD5,
     span: #555533,
@@ -12,11 +13,11 @@ $themes: (
     titleold: #007777,
     latestold: #559999,
     spanold: #337799,
-    tabold: #AADDBB,
+    tabold: #CCDDDD,
     titlefresh: #003333,
     latestfresh: #118844,
     spanfresh: #559900,
-    tabfresh: #CCDDDD,
+    tabfresh: #AADDBB,
     border: #FFAA99,
     button: #EECCAA,
     rule: #CC7777,
@@ -33,6 +34,7 @@ $themes: (
     link: #DDFFFF,
     visited: #FFDDFF,
     color: #CCEEEE,
+    hover: #EEFF33,
     title: #CCBBBB,
     latest: #000000,
     span: #887777,
@@ -52,7 +54,7 @@ $themes: (
     sparkfreshfill: #003F34,
     sparkoldline: #BB9999,
     sparkoldfill: #2B2C10,
-    notice: #FFFFCC,
+    notice: #7799AA,
     progress: #997755,
   ),
 );
@@ -339,12 +341,15 @@ div.intro {
     a {
       display: inline-block;
       text-decoration: none;
-      color: #997755;
       overflow: hidden;
       max-width: calc(100% - 40px);
       white-space: nowrap;
       margin-bottom: -4px;
       margin-top: 4px;
+
+      @include themed() {
+        color: t('notice');
+      }
     }
 
     span, a {
@@ -363,6 +368,14 @@ div.intro {
     .latest {
       background-color: t('title');
       color: t('latest');
+    }
+
+    .live {
+      border-radius: 4px;
+      color: t('sparkfreshline');
+      background-color: t('latest');
+      border: solid 1px t('sparkfreshline');
+      margin: 0 8px 0 4px;
     }
 
     li.age-d,
@@ -386,7 +399,6 @@ div.intro {
     }
   }
 
-  & > ol > li:hover h3 a.url,
   h3 a.url:hover {
     text-decoration: underline;
     color: #FF0099;
@@ -434,8 +446,10 @@ div.intro {
         // }
 
         a:hover {
-          color: #079;
           text-decoration: underline;
+          @include themed() {
+            color: t('hover');
+          }
         }
 
         @include themed() {
@@ -478,7 +492,7 @@ div.intro {
       background-color: #579;
 
       @include themed() {
-        color: t('color');
+        color: t('tab');
       }
     }
   }
@@ -561,10 +575,15 @@ div.intro {
 #feed-select {
   li {
     list-style: none;
+
+    em {
+      font-size: 0.9rem;
+      padding-left: 20px;
+    }
   }
 }
 
-#add-feed {
+#edit-feed {
   button {
     margin-right: 12px;
   }
@@ -606,6 +625,11 @@ input, textarea, select {
   font: 1em sans-serif;
   box-sizing: border-box;
   border: 1px solid #999;
+
+  @include themed() {
+    color: t('plain');
+    background-color: t('tab');
+  }
 }
 
 input, textarea {

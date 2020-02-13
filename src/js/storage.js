@@ -8,8 +8,8 @@
 //
 // * Local metadata listing all follows and recent posts.
 //   a. follows.json: All follows, last ten posts, basic stats.
-//   b. follows/feed-id.json: Individual follow metadata.
-//   c. follows/feed-id/post-id.json: Locally cached post.
+//   b. feeds/feed-id.json: Individual follow metadata.
+//   c. feeds/feed-id/post-id.json: Locally cached post.
 // * Synced metadata. Lists all inputted metadata for a
 //   follow.
 //
@@ -17,9 +17,11 @@
 // instance to pull down feeds and operate independently. This allows the
 // instance to run alone, with no syncing, should the user want it that way.
 //
-import { followTitle, house, Importances, urlToFeed, urlToID, urlToNormal } from './util'
+import { followTitle, house, getIndexById, Importances,
+  urlToFeed, urlToID, urlToNormal } from './util'
 import u from '@kickscondor/umbrellajs'
 
+const fraidyscrape = require('fraidyscrape')
 const og = require('opml-generator')
 const quicklru = require('quick-lru')
 const sax = require('sax')
@@ -28,6 +30,9 @@ const url = require('url')
 const SYNC_FULL = 1
 const SYNC_PARTIAL = 2
 const SYNC_EXTERNAL = 3
+
+const POSTS_IN_MAIN_INDEX = 10
+const ACTIVITY_IN_MAIN_INDEX = 180
 
 function fetchedAt(fetched, id) {
   let fetch = fetched[id]
@@ -38,12 +43,12 @@ function isOutOfDate(follow, fetched) {
   let imp = Number(follow.importance)
   let age = (new Date()) - (fetchedAt(fetched, follow.id) || 0)
   if (fetched[follow.id])
-    age *= (fetched[follow.id].delay || 1.0)
+    age *= ((fetched[follow.id].delay || 100) * 0.01)
   if (imp < 1) {
-    // Real-time is currently a five minute check.
+    // Real-time is currently a 5 to 10 minute check.
     return age > (5 * 60 * 1000)
   } else if (imp < 2) {
-    // Daily check is hourly.
+    // Daily check is every 1 to 2 hours.
     return age > (60 * 60 * 1000)
   } else {
     // Longer checks are once or twice a day.
@@ -53,7 +58,7 @@ function isOutOfDate(follow, fetched) {
 
 module.exports = {
   setup(msg, sender) {
-    let obj = {started: true, updating: {}}
+    let obj = {started: true, updating: {}, baseHref: this.baseHref}
     if (this.started) {
       this.update(Object.assign(obj, {all: this.all}), sender)
       return
@@ -79,8 +84,8 @@ module.exports = {
           this.update(obj, sender)
           this.fetch("https://fraidyc.at/defs/social.json").
             then(soc => soc.text()).
-            then(txt =>
-              defs = JSON.parse(txt)
+            then(txt => {
+              let defs = JSON.parse(txt)
               this.scraper = new fraidyscrape(defs, this.dom, this.xpath,
                 {useragent: this.userAgent})
 
@@ -112,11 +117,13 @@ module.exports = {
       //   (fetchedAt(this.fetched, id) || 0) > (fetchedAt(this.fetched, id) || 0) ? follow : old)
       try {
         let feed = await this.fetchfeed(follow)
-        if (feed.status != 304) {
+        if (feed.fresh) {
           this.update({op: 'replace', path: `/all/${id}`, value: follow})
           this.write({update: false})
         }
-      } catch {}
+      } catch (e) {
+        console.log(e)
+      }
       maxToQueue--
     }
   },
@@ -139,38 +146,94 @@ module.exports = {
     this.update({op: 'replace', path: '/updating', value: this.updating})
   },
 
+  //
+  // Use Fraidyscrape to figure out the requests that need to made and build
+  // the feed object, updating the 'meta' object with the discovered posts and
+  // metadata.
+  //
   async scrape(meta) {
-    let req, last
-    let tasks = scraper.detect(meta.feed || meta.url)
-    while (req = scraper.nextRequest(tasks)) {
+    let req, feed
+    let tasks = this.scraper.detect(meta.feed)
+    while (req = this.scraper.nextRequest(tasks)) {
       // console.log(req)
       try {
         //
         // 'no-cache' is used to ensure that, at minimum, a conditional request
-        // is sent to check for changed content.
+        // is sent to check for changed content. The 'etag' will then be used
+        // to determine if we need to update the item. (Don't use the 'age'
+        // header - it's possible that another request could have pulled a fresh
+        // request and we're now getting one out of the cache that is technically
+        // fresh to this operation.)
         //
         let res = await this.fetch(req.url,
           Object.assign(req.options, {cache: 'no-cache'}))
-        // console.log(res)
         if (!res.ok) {
           throw `${req.url} is giving a ${res.status} error.`
         }
 
-        let obj = await scraper.scrape(tasks, req, res)
-        last = obj.out
-        last.status = res.status
+        let obj = await this.scraper.scrape(tasks, req, res)
+        feed = obj.out
+        feed.etag = res.headers.get('etag')
+          || res.headers.get('last-modified')
+          || res.headers.get('date')
       } catch (e) {
         throw e.message
       }
     }
 
-    meta.title = last.title
+    //
+    // Merge the new posts into the feed's master post list.
+    //
+    let fresh = feed.etag !== meta.etag
+    if (!fresh) {
+      console.log(`${meta.feed} hasn't changed.`)
+    }
+    if (fresh && feed.posts) {
+      let now = new Date()
+      for (let item of feed.posts) {
+        item.id = item.url.replace(/^([a-z]+:\/+[^\/#]+)?[\/#]*/, '').replace(/\W+/g, '_')
+        let i = getIndexById(meta.posts, item.id), index = null
+        if (i < 0) {
+          index = {id: item.id, url: item.url, createdAt: now}
+          meta.posts.unshift(index)
+        } else {
+          index = meta.posts[i]
+        }
 
-    return last
+        index.title = item.title || item.text
+        if (!index.title)
+          index.title = u("<div>" + item.html).text()
+        if (!index.title)
+          index.title = item.publishedAt.toLocaleString()
+        index.title = index.title.toString().trim()
+        index.publishedAt = item.publishedAt
+        index.updatedAt = item.updatedAt || item.publishedAt
+      }
+      delete feed.posts
+
+      Object.assign(meta, feed)
+      meta.posts.sort((a, b) => b.updatedAt - a.updatedAt)
+    }
+
+    feed.fresh = fresh
+    return feed
   },
 
+  //
+  // This checks for updates to a follow using the browser's fetch API.
+  // One thing to mention about URLs here. In the follows.json, 'feed' is the
+  // current feed location, 'url' is the home page URL, used to link to the
+  // follow. But in the individual follow object, the 'originalUrl' is stored
+  // as well, though it is not commonly used.
+  //
+  // The original link is stored in case we start getting 404s somewhere and
+  // need to try the original link to track down new feed URLs. The 'feed' URL
+  // is stored in the 'follow' object here because it's used to broadcast
+  // not just the main URL, but the feed URL being used here.
+  //
   async refetch(follow) {
-    let meta = {createdAt: new Date(), url: follow.url, posts: []}
+    let meta = {createdAt: new Date(), originalUrl: follow.url,
+      url: follow.url, feed: follow.url, posts: []}
     if (follow.id) {
       try {
         meta = await this.readFile(`/feeds/${follow.id}.json`)
@@ -178,25 +241,39 @@ module.exports = {
     }
 
     let feed = await this.scrape(meta)
+    if (!feed.fresh)
+      return feed
+
+    //
+    // This is not a feed, but a list of feed sources.
+    //
     if (feed.sources && feed.sources.length > 0) {
       if (feed.sources.length == 1) {
         meta.feed = feed.sources[0].url
         feed = await this.scrape(meta)
+      } else {
+        return feed
       }
     }
 
-    follow.url = meta.url
-    follow.feed = meta.feed
+    //
+    // Index a portion of the metadata. Don't need all the 'rels' and
+    // 'photos' and other metadata that may come in useful later.
+    //
     follow.id = urlToID(urlToNormal(meta.feed))
+    follow.feed = meta.feed
+    follow.url = meta.url
     follow.actualTitle = meta.title
+    follow.status = meta.status
     if (meta.photos)
-      follow.photo = meta.photos['16x16'] || meta.photos['icon'] || Object.values(meta.photos)[0]
+      follow.photo = meta.photos['avatar'] || Object.values(meta.photos)[0]
     follow.posts = meta.posts.slice(0, POSTS_IN_MAIN_INDEX)
 
     //
     // Build the 'activity' array - most recent first, then trim
     // off empty items from the history.
-    let arr = [], len = 0
+    //
+    let arr = [], len = 0, now = new Date()
     arr.length = ACTIVITY_IN_MAIN_INDEX 
     arr.fill(0)
     meta.posts.find(post => {
@@ -213,13 +290,7 @@ module.exports = {
       arr.splice(len + 1)
     }
     follow.activity = arr
-    storage.writeFile(`/feeds/${follow.id}.json`, meta)
-
-
-    if (feed.posts) {
-      feed.posts = feed.posts.filter(a => 'publishedAt' in a).
-        sort((a, b) => b.publishedAt - a.publishedAt).slice(0, 20)
-    }
+    this.writeFile(`/feeds/${follow.id}.json`, meta)
 
     return feed
   },
@@ -227,14 +298,14 @@ module.exports = {
   async fetchfeed(follow) {
     let id = follow.id || urlToID(urlToNormal(follow.url))
     this.noteUpdate([id], false)
-    // console.log(`Updating ${followTitle(follow)}`)
+    console.log(`Updating ${followTitle(follow)}`)
     let feed
     try {
       feed = await this.refetch(follow)
-      this.fetched[follow.id] =
-        {at: new Date(), delay: 0.5 + (Math.random() * 0.5)})
-      this.localSet('fraidycat', {fetched: this.fetched})
     } finally {
+      this.fetched[id] =
+        {at: Number(new Date()), delay: Math.ceil(50 + (Math.random() * 50))}
+      this.localSet('fraidycat', {fetched: this.fetched})
       this.noteUpdate([id], true)
     }
     return feed
@@ -374,8 +445,8 @@ module.exports = {
   // Notify of follow
   //
   notifyFollow(follow) {
-    this.common.follows[follow.id] = {url: follow.feed, tags: follow.tags,
-      importance: follow.importance, title: follow.title,
+    this.common.follows[follow.id] = {url: follow.feed,
+      importance: follow.importance, title: follow.title, tags: follow.tags,
       fetchesContent: follow.fetchesContent, editedAt: follow.editedAt}
   },
 
@@ -545,6 +616,7 @@ module.exports = {
         this.update({op: 'subscription', follow}, sender)
       }
     } catch (e) {
+      console.log(e)
       this.update({op: 'error', message: e}, sender)
     }
   },
@@ -557,7 +629,7 @@ module.exports = {
     let site = fc.site, list = fc.list, follows = []
     let sel = list.filter(feed => feed.selected), errors = []
     for (let feed of sel) {
-      let follow = {url: feed.href, importance: site.importance,
+      let follow = {url: feed.url, importance: site.importance,
         tags: site.tags, title: site.title, editedAt: new Date()}
       if (sel.length > 1) {
         follow.title = `${followTitle(site)} [${feed.title}]`

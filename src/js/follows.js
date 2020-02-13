@@ -21,12 +21,7 @@ export default ({
     //
     init: () => async (state, {update}) => {
       let local = await storage()
-      local.receiveMessage(msg => {
-        if (msg.action === 'updated') {
-          update(msg.data)
-          return true
-        }
-      })
+      local.client(msg => update(msg))
       local.command('setup')
       state.local = local
     },
