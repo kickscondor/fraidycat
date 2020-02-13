@@ -4,25 +4,10 @@
 // Chrome.)
 //
 import { jsonDateParser } from "json-date-parser"
-import { responseToObject } from '../util'
+import { xpathDom } from '../util'
 const browser = require("webextension-polyfill")
 const frago = require('../frago')
 const path = require('path')
-
-function innerHtml(node) {
-  let v = node.value || node.nodeValue
-  if (v) return v
-
-  if (node.hasChildNodes())
-  {
-    v = ''
-    for (let c = 0; c < node.childNodes.length; c++) {
-      let n = node.childNodes[c]
-      v += n.value || n.nodeValue || n.innerHTML
-    }
-  }
-  return v
-}
 
 class WebextStorage {
   constructor(id) {
@@ -32,6 +17,7 @@ class WebextStorage {
     this.tabs = {}
     this.baseHref = browser.runtime.getURL ?
       browser.runtime.getURL('/').slice(0, -1) : ''
+    this.xpath = xpathDom
   }
 
   //
@@ -43,26 +29,6 @@ class WebextStorage {
 
   decode(str) {
     return JSON.parse(str, jsonDateParser)
-  }
-
-  //
-  // HTML traversal and string building.
-  //
-  xpath(doc, node, path, asText, ns) {
-    let lookup = null
-    if (ns) lookup = (pre) => ns[pre]
-    let result = doc.evaluate(path, node, lookup, 4, null), list = []
-    if (result) {
-      while (true) {
-        let node = result.iterateNext()
-        if (node) {
-          list.push(asText ? innerHtml(node) : node)
-        } else {
-          break
-        }
-      }
-    }
-    return list
   }
 
   //

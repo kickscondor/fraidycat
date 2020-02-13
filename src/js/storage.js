@@ -87,7 +87,7 @@ module.exports = {
             then(txt => {
               let defs = JSON.parse(txt)
               this.scraper = new fraidyscrape(defs, this.dom, this.xpath,
-                {useragent: this.userAgent})
+                {useragent: this.userAgent || 'User-Agent'})
 
               this.readSynced('follows').
                 then(inc => this.sync(inc, SYNC_FULL)).
@@ -203,11 +203,11 @@ module.exports = {
         index.title = item.title || item.text
         if (!index.title)
           index.title = u("<div>" + item.html).text()
-        if (!index.title)
+        if (!index.title && item.publishedAt)
           index.title = item.publishedAt.toLocaleString()
         index.title = index.title.toString().trim()
-        index.publishedAt = item.publishedAt
-        index.updatedAt = item.updatedAt || item.publishedAt
+        index.publishedAt = item.publishedAt || index.publishedAt || feed.publishedAt || now
+        index.updatedAt = item.updatedAt || index.publishedAt
       }
       delete feed.posts
 

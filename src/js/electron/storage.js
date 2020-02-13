@@ -1,5 +1,5 @@
 const { remote, ipcRenderer } = require('electron')
-import { responseToObject } from '../util'
+import { xpathDom } from '../util'
 import { jsonDateParser } from "json-date-parser"
 const fs = require('fs')
 const path = require('path')
@@ -9,7 +9,10 @@ class NodeStorage {
   constructor(session) {
     this.session = session
     this.id = remote.getCurrentWebContents().id
+    this.dom = new DOMParser()
     this.appPath = path.join(remote.app.getPath('userData'), 'File Storage')
+    this.xpath = xpathDom
+    this.baseHref = ''
   }
 
   //
@@ -28,7 +31,7 @@ class NodeStorage {
   //
   async fetch(url, options) {
     let req = new Request(url, options)
-    return fetch(req).then(responseToObject)
+    return fetch(req)
   }
 
   async mkdir(dest) {
@@ -93,12 +96,25 @@ class NodeStorage {
   // The 'fraidy' channel is how messages are sent. Replies are made - on
   // 'fraidy-<id>' channel to the sender.
   //
-  receiveMessage(fn) {
+  server(fn) {
     ipcRenderer.on('fraidy', (e, msg) => {
       // console.log(msg)
-      if (msg.data)
-        msg.data = this.decode(msg.data)
-      fn(msg)
+      if (msg.action !== 'updated') {
+        if (msg.data)
+          msg.data = this.decode(msg.data)
+        fn(msg)
+      }
+    })
+  }
+
+  client(fn) {
+    ipcRenderer.on('fraidy', (e, msg) => {
+      // console.log(msg)
+      if (msg.action === 'updated') {
+        if (msg.data)
+          msg.data = this.decode(msg.data)
+        fn(msg.data)
+      }
     })
   }
 
