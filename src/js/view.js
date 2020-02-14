@@ -334,6 +334,15 @@ const ChangeSettings = ({ match, setup }) => (_, {follows}) => {
       </p>
       <p class="note">This is just for fun - a bookmarks list in HTML.</p>
     </div>
+    <h3>About Fraidycat</h3>
+    <div>
+      <p>
+        Fraidycat is a desktop app or browser extension for Firefox or Chrome. You can use it to follow people (hundreds) on whatever platform they choose - Twitter, a blog, YouTube, even on a public TiddlyWiki.
+      </p>
+      <p>
+        You can learn more about Fraidycat in its <a href="https://fraidyc.at/">home page</a>.
+      </p>
+    </div>
     </form>
   </div>
 }
