@@ -66,12 +66,12 @@
     "babel-preset-env": "^1.7.0",
     "babel-preset-es2015": "^6.24.1",
     "cross-env": "^6.0.3",
-    "electron-log": "^4.0.0",
+    "electron-log": "^4.0.6",
     "electron-process": "^0.2.0",
     "electron-updater": "^4.2.0",
     "fast-json-patch": "^3.0.0-1",
     "feedme": "^1.2.0",
-    "fraidyscrape": "file:../fraidyscrape",
+    "fraidyscrape": "^1.0.0",
     "fsbin": "^1.0.9",
     "hyperapp": "^1.2.9",
     "json-date-parser": "^1.0.1",
@@ -81,20 +81,20 @@
     "opml-generator": "^1.1.1",
     "parcel-bundler": "^1.12.4",
     "quick-lru": "^4.0.1",
-    "taggle": "^1.14.4",
+    "taggle": "^1.15.0",
     "xmldom": "^0.2.1",
     "xpath": "0.0.27",
-    "yarn": "^1.19.1"
+    "yarn": "^1.22.0"
   },
   "devDependencies": {
     "ava": "^2.4.0",
     "babel-core": "^6.26.3",
     "babel-preset-stage-0": "^6.24.1",
-    "electron": "^7.1.2",
+    "electron": "^7.1.12",
     "electron-builder": "^21.2.0",
-    "node-sass": "^4.13.0",
-    "parcel-plugin-web-extension": "^1.5.2",
-    "web-ext": "^3.2.0",
+    "node-sass": "^4.13.1",
+    "parcel-plugin-web-extension": "^1.6.1",
+    "web-ext": "^3.2.1",
     "webextension-polyfill": "^0.4.0"
   }
 }

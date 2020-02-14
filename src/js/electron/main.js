@@ -8,13 +8,13 @@
 import '../../js/environment'
 import images from '../../images/*.png'
 const { Worker, isMainThread, parentPort } = require('worker_threads')
-const { app, BrowserWindow, ipcMain, webContents, Menu, shell, Tray } = require('electron')
+const { app, BrowserWindow, ipcMain, webContents, Menu, session, shell, Tray } = require('electron')
 const path = require('path')
 const openAboutWindow = require('about-window').default
 const { autoUpdater } = require('electron-updater')
 
 const isMac = process.platform === 'darwin'
-const DEBUG = false
+const DEBUG = true
 
 //
 // Without this, uncaught errors (esp in electron-updater) will become alerts.
@@ -119,6 +119,16 @@ function createWindow() {
   bg = new BrowserWindow({
     webPreferences: {nodeIntegration: true},
     show: false
+  })
+
+  //
+  // Used to rewrite the user-agent.
+  //
+  bg.webContents.session.webRequest.onBeforeSendHeaders((details, callback) => {
+    console.log(details.requestHeaders)
+    if (details.requestHeaders['X-FC-User-Agent'])
+      details.requestHeaders['User-Agent'] = details.requestHeaders['X-FC-User-Agent']
+    callback({ cancel: false, requestHeaders: details.requestHeaders })
   })
 
   bg.loadURL(`file://${path.resolve(__dirname, "../../background.html")}`)

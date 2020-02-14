@@ -9,6 +9,7 @@ class NodeStorage {
   constructor(session) {
     this.session = session
     this.id = remote.getCurrentWebContents().id
+    this.userAgent = 'X-FC-User-Agent'
     this.dom = new DOMParser()
     this.appPath = path.join(remote.app.getPath('userData'), 'File Storage')
     this.xpath = xpathDom

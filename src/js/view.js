@@ -38,7 +38,7 @@ const FollowForm = (match, setup, isNew) => ({follows}, actions) => {
         <label for="url">URL <img src={follows.baseHref + images['supported']} /></label>
         <input type="text" id="url" name="url" value={follow.url} autocorrect="off" autocapitalize="none"
           oninput={e => follow.url = e.target.value} />
-        <p class="note">(Also see <a href="https://rss.app/">RSS.app</a> and <a href="https://rssbox.herokuapp.com">RSS Box</a> for other services.)</p>
+        <p class="note">(See <a href="https://rss.app/">RSS.app</a> and <a href="https://rssbox.herokuapp.com">RSS Box</a> for other services. Or <a href="https://notifier.in/integrations/email-to-rss">Notifier</a> for email newsletters.)</p>
       </div>}
 
     <div>
@@ -252,13 +252,9 @@ const ListFollow = ({ location, match }) => ({follows}, actions) => {
     </ul>
     {viewable.length > 0 ?
       <ol>{viewable.map(follow => {
-          let lastPost = (follow.posts && follow.posts[0]), tags = []
-          let lastPostAt = lastPost.updatedAt
-          if (follow.status && follow.status.at > lastPostAt) {
-            lastPostAt = follow.status.at
-          }
-          let ago = lastPost && timeAgo(lastPostAt, now)
-          let dk = lastPost && timeDarkness(lastPostAt, now)
+          let lastPostAt = lastPostTime(follow), tags = []
+          let ago = timeAgo(lastPostAt, now)
+          let dk = timeDarkness(lastPostAt, now)
           let daily = follow.importance < 7
           let linkUrl = follow.fetchesContent ? `/view/${follow.id}` : follow.url
           let id = `follow-${follow.id}`

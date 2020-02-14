@@ -156,6 +156,7 @@ module.exports = {
     let tasks = this.scraper.detect(meta.feed)
     while (req = this.scraper.nextRequest(tasks)) {
       // console.log(req)
+      let err = null
       try {
         //
         // 'no-cache' is used to ensure that, at minimum, a conditional request
@@ -168,7 +169,8 @@ module.exports = {
         let res = await this.fetch(req.url,
           Object.assign(req.options, {cache: 'no-cache'}))
         if (!res.ok) {
-          throw `${req.url} is giving a ${res.status} error.`
+          console.log(`${req.url} is giving a ${res.status} error.`)
+          err = `${req.url} is giving a ${res.status} error.`
         }
 
         let obj = await this.scraper.scrape(tasks, req, res)
@@ -177,8 +179,12 @@ module.exports = {
           || res.headers.get('last-modified')
           || res.headers.get('date')
       } catch (e) {
-        throw e.message
+        err = e.message
+        if (err === "Failed to fetch")
+          err = "Couldn't connect - check your spelling, be sure this URL really exists."
       }
+      if (err != null)
+        throw err
     }
 
     //
