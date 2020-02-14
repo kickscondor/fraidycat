@@ -16,7 +16,7 @@
     "start": "electron ./src",
     "start:firefox": "web-ext run --source-dir ./build/webext/",
     "test": "ava",
-    "electron": "npm run electron:setup && electron-builder -mwl",
+    "electron": "npm run electron:setup && electron-builder -wl",
     "electron:linux": "npm run electron:setup && electron-builder -l",
     "electron:mac": "npm run electron:setup && electron-builder -m",
     "electron:windows": "npm run electron:setup && electron-builder -w",

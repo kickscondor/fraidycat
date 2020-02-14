@@ -16,6 +16,9 @@ const { autoUpdater } = require('electron-updater')
 const isMac = process.platform === 'darwin'
 const DEBUG = false
 
+const homepage = 'https://fraidyc.at/'
+const bug_report_url = 'https://github.com/kickscondor/fraidycat/issues'
+
 //
 // Without this, uncaught errors (esp in electron-updater) will become alerts.
 //
@@ -27,6 +30,7 @@ process.on('uncaughtException', e => console.log(e))
 var bg = null, win = null
 
 const about = () => openAboutWindow({
+  homepage, bug_report_url,
   icon_path: path.resolve(__dirname, "../../", images['flatcat-512']),
   win_options: {
     autoHideMenuBar: true,
@@ -89,8 +93,8 @@ const template = [
   {
     role: 'help',
     submenu: [
-      link('Fraidyc.at', 'https://fraidyc.at/'),
-      link('Search Issues', 'https://github.com/kickscondor/fraidycat/issues')
+      link('Fraidyc.at', homepage),
+      link('Search Issues', bug_report_url)
     ]
   }
 ]
