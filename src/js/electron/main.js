@@ -14,7 +14,7 @@ const openAboutWindow = require('about-window').default
 const { autoUpdater } = require('electron-updater')
 
 const isMac = process.platform === 'darwin'
-const DEBUG = true
+const DEBUG = false
 
 //
 // Without this, uncaught errors (esp in electron-updater) will become alerts.
@@ -72,11 +72,20 @@ const template = [
   {
     label: 'View',
     submenu: [
+      ...(DEBUG ? [
+        { role: 'reload' },
+        { role: 'forcereload' },
+        { role: 'toggledevtools' },	
+        { label: 'Show Background Window', click: () => bg.show() },
+        { type: 'separator' }] : []),
       { role: 'resetzoom' },
       { role: 'zoomin' },
-      { role: 'zoomout' }
+      { role: 'zoomout' },
+      { type: 'separator' },
+      { role: 'togglefullscreen' }
     ]
   },
+  { role: 'windowMenu' },
   {
     role: 'help',
     submenu: [
@@ -86,10 +95,8 @@ const template = [
   }
 ]
 
-if (!DEBUG) {
-  const menu = Menu.buildFromTemplate(template)
-  Menu.setApplicationMenu(menu)
-}
+const menu = Menu.buildFromTemplate(template)
+Menu.setApplicationMenu(menu)
 
 //
 // This is the context menu on input boxes, for copy/paste and such.
@@ -169,15 +176,15 @@ function createWindow() {
     if (!DEBUG) { win.setMenuBarVisibility(false) }
     win.show()
   })
-  win.on("close", ev => {
-    if (app.isQuitting) {
-      win = null
-    } else {
-      ev.preventDefault()
-      win.hide()
-    }
-    return false
-  })
+  for (let w of [bg, win]) {
+    w.on("close", ev => {
+      if (!app.isQuitting) {
+        ev.preventDefault()
+        w.hide()
+      }
+      return false
+    })
+  }
 }
 
 //
@@ -228,8 +235,7 @@ if (!canRun) {
             for (var wc of webContents.getAllWebContents()) {	
               wc.send('fraidy', {action: 'updated', data:
                 JSON.stringify({op: 'autoUpdate', version: '1.0.8'})})	
-            } } },	
-          { label: 'Background', click: () => bg.show() }] : []),
+            } } }] : []),
         { label: 'About', click: about },
         { label: 'Quit', click: quit }
       ])
@@ -241,16 +247,14 @@ if (!canRun) {
     autoUpdater.checkForUpdatesAndNotify()
   })
 
-  app.on("quit", () => {
-    if (isMac) {
+  if (isMac) {
+    app.on("before-quit", () => {
       app.isQuitting = true
-    }
-  })
+    })
+  }
 
   app.on("window-all-closed", () => {
-    if (!isMac) {
-      app.quit()
-    }
+    app.quit()
   })
 
   app.on("activate", () => {

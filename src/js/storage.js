@@ -196,6 +196,22 @@ module.exports = {
     }
     if (fresh && feed.posts) {
       let now = new Date()
+      //
+      // If all entries have identical titles, use the descriptions.
+      //
+      let ident = 0
+      if (feed.posts.length > 1) {
+        let firstTitle = feed.posts[0].title
+        if (firstTitle) {
+          ident = feed.posts.filter(item => item.title === firstTitle).length
+          if (ident != feed.posts.length)
+            ident = 0
+        }
+      }
+
+      //
+      // Normalize the post entries for display.
+      //
       for (let item of feed.posts) {
         item.id = item.url.replace(/^([a-z]+:\/+[^\/#]+)?[\/#]*/, '').replace(/\W+/g, '_')
         let i = getIndexById(meta.posts, item.id), index = null
@@ -206,11 +222,13 @@ module.exports = {
           index = meta.posts[i]
         }
 
-        index.title = item.title || item.text
+        index.title = (ident === 0 && item.title) || item.text
         if (!index.title)
           index.title = u("<div>" + item.html).text()
         if (!index.title && item.publishedAt)
           index.title = item.publishedAt.toLocaleString()
+        if (!index.title && ident !== 0)
+          index.title = item.title
         index.title = index.title.toString().trim()
         index.publishedAt = item.publishedAt || index.publishedAt || feed.publishedAt || now
         index.updatedAt = item.updatedAt || index.publishedAt
