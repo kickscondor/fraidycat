@@ -21,6 +21,7 @@ $themes: (
     border: #FFAA99,
     button: #EECCAA,
     rule: #CC7777,
+    paper: #FFFFFF,
     sparkfreshline: #FF0099,
     sparkfreshfill: #FFC0CB,
     sparkoldline: #9999BB,
@@ -50,6 +51,7 @@ $themes: (
     border: #005566,
     button: #003F34,
     rule: #005566,
+    paper: #443300,
     sparkfreshline: #00FFFF,
     sparkfreshfill: #003F34,
     sparkoldline: #BB9999,
@@ -129,7 +131,7 @@ footer {
   display: none;
 
   &.show {
-    display: block;
+    display: block !important;
   }
 
   p {
@@ -229,6 +231,30 @@ div.intro {
 
     @include themed() {
       border-bottom: dotted 1px t('rule');
+
+      a.show > div {
+        display: block !important;
+      }
+
+      a.status > div {
+        position: absolute;
+        left: -32px;
+        bottom: 100%;
+        background: t('paper');
+        color: t('sparkfreshline');
+        border: solid 1px t('sparkfreshline');
+        box-shadow: 4px 3px 0 0 t('progress');
+        margin-bottom: 8px;
+        margin-right: -50vw;
+        padding: 4px;
+        z-index: 3;
+        display: none;
+
+        span.ago {
+          color: t('latestfresh');
+          font-size: 0.9rem;
+        }
+      }
     }
     
     &:last-child {
@@ -338,7 +364,7 @@ div.intro {
     font-size: 1.1rem;
     margin: 8px 0 4px 0;
 
-    a {
+    a.url {
       display: inline-block;
       text-decoration: none;
       overflow: hidden;
@@ -352,7 +378,7 @@ div.intro {
       }
     }
 
-    span, a {
+    span, a.url {
       padding: 0 3px;
     }
   }
@@ -364,23 +390,35 @@ div.intro {
     cursor: default;
   }
 
+  .status {
+    position: relative;
+    cursor: pointer;
+    display: inline;
+    padding: 0 3px;
+  }
+
   @include themed() {
     .latest {
       background-color: t('title');
       color: t('latest');
     }
 
-    .live {
+    .status-live {
       border-radius: 4px;
-      color: t('sparkfreshline');
       background-color: t('latest');
+      color: t('sparkfreshline');
       border: solid 1px t('sparkfreshline');
       margin: 0 8px 0 4px;
+
+      &.show {
+        background-color: t('sparkfreshline');
+        color: t('latest');
+      }
     }
 
     li.age-d,
     li.age-w {
-      h3 a {
+      h3 .url {
         color: t('titleold');
       }
       .latest {
@@ -390,7 +428,7 @@ div.intro {
 
     li.age-m,
     li.age-h {
-      h3 a {
+      h3 .url {
         color: t('titlefresh');
       }
       .latest {
@@ -628,7 +666,7 @@ input, textarea, select {
 
   @include themed() {
     color: t('plain');
-    background-color: t('tab');
+    background-color: t('paper');
   }
 }
 

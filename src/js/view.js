@@ -16,6 +16,29 @@ const FormFreeze = (e) => {
   u('button', e.target).each(ele => ele.disabled = true)
 }
 
+const ToggleShow = (el, parentSel, childSel) => {
+  let clicked = false
+  let display = show => {
+    let ele = u(el)
+    if (parentSel) ele = ele.closest(parentSel)
+    if (childSel) ele = ele.find(childSel)
+    let isShown = ele.hasClass('show')
+    if (clicked || show) {
+      if (!isShown) ele.addClass('show')
+    } else {
+      if (isShown) ele.removeClass('show')
+    }
+  }
+  u(el).on('click', e => {
+    clicked = !clicked
+    display()
+  }).on('mouseover', e => {
+    display(true)
+  }).on('mouseout', e => {
+    display(false)
+  })
+}
+
 const FollowForm = (match, setup, isNew) => ({follows}, actions) => {
   let follow = follows.editing
   let picker = new EmojiButton()
@@ -266,7 +289,12 @@ const ListFollow = ({ location, match }) => ({follows}, actions) => {
                   onerror={e => e.target.src=follows.baseHref + globe} width="20" height="20" />
               </Link>
               <Link class="url" to={linkUrl}>{followTitle(follow)}</Link>
-              {follow.status && follow.status.type === 'live' && <span class="live" title={follow.status.text}>&#x25cf; LIVE</span>}
+              {follow.status &&
+                <a class={`status status-${follow.status.type}`} oncreate={el => ToggleShow(el)}
+                  >{follow.status.type === 'live' ? <span>&#x25cf; LIVE</span> : <span>&#x1f5d2;</span>}
+                  <div>{follow.status.title || follow.status.text || <span innerHTML={follow.status.html} />}
+                    {follow.status.at && <span class="ago">{timeAgo(follow.status.at, now)}</span>}</div>
+                </a>}
               {ago && <span class="latest">{ago}</span>}
               <span title={`graph of the last ${daily ? 'two' : 'six'} months`}>
                 <svg class="sparkline"
