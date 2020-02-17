@@ -57,15 +57,15 @@ function isOutOfDate(follow, fetched) {
 }
 
 module.exports = {
-  setup(msg, sender) {
-    let obj = {started: true, updating: {}, baseHref: this.baseHref}
+  setup(msg, sender) {settings: {broadcast: false}
+    let obj = {started: true, updating: {}, baseHref: this.baseHref,
+      settings: {broadcast: false}}
     if (this.started) {
       this.update(Object.assign(obj, {all: this.all}), sender)
       return
     }
 
-    Object.assign(this, {all: {}, fetched: {},
-      common: {settings: {broadcast: false}, follows: {}, index: {}},
+    Object.assign(this, {all: {}, fetched: {}, follows: {}, index: {},
       postCache: new quicklru({maxSize: 1000})})
 
     let pollFreq = 1000
@@ -96,6 +96,10 @@ module.exports = {
             })
         })
       })
+  },
+
+  toObject() {
+    return {follows: this.follows, index: this.index, settings: this.settings}
   },
 
   //
@@ -213,6 +217,8 @@ module.exports = {
       // Normalize the post entries for display.
       //
       for (let item of feed.posts) {
+        if (typeof(item.url) !== 'string')
+          continue
         item.id = item.url.replace(/^([a-z]+:\/+[^\/#]+)?[\/#]*/, '').replace(/\W+/g, '_')
         let i = getIndexById(meta.posts, item.id), index = null
         if (i < 0) {
@@ -373,17 +379,17 @@ module.exports = {
     // console.log(inc)
     if ('follows' in inc) {
       if ('index' in inc)
-        Object.assign(this.common.index, inc.index)
+        Object.assign(this.index, inc.index)
 
       this.noteUpdate(Object.keys(inc.follows), false)
       for (let id in inc.follows) {
         try {
           let current = this.all[id], incoming = inc.follows[id], notify = false
-          if (!(id in this.common.follows))
-            this.common.follows[id] = inc.follows[id]
+          if (!(id in this.follows))
+            this.follows[id] = inc.follows[id]
           if (!current || current.editedAt < incoming.editedAt) {
             if (incoming.deleted) {
-              this.common.follows[id] = incoming
+              this.follows[id] = incoming
               if (current) {
                 delete this.all[id]
                 this.update({op: 'remove', path: `/all/${id}`})
@@ -430,6 +436,11 @@ module.exports = {
     if (updated || follows.length > 0) {
       this.write({update: follows.length > 0, follows})
     }
+
+    if ('settings' in inc) {
+      Object.assign(this.settings, inc.settings)
+      this.update({op: 'replace', path: '/settings', value: this.settings})
+    }
   },
 
   //
@@ -469,7 +480,7 @@ module.exports = {
   // Notify of follow
   //
   notifyFollow(follow) {
-    this.common.follows[follow.id] = {url: follow.feed,
+    this.follows[follow.id] = {url: follow.feed,
       importance: follow.importance, title: follow.title, tags: follow.tags,
       fetchesContent: follow.fetchesContent, editedAt: follow.editedAt}
   },
@@ -601,7 +612,7 @@ module.exports = {
       // Straight JSON export of the sync file.
       //
       mimeType = 'application/json'
-      contents = this.encode(this.common)
+      contents = this.encode(this.toObject())
     }
     this.update({op: 'exported', format: msg.format, mimeType, contents}, sender)
   },
@@ -685,9 +696,16 @@ module.exports = {
   async write(opts) {
     this.writeFile('/follows.json', this.all).then(() => {
       if (opts.update) {
-        this.writeSynced(this.common, 'follows', opts.follows)
+        this.writeSynced(this.toObject(), 'follows', opts.follows)
       }
     })
+  },
+
+  //
+  // Write changes to settings.
+  //
+  async writeSettings() {
+    this.writeSynced({settings: this.settings})
   },
 
   //
@@ -695,7 +713,7 @@ module.exports = {
   //
   async remove(follow, sender) {
     delete this.all[follow.id]
-    this.common.follows[follow.id] = {deleted: true, editedAt: new Date()}
+    this.follows[follow.id] = {deleted: true, editedAt: new Date()}
     this.update({op: 'remove', path: `/all/${follow.id}`})
     this.write({update: true, follows: [follow.id]})
     this.update({op: 'subscription', follow}, sender)

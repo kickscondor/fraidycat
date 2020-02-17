@@ -100,6 +100,11 @@ h1 {
   }
 }
 
+ul {
+  margin: 0;
+  padding: 0;
+}
+
 article {
   /* max-width: 780px; */
   padding: 20px 40px 60px 40px;
@@ -246,6 +251,8 @@ div.intro {
         box-shadow: 4px 3px 0 0 t('progress');
         margin-bottom: 8px;
         margin-right: -50vw;
+        max-height: 200px;
+        overflow: hidden;
         padding: 4px;
         z-index: 3;
         display: none;
@@ -272,13 +279,8 @@ div.intro {
     }
   }
 
-  ul {
-    margin: 0;
-    padding: 0;
-
-    li {
-      display: inline-block;
-    }
+  & > ul > li {
+    display: inline-block;
   }
 
   #tags {
@@ -324,6 +326,58 @@ div.intro {
           background-color: t('background');
           border-bottom: 0;
         }
+      }
+    }
+  }
+
+  div.sort {
+    float: right;
+    position: relative;
+
+    div.drop {
+      position: absolute;
+      right: 0;
+      white-space: nowrap;
+      text-align: right;
+      display: none;
+      z-index: 4;
+
+      @include themed() {
+        background-color: t('paper');
+        border: solid 1px t('border');
+        box-shadow: 4px 3px 0 0 t('border');
+
+        svg {
+          stroke: t('border');
+        }
+
+        .sep {
+          border-bottom: solid 1px t('border');
+        }
+
+        li > a:hover {
+          background-color: t('latest');
+        }
+      }
+
+      ul {
+        list-style: none;
+      }
+
+      li > a {
+        font-size: 1rem;
+        display: block;
+        padding: 6px 10px;
+      }
+    }
+
+    a {
+      text-decoration: none;
+    }
+
+    &.show {
+      div.drop {
+        display: block;
       }
     }
   }
@@ -392,7 +446,6 @@ div.intro {
 
   .status {
     position: relative;
-    cursor: pointer;
     display: inline;
     padding: 0 3px;
   }

@@ -2,7 +2,7 @@ import { followTitle, getIndexById, house, Importances } from './util'
 import { h } from 'hyperapp'
 import { jsonDateParser } from "json-date-parser"
 import { Link, Route, Switch } from '@kickscondor/router'
-import globe from '../images/globe.svg'
+import svg from '../images/*.svg'
 import images from '../images/*.png'
 import EmojiButton from '@kickscondor/emoji-button'
 const url = require('url')
@@ -16,7 +16,18 @@ const FormFreeze = (e) => {
   u('button', e.target).each(ele => ele.disabled = true)
 }
 
-const ToggleShow = (el, parentSel, childSel) => {
+const Setting = (name, value) => ele => {
+  // let actual = follows.settings[name], cls
+  // if (actual === value) {
+  //   cls = "sel"
+  // }
+  // u(ele).on('click', e => {
+  //   e.preventDefault()
+  //   actions.follows.changeSetting(name, value)
+  // })
+}
+
+const ToggleHover = (el, parentSel, childSel) => {
   let clicked = false
   let display = show => {
     let ele = u(el)
@@ -37,6 +48,11 @@ const ToggleShow = (el, parentSel, childSel) => {
   }).on('mouseout', e => {
     display(false)
   })
+}
+
+const ToggleShow = (e, parentSel, cls) => {
+  e.preventDefault()
+  u(e.target).closest(parentSel).toggleClass(cls || "show")
 }
 
 const FollowForm = (match, setup, isNew) => ({follows}, actions) => {
@@ -213,8 +229,11 @@ function lastPostTime(follow) {
     let lastPost = follow.posts[0]
     if (lastPost)
       lastPostAt = lastPost.updatedAt
-    if (follow.status && follow.status.at > lastPostAt)
-      lastPostAt = follow.status.at
+  }
+  if (follow.status) {
+    let lastPost = follow.status[0]
+    if (lastPost && lastPost.updatedAt > lastPostAt)
+      lastPostAt = lastPost.updatedAt
   }
   return lastPostAt
 }
@@ -268,6 +287,24 @@ const ListFollow = ({ location, match }) => ({follows}, actions) => {
     <ul id="tags">
     {tagTabs.map(t => <li class={timeDarkness(tags[t], now)}><Link to={`/tag/${t}`} class={t == tag ? 'active ' : null}>{t}</Link></li>)}
     </ul>
+    <div class="sort">
+      <a href="#" onclick={e => ToggleShow(e, "div")}>
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="3" y1="6" x2="21" y2="6"></line>
+          <line x1="6" y1="12" x2="21" y2="12"></line>
+          <line x1="9" y1="18" x2="21" y2="18"></line>
+        </svg>
+      </a>
+      <div class="drop">
+        <ul>
+          <li><a oncreate={Setting('sort-follows', 'publishedAt')}>Recent Posts</a></li>
+          <li><a oncreate={Setting('sort-follows', 'createdAt')}>Date Added</a></li>
+          <li class="sep"><a oncreate={Setting('sort', 'title')}>A to Z</a></li>
+          <li><a oncreate={Setting('mode-updates', 'updatedAt')}>Updated Posts</a></li>
+          <li><a oncreate={Setting('mode-theme', 'dark')}>Dark Mode</a></li>
+        </ul>
+      </div>
+    </div>
     <ul id="imps">
     {Importances.map(sel => (sel[0] == imp ? <li class='active'>{sel[1]}</li> :
       ((imps[sel[0]] || sel[0] === 0) &&
@@ -286,15 +323,15 @@ const ListFollow = ({ location, match }) => ({follows}, actions) => {
             <h3>
               <Link to={linkUrl}>
                 <img class="favicon" src={url.resolve(follow.url, follow.photo || '/favicon.ico')}
-                  onerror={e => e.target.src=follows.baseHref + globe} width="20" height="20" />
+                  onerror={e => e.target.src=follows.baseHref + svg['globe']} width="20" height="20" />
               </Link>
               <Link class="url" to={linkUrl}>{followTitle(follow)}</Link>
-              {follow.status &&
-                <a class={`status status-${follow.status.type}`} oncreate={el => ToggleShow(el)}
-                  >{follow.status.type === 'live' ? <span>&#x25cf; LIVE</span> : <span>&#x1f5d2;</span>}
-                  <div>{follow.status.title || follow.status.text || <span innerHTML={follow.status.html} />}
-                    {follow.status.at && <span class="ago">{timeAgo(follow.status.at, now)}</span>}</div>
-                </a>}
+              {follow.status && follow.status.map && follow.status.map(st =>
+                <a class={`status status-${st.type}`} oncreate={ToggleHover}
+                  >{st.type === 'live' ? <span>&#x25cf; LIVE</span> : <span>&#x1f5d2;</span>}
+                  <div>{st.title || st.text || <span innerHTML={st.html} />}
+                    {st.publishedAt && <span class="ago">{timeAgo(st.publishedAt, now)}</span>}</div>
+                </a>)}
               {ago && <span class="latest">{ago}</span>}
               <span title={`graph of the last ${daily ? 'two' : 'six'} months`}>
                 <svg class="sparkline"
@@ -311,7 +348,7 @@ const ListFollow = ({ location, match }) => ({follows}, actions) => {
                   </li>
                 })}</ol>}
                 {!follow.fetchesContent && <a class="collapse" href="#"
-                  onclick={e => {e.preventDefault(); u(e.target).closest(".extra").toggleClass("trunc")}}>
+                  onclick={e => ToggleShow(e, ".extra", "trunc")}>
                     <span class="enter">&#x2ba8;</span>
                     <span class="close">&#x1f7ab;</span>
                     </a>}

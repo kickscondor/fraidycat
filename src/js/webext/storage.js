@@ -108,11 +108,23 @@ class WebextStorage {
 
   async writeSynced(items, subkey, ids) {
     // console.log(["OUTGOING", items, ids])
-    await frago.separate(items, subkey, ids, (k, v) =>
-      browser.storage.sync.set({[k]: this.encode(v),
-        id: this.encode([this.id, new Date()])}))
-    // await browser.storage.sync.set({settings: this.encode(items.settings),
-    //   id: this.encode([this.id, new Date()])})
+    let id = this.encode([this.id, new Date()])
+    if (subkey && subkey in items) {
+      await frago.separate(items, subkey, ids, (k, v) =>
+        browser.storage.sync.set({[k]: this.encode(v), id}))
+      delete items[subkey]
+      delete items.index
+    }
+
+    let len = 0
+    for (let k in items) {
+      items[k] = this.encode(items[k])
+      len++
+    }
+    if (len > 0) {
+      items.id = id
+      await browser.storage.sync.set(items)
+    }
   }
 
   //
