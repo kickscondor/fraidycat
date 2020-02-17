@@ -48,6 +48,9 @@
       "icon": "src/images/flatcat-512.png",
       "category": "News"
     },
+    "nsis": {
+      "deleteAppDataOnUninstall": true
+    },
     "publish": [
       {
         "provider": "github"

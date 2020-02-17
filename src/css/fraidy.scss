@@ -84,7 +84,7 @@ body {
   padding: 0;
 }
 
-#fraidy {
+#fraidy > div {
   position: absolute;
   top: 0;
   left: 0;
@@ -368,6 +368,10 @@ div.intro {
         font-size: 1rem;
         display: block;
         padding: 6px 10px;
+
+        &.sel::before {
+          content: "\25cf\00a0";
+        }
       }
     }
 

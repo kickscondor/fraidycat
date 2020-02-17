@@ -66,6 +66,13 @@ export default ({
     },
 
     //
+    // Change a setting.
+    //
+    changeSetting: s => ({local}) => {
+      local.command("changeSetting", s)
+    },
+
+    //
     // Save a single follow, after add or edit.
     //
     save: follow => ({local}, {location, goToFollow, set}) => {
@@ -76,7 +83,7 @@ export default ({
     //
     // Subscribe to follows from a list found within an HTML page.
     //
-    subscribe: fc => async ({local}, {goToFollow, location}) => {
+    subscribe: fc => async ({local}) => {
       local.command("subscribe", fc)
     },
 

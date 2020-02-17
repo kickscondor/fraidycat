@@ -16,16 +16,13 @@ const FormFreeze = (e) => {
   u('button', e.target).each(ele => ele.disabled = true)
 }
 
-const Setting = (name, value) => ele => {
-  // let actual = follows.settings[name], cls
-  // if (actual === value) {
-  //   cls = "sel"
-  // }
-  // u(ele).on('click', e => {
-  //   e.preventDefault()
-  //   actions.follows.changeSetting(name, value)
-  // })
-}
+const Setting = ({name, value}, children) => ({follows}, actions) =>
+  <a href="#" class={follows.settings[name] === value && "sel"}
+    onclick={e => {
+      e.preventDefault()
+      u(e.target).closest('div.sort').removeClass('show')
+      actions.follows.changeSetting({name, value})
+    }}>{children}</a>
 
 const ToggleHover = (el, parentSel, childSel) => {
   let clicked = false
@@ -223,17 +220,17 @@ function sparkpoints(el, ary, daily) {
     sparkline(el, points.reverse())
 }
 
-function lastPostTime(follow) {
+function lastPostTime(follow, sortPosts) {
   let lastPostAt = new Date(0)
   if (follow.posts) {
     let lastPost = follow.posts[0]
     if (lastPost)
-      lastPostAt = lastPost.updatedAt
+      lastPostAt = lastPost[sortPosts]
   }
   if (follow.status) {
     let lastPost = follow.status[0]
-    if (lastPost && lastPost.updatedAt > lastPostAt)
-      lastPostAt = lastPost.updatedAt
+    if (lastPost && lastPost[sortPosts] > lastPostAt)
+      lastPostAt = lastPost[sortPosts]
   }
   return lastPostAt
 }
@@ -261,20 +258,38 @@ const ListFollow = ({ location, match }) => ({follows}, actions) => {
   let now = new Date()
   let tag = match.params.tag ? match.params.tag : house
   let tags = {}, imps = {}
+  let sortPosts = follows.settings['mode-updates'] || 'publishedAt'
   let viewable = Object.values(follows.all).filter(follow => {
     let ftags = (follow.tags || [house])
-    let lastPost = (follow.posts && follow.posts[0])
+    let lastPost = null
+    if (follow.posts && follow.posts[0]) {
+      if (follow.sortedBy !== sortPosts) {
+        follow.sortedBy = sortPosts
+        follow.posts.sort((a, b) => b[sortPosts] - a[sortPosts])
+      }
+      lastPost = follow.posts[0]
+    }
     ftags.forEach(k => {
       let at = tags[k]
       if (!at)
         tags[k] = at = new Date(0)
-      if (lastPost && follow.importance === 0 && at < lastPost.updatedAt)
-        tags[k] = lastPost.updatedAt
+      if (lastPost && follow.importance === 0 && at < lastPost[sortPosts])
+        tags[k] = lastPost[sortPosts]
     })
     let isShown = ftags.includes(tag)
     if (isShown) imps[follow.importance] = true
     return isShown
-  }).sort((a, b) => (a.importance - b.importance) || (lastPostTime(b) - lastPostTime(a)))
+  }).sort((a, b) => {
+    let sortBy = follows.settings['sort-follows']
+    if (sortBy === 'title') {
+      sortBy = followTitle(a).localeCompare(followTitle(b))
+    } else if (sortBy) {
+      sortBy = b[sortBy] - a[sortBy]
+    } else {
+      sortBy = lastPostTime(b, sortPosts) - lastPostTime(a, sortPosts)
+    }
+    return (a.importance - b.importance) || sortBy
+  })
   let impa = Object.keys(imps)
   let imp = match.params.importance || (impa.length > 0 ? Math.min(...impa) : 0)
   viewable = viewable.filter(follow => (follow.importance == imp))
@@ -297,11 +312,12 @@ const ListFollow = ({ location, match }) => ({follows}, actions) => {
       </a>
       <div class="drop">
         <ul>
-          <li><a oncreate={Setting('sort-follows', 'publishedAt')}>Recent Posts</a></li>
-          <li><a oncreate={Setting('sort-follows', 'createdAt')}>Date Added</a></li>
-          <li class="sep"><a oncreate={Setting('sort', 'title')}>A to Z</a></li>
-          <li><a oncreate={Setting('mode-updates', 'updatedAt')}>Updated Posts</a></li>
-          <li><a oncreate={Setting('mode-theme', 'dark')}>Dark Mode</a></li>
+          <li><Setting name="sort-follows">Recent Posts</Setting></li>
+          <li><Setting name="sort-follows" value="createdAt">Recently Followed</Setting></li>
+          <li class="sep"><Setting name="sort-follows" value="title">A to Z</Setting></li>
+          <li><Setting name="mode-updates" value="updatedAt">Show Post Updates</Setting></li>
+          <li><Setting name="mode-expand" value="all">Expand All</Setting></li>
+          <li><Setting name="mode-theme" value="dark">Dark Mode</Setting></li>
         </ul>
       </div>
     </div>
@@ -312,7 +328,7 @@ const ListFollow = ({ location, match }) => ({follows}, actions) => {
     </ul>
     {viewable.length > 0 ?
       <ol>{viewable.map(follow => {
-          let lastPostAt = lastPostTime(follow), tags = []
+          let lastPostAt = lastPostTime(follow, sortPosts), tags = []
           let ago = timeAgo(lastPostAt, now)
           let dk = timeDarkness(lastPostAt, now)
           let daily = follow.importance < 7
@@ -330,7 +346,7 @@ const ListFollow = ({ location, match }) => ({follows}, actions) => {
                 <a class={`status status-${st.type}`} oncreate={ToggleHover}
                   >{st.type === 'live' ? <span>&#x25cf; LIVE</span> : <span>&#x1f5d2;</span>}
                   <div>{st.title || st.text || <span innerHTML={st.html} />}
-                    {st.publishedAt && <span class="ago">{timeAgo(st.publishedAt, now)}</span>}</div>
+                    {st[sortPosts] && <span class="ago">{timeAgo(st[sortPosts], now)}</span>}</div>
                 </a>)}
               {ago && <span class="latest">{ago}</span>}
               <span title={`graph of the last ${daily ? 'two' : 'six'} months`}>
@@ -339,12 +355,12 @@ const ListFollow = ({ location, match }) => ({follows}, actions) => {
                   oncreate={el => sparkpoints(el, follow.activity, daily)}></svg></span>
                 <Link to={`/edit/${follow.id}`} class="edit" title="edit"><img src={follows.baseHref + images['270f']} /></Link>
             </h3>
-            <div class="extra trunc">
+            <div class={`extra ${follows.settings['mode-expand'] || "trunc"}`}>
               <div class="post">{follow.posts &&
-                <ol class="title">{follow.posts.map(f => {
-                  let postAge = timeAgo(f.updatedAt, now)
-                  return <li class={timeDarkness(f.updatedAt, now)}>{follow.fetchesContent ? f.title : <a href={f.url}>{f.title}</a>}
-                    <span>{timeAgo(f.updatedAt, now)}</span>
+                <ol class="title">{follow.posts.slice(0, follow.limit || 10).map(f => {
+                  let postAge = timeAgo(f[sortPosts], now)
+                  return <li class={timeDarkness(f[sortPosts], now)}>{follow.fetchesContent ? f.title : <a href={f.url}>{f.title}</a>}
+                    <span>{timeAgo(f[sortPosts], now)}</span>
                   </li>
                 })}</ol>}
                 {!follow.fetchesContent && <a class="collapse" href="#"
@@ -431,7 +447,7 @@ export default (state, actions) => {
   //	
   // Report progress on follows that are currently updating.	
   //	
-  let upd = state.follows.updating, urgent = state.follows.urgent	
+  let upd = state.follows.updating, urgent = state.follows.urgent
   let updDone = 0, updTotal = 0, note = null, last = new Date()	
   for (let id in upd) {	
     let f = upd[id]	
@@ -444,7 +460,8 @@ export default (state, actions) => {
     }	
   }
 
-  return <article>
+  return <div class={`theme--${state.follows.settings['mode-theme'] || "auto"}`}>
+    <article>
       <header>
         <h1><Link to="/"><img src={state.follows.baseHref + images['fc']} alt="Fraidycat" title="Fraidycat" /></Link></h1>
       </header>
@@ -477,4 +494,5 @@ export default (state, actions) => {
         <p>&nbsp;</p>
       </footer>
     </article>
+  </div>
 }

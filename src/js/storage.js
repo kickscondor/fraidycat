@@ -57,11 +57,11 @@ function isOutOfDate(follow, fetched) {
 }
 
 module.exports = {
-  setup(msg, sender) {settings: {broadcast: false}
+  setup(msg, sender) {
     let obj = {started: true, updating: {}, baseHref: this.baseHref,
       settings: {broadcast: false}}
     if (this.started) {
-      this.update(Object.assign(obj, {all: this.all}), sender)
+      this.update(Object.assign(obj, {all: this.all, settings: this.settings}), sender)
       return
     }
 
@@ -90,7 +90,10 @@ module.exports = {
                 {useragent: this.userAgent || 'User-Agent'})
 
               this.readSynced('follows').
-                then(inc => this.sync(inc, SYNC_FULL)).
+                then(inc => {
+                  obj.settings = inc.settings
+                  this.sync(inc, SYNC_FULL)
+                }).
                 catch(e => console.log(e)).
                 finally(_ => setTimeout(pollFn, pollFreq))
             })
@@ -241,8 +244,22 @@ module.exports = {
       }
       delete feed.posts
 
+      //
+      // Normalize the status entries.
+      //
+      if (feed.status instanceof Array) {
+        for (let item of feed.status) {
+          item.updatedAt = item.updatedAt || item.publishedAt
+        }
+      }
+
+      //
+      // Sort posts based on the settings.
+      //
+      let sortedBy = this.settings['mode-updates'] || 'publishedAt'
       Object.assign(meta, feed)
-      meta.posts.sort((a, b) => b.updatedAt - a.updatedAt)
+      meta.sortedBy = sortedBy
+      meta.posts.sort((a, b) => b[sortedBy] - a[sortedBy])
     }
 
     feed.fresh = fresh
@@ -295,9 +312,19 @@ module.exports = {
     follow.url = meta.url
     follow.actualTitle = meta.title
     follow.status = meta.status
+    follow.sortedBy = meta.sortedBy
     if (meta.photos)
       follow.photo = meta.photos['avatar'] || Object.values(meta.photos)[0]
+
+    //
+    // Add some posts from the other sort method, in case it is toggled.
+    //
+    let sortOpposite = meta.sortedBy === 'publishedAt' ? 'updatedAt' : 'publishedAt'
+    let oppo = meta.posts.concat().sort((a, b) => b[sortOpposite] - a[sortOpposite])
+    follow.limit = POSTS_IN_MAIN_INDEX
     follow.posts = meta.posts.slice(0, POSTS_IN_MAIN_INDEX)
+    follow.posts = follow.posts.concat(oppo.slice(0, POSTS_IN_MAIN_INDEX).
+      filter(o => !follow.posts.includes(o)))
 
     //
     // Build the 'activity' array - most recent first, then trim
@@ -704,8 +731,16 @@ module.exports = {
   //
   // Write changes to settings.
   //
-  async writeSettings() {
-    this.writeSynced({settings: this.settings})
+  async changeSetting(s) {
+    let val = this.settings[s.name]
+    if (s.name.startsWith('mode-')) {
+      val = val ? null : s.value
+    } else if (s.name.startsWith('sort-')) {
+      val = s.value
+    }
+    this.settings[s.name] = val
+    this.update({op: 'replace', path: `/settings`, value: this.settings})
+    return this.writeSynced({settings: this.settings})
   },
 
   //
