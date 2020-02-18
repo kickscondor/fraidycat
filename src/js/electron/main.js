@@ -145,8 +145,8 @@ function createWindow() {
   bg.loadURL(`file://${path.resolve(__dirname, "../../background.html")}`)
 
   win = new BrowserWindow({
-    width: 900,
-    height: 680,
+    minWidth: 380, width: 900,
+    minHeight: 320, height: 680,
     show: false,
     webPreferences: {nodeIntegration: true},
     icon: path.resolve(__dirname, "../../", images['flatcat-32'])

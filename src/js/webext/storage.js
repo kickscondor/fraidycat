@@ -78,6 +78,10 @@ class WebextStorage {
     return browser.storage.local.set({[path]: data})
   }
 
+  async deleteFile(path) {
+    return browser.storage.local.remove(path)
+  }
+
   //
   // The following 'Synced' functions all do I/O to browser.storage.sync. (The
   // synced data for an extension.)

@@ -1,0 +1,8 @@
+# Temp
+.cache/
+build/
+dist/
+node_modules/
+
+# Misc
+sign-it

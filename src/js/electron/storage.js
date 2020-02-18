@@ -80,15 +80,52 @@ class NodeStorage {
     })
   }
 
+  async deleteFile(file) {
+    file = path.join(this.appPath, file)
+    return new Promise((resolve, reject) => {
+      fs.unlink(file, err => {
+        if (err) {
+          reject(err)
+        } else {
+          resolve()
+        }
+      })
+    })
+  }
+
+  async listFiles(dir) {
+    dir = path.join(this.appPath, dir)
+    return new Promise((resolve, reject) => {
+      fs.readdir(dir, (err, files) => {
+        if (err) {
+          reject(err)
+        } else {
+          resolve(files)
+        }
+      })
+    })
+  }
+
   //
   // This needs to sync with the Firefox Sync
   //
   async readSynced(subkey) {
-    return this.readFile("/sync/" + subkey + ".json")
+    let files = await this.listFiles("/sync") 
+    console.log(files)
+    let obj = {}
+    for (let file of files) {
+      if (file.endsWith(".json")) {
+        let name = path.basename(file, ".json")
+        Object.assign(obj, await this.readFile("/sync/" + file))
+      }
+    }
+    return obj
   }
 
-  async writeSynced(obj, subkey, ids) {
-    return this.writeFile("/sync/" + subkey + ".json", obj)
+  async writeSynced(items, subkey, ids) {
+    for (let k in items) {
+      await this.writeFile("/sync/" + k + ".json", {[k]: items[k]})
+    }
   }
 
   //

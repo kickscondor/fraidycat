@@ -51,7 +51,7 @@ $themes: (
     border: #005566,
     button: #003F34,
     rule: #005566,
-    paper: #443300,
+    paper: #550022,
     sparkfreshline: #00FFFF,
     sparkfreshfill: #003F34,
     sparkoldline: #BB9999,
@@ -452,6 +452,7 @@ div.intro {
     position: relative;
     display: inline;
     padding: 0 3px;
+    text-decoration: none;
   }
 
   @include themed() {
@@ -496,7 +497,7 @@ div.intro {
 
   h3 a.url:hover {
     text-decoration: underline;
-    color: #FF0099;
+    color: #FF0099 !important;
   }
 
   h3 img.favicon {
@@ -725,6 +726,10 @@ input, textarea, select {
     color: t('plain');
     background-color: t('paper');
   }
+}
+
+select#importance {
+  height: 2rem;
 }
 
 input, textarea {

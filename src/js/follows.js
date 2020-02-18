@@ -88,20 +88,6 @@ export default ({
     },
 
     //
-    // Get all posts from a given follow.
-    //
-    getPosts: id => (_, {set}) => {
-      return []
-    },
-
-    //
-    // Get full post contents from a follow.
-    //
-    getPostDetails: ({id, post}) => (_, {set}) => {
-      return {}
-    },
-
-    //
     // Delete confirmation event from HTML.
     //
     confirmRemove: follow => ({local}, {location}) => {

@@ -37,10 +37,7 @@ const ToggleHover = (el, parentSel, childSel) => {
       if (isShown) ele.removeClass('show')
     }
   }
-  u(el).on('click', e => {
-    clicked = !clicked
-    display()
-  }).on('mouseover', e => {
+  u(el).on('mouseover', e => {
     display(true)
   }).on('mouseout', e => {
     display(false)
@@ -81,8 +78,10 @@ const FollowForm = (match, setup, isNew) => ({follows}, actions) => {
       <label for="importance">Importance</label> 
       <select id="importance" name="importance" onchange={e => follow.importance = Number(e.target.options[e.target.selectedIndex].value)}>
       {Importances.map(imp => 
-        <option value={imp[0]} selected={imp[0] == follow.importance}>{imp[1]}</option>)}
+        <option value={imp[0]} selected={imp[0] == follow.importance}>{imp[2]} {imp[1]} &mdash; {imp[3]}</option>)}
       </select>
+      <p class="note">Only 'Real-time' follows will highlight the tab when there
+        are updates.</p>
     </div>
 
     <div>
@@ -322,9 +321,9 @@ const ListFollow = ({ location, match }) => ({follows}, actions) => {
       </div>
     </div>
     <ul id="imps">
-    {Importances.map(sel => (sel[0] == imp ? <li class='active'>{sel[1]}</li> :
+    {Importances.map(sel => (sel[0] == imp ? <li class='active'>{sel[2]} {sel[1]}</li> :
       ((imps[sel[0]] || sel[0] === 0) &&
-        <li><Link to={`/tag/${tag}?importance=${sel[0]}`}>{sel[1]}</Link></li>)))}
+        <li>{sel[2]} <Link to={`/tag/${tag}?importance=${sel[0]}`}>{sel[1]}</Link></li>)))}
     </ul>
     {viewable.length > 0 ?
       <ol>{viewable.map(follow => {
@@ -343,7 +342,7 @@ const ListFollow = ({ location, match }) => ({follows}, actions) => {
               </Link>
               <Link class="url" to={linkUrl}>{followTitle(follow)}</Link>
               {follow.status && follow.status.map && follow.status.map(st =>
-                <a class={`status status-${st.type}`} oncreate={ToggleHover}
+                <a class={`status status-${st.type}`} oncreate={ToggleHover} href={st.url || follow.url}
                   >{st.type === 'live' ? <span>&#x25cf; LIVE</span> : <span>&#x1f5d2;</span>}
                   <div>{st.title || st.text || <span innerHTML={st.html} />}
                     {st[sortPosts] && <span class="ago">{timeAgo(st[sortPosts], now)}</span>}</div>

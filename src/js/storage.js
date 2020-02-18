@@ -9,7 +9,6 @@
 // * Local metadata listing all follows and recent posts.
 //   a. follows.json: All follows, last ten posts, basic stats.
 //   b. feeds/feed-id.json: Individual follow metadata.
-//   c. feeds/feed-id/post-id.json: Locally cached post.
 // * Synced metadata. Lists all inputted metadata for a
 //   follow.
 //
@@ -57,7 +56,7 @@ function isOutOfDate(follow, fetched) {
 }
 
 module.exports = {
-  setup(msg, sender) {
+  async setup(msg, sender) {
     let obj = {started: true, updating: {}, baseHref: this.baseHref,
       settings: {broadcast: false}}
     if (this.started) {
@@ -68,37 +67,40 @@ module.exports = {
     Object.assign(this, {all: {}, fetched: {}, follows: {}, index: {},
       postCache: new quicklru({maxSize: 1000})})
 
-    let pollFreq = 1000
+    let pollFreq = 1000, pollDate = new Date(0), pollMod = "X"
+    let fetchScraper = async () => {
+      if (new Date() - pollDate > (2 * 60 * 1000)) { 
+        let soc = await this.fetch("https://fraidyc.at/defs/social.json")
+        let mod = soc.headers.get('last-modified')
+        if (pollMod !== mod) {
+          let txt = await soc.text()
+          let defs = JSON.parse(txt)
+          this.scraper = new fraidyscrape(defs, this.dom, this.xpath,
+            {useragent: this.userAgent || 'User-Agent'})
+          pollDate = new Date()
+          pollMod = mod
+        }
+      }
+    }
     let pollFn = () => {
       this.poll()
+      fetchScraper()
       setTimeout(pollFn, pollFreq)
     }
 
-    this.readFile('/follows.json').
-      then(all => obj.all = all).catch(e => console.log(e)).
-      finally(() => {
-        this.localGet('fraidycat').then(saved => {
-          if (saved)
-            Object.assign(this, saved)
-          Object.assign(this, obj)
-          this.update(obj, sender)
-          this.fetch("https://fraidyc.at/defs/social.json").
-            then(soc => soc.text()).
-            then(txt => {
-              let defs = JSON.parse(txt)
-              this.scraper = new fraidyscrape(defs, this.dom, this.xpath,
-                {useragent: this.userAgent || 'User-Agent'})
+    let saved = null, inc = {}
+    try { obj.all = await this.readFile('/follows.json') } catch {}
+    try { saved = await this.localGet('fraidycat') } catch {}
+    try { inc = await this.readSynced('follows') } catch {}
+    if (saved)
+      Object.assign(this, saved)
+    obj.settings = inc.settings
+    Object.assign(this, obj)
+    this.update(obj, sender)
 
-              this.readSynced('follows').
-                then(inc => {
-                  obj.settings = inc.settings
-                  this.sync(inc, SYNC_FULL)
-                }).
-                catch(e => console.log(e)).
-                finally(_ => setTimeout(pollFn, pollFreq))
-            })
-        })
-      })
+    await fetchScraper()
+    this.sync(inc, SYNC_FULL)
+    setTimeout(pollFn, pollFreq)
   },
 
   toObject() {
@@ -197,7 +199,8 @@ module.exports = {
     //
     // Merge the new posts into the feed's master post list.
     //
-    let fresh = feed.etag !== meta.etag
+    let sortedBy = this.settings['mode-updates'] || 'publishedAt'
+    let fresh = (feed.etag !== meta.etag || sortedBy !== meta.sortedBy)
     if (!fresh) {
       console.log(`${meta.feed} hasn't changed.`)
     }
@@ -219,16 +222,23 @@ module.exports = {
       //
       // Normalize the post entries for display.
       //
+      let posts = []
       for (let item of feed.posts) {
-        if (typeof(item.url) !== 'string')
+        if (typeof(item.url) !== 'string' ||
+          (item.publishedAt && item.publishedAt > now))
           continue
         item.id = item.url.replace(/^([a-z]+:\/+[^\/#]+)?[\/#]*/, '').replace(/\W+/g, '_')
         let i = getIndexById(meta.posts, item.id), index = null
         if (i < 0) {
           index = {id: item.id, url: item.url, createdAt: now}
-          meta.posts.unshift(index)
+          if (feed.flags !== 'COMPLETE') {
+            meta.posts.unshift(index)
+          }
         } else {
           index = meta.posts[i]
+        }
+        if (feed.flags === 'COMPLETE') {
+          posts.push(index)
         }
 
         index.title = (ident === 0 && item.title) || item.text
@@ -239,8 +249,11 @@ module.exports = {
         if (!index.title && ident !== 0)
           index.title = item.title
         index.title = index.title.toString().trim()
-        index.publishedAt = item.publishedAt || index.publishedAt || feed.publishedAt || now
-        index.updatedAt = item.updatedAt || index.publishedAt
+        index.publishedAt = item.publishedAt || index.publishedAt || index.createdAt
+        index.updatedAt = (item.updatedAt && item.updatedAt < now ? item.updatedAt : index.publishedAt)
+      }
+      if (feed.flags === 'COMPLETE') {
+        meta.posts = posts
       }
       delete feed.posts
 
@@ -256,7 +269,6 @@ module.exports = {
       //
       // Sort posts based on the settings.
       //
-      let sortedBy = this.settings['mode-updates'] || 'publishedAt'
       Object.assign(meta, feed)
       meta.sortedBy = sortedBy
       meta.posts.sort((a, b) => b[sortedBy] - a[sortedBy])
@@ -471,39 +483,6 @@ module.exports = {
   },
 
   //
-  // Get all posts from a given follow.
-  //
-  getPosts(id) {
-    let posts = this.postCache.get(id)
-    //this.set({posts: posts})
-    if (posts == null) {
-      this.postCache.set(id, [])
-      this.readFile(`/feeds/${id}.json`).then(meta => {
-        this.postCache.set(id, meta.posts)
-        //this.set({posts: meta.posts})
-      }, err => {})
-    }
-  },
-
-  //
-  // Get full post contents from a follow.
-  //
-  getPostDetails(id, post) {
-    if (post) {
-      let fullId = `${id}/${post.publishedAt.getFullYear()}/${post.id}`
-      let deets = this.postCache.get(fullId)
-      //this.set({post: deets})
-      if (deets == null) {
-        this.postCache.set(fullId, {})
-        this.readFile(`/feeds/${fullId}.json`).then(obj => {
-          this.postCache.set(fullId, obj)
-          //this.set({post: obj})
-        }, err => {})
-      }
-    }
-  },
-
-  //
   // Notify of follow
   //
   notifyFollow(follow) {
@@ -621,7 +600,7 @@ module.exports = {
             for (let follow of follows[fk]) {
               dlr.append(u('<dt>').append(u('<a>').attr({href: follow.url}).text(followTitle(follow))))
             }
-            dli.append(u('<dt>').append(u('<h4>').text(imp[1])).append(dlr))
+            dli.append(u('<dt>').append(u('<h4>').text(imp[2] + " " + imp[1])).append(dlr))
           }
         }
 
@@ -752,5 +731,6 @@ module.exports = {
     this.update({op: 'remove', path: `/all/${follow.id}`})
     this.write({update: true, follows: [follow.id]})
     this.update({op: 'subscription', follow}, sender)
+    this.deleteFile(`/feeds/${follow.id}.json`)
   }
 }

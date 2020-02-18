@@ -3,11 +3,11 @@ const normalizeUrl = require('normalize-url')
 export const house = "\u{1f3e0}"
 
 export const Importances = [
-  [0,   'Real-time'],
-  [1,   'Daily'],
-  [7,   'Weekly'],
-  [30,  'Monthly'],
-  [365, 'Year']
+  [0,   "Real-time", "\u{1f684}", "Following this with complete devotion."], // 1f525
+  [1,   "Frequent", "\u{1f304}", "Keep just out of view, but love it."], // 2728
+  [7,   "Occasional", "\u{1f407}", "For when I have free time."], 
+  [30,  "Sometime", "\u{1f34a}", "Maintaining a mild curiosity here."],
+  [365, "Rarely", "\u{2602}", "Not very active. Or, just don't lose this."]
 ]
 
 export async function responseToObject (resp) {

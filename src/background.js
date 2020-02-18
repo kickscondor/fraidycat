@@ -15,7 +15,7 @@ let start = async function () {
   let local = await storage()
   Object.assign(local, mixin)
   console.log(`Started up Fraidycat background script. (${local.id})`)
-  local.setup()
+  await local.setup()
   local.server(msg => local[msg.action](msg.data, msg.sender))
   local.backgroundSetup()
 }
