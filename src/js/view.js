@@ -264,7 +264,7 @@ const ListFollow = ({ location, match }) => ({follows}, actions) => {
     if (follow.posts && follow.posts[0]) {
       if (follow.sortedBy !== sortPosts) {
         follow.sortedBy = sortPosts
-        follow.posts.sort((a, b) => b[sortPosts] - a[sortPosts])
+        follow.posts.sort((a, b) => b[sortPosts] > a[sortPosts] ? 1 : -1)
       }
       lastPost = follow.posts[0]
     }
@@ -283,9 +283,9 @@ const ListFollow = ({ location, match }) => ({follows}, actions) => {
     if (sortBy === 'title') {
       sortBy = followTitle(a).localeCompare(followTitle(b))
     } else if (sortBy) {
-      sortBy = b[sortBy] - a[sortBy]
+      sortBy = b[sortBy] > a[sortBy] ? 1 : -1
     } else {
-      sortBy = lastPostTime(b, sortPosts) - lastPostTime(a, sortPosts)
+      sortBy = lastPostTime(b, sortPosts) > lastPostTime(a, sortPosts) ? 1 : -1
     }
     return (a.importance - b.importance) || sortBy
   })

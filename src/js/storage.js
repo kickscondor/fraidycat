@@ -45,26 +45,28 @@ function isOutOfDate(follow, fetched) {
     age *= ((fetched[follow.id].delay || 100) * 0.01)
   if (imp < 1) {
     // Real-time is currently a 5 to 10 minute check.
-    return age > (5 * 60 * 1000)
+    return (5 * 60 * 1000) - age
   } else if (imp < 2) {
-    // Daily check is every 1 to 2 hours.
-    return age > (60 * 60 * 1000)
+    // Frequent is every 1 to 2 hours.
+    return (60 * 60 * 1000) - age
+  } else if (imp < 8) {
+    // Occassional is every 4 to 8 hours.
+    return (4 * 60 * 60 * 1000) - age
   } else {
     // Longer checks are once or twice a day.
-    return age > (12 * 60 * 60 * 1000)
+    return (12 * 60 * 60 * 1000) - age
   }
 }
 
 module.exports = {
   async setup(msg, sender) {
-    let obj = {started: true, updating: {}, baseHref: this.baseHref,
-      settings: {broadcast: false}}
+    let obj = {started: true, updating: {}, baseHref: this.baseHref, all: {}, settings: {}}
     if (this.started) {
       this.update(Object.assign(obj, {all: this.all, settings: this.settings}), sender)
       return
     }
 
-    Object.assign(this, {all: {}, fetched: {}, follows: {}, index: {},
+    Object.assign(this, {fetched: {}, follows: {}, index: {},
       postCache: new quicklru({maxSize: 1000})})
 
     let pollFreq = 1000, pollDate = new Date(0), pollMod = "X"
@@ -72,12 +74,12 @@ module.exports = {
       if (new Date() - pollDate > (2 * 60 * 1000)) { 
         let soc = await this.fetch("https://fraidyc.at/defs/social.json")
         let mod = soc.headers.get('last-modified')
+        pollDate = new Date()
         if (pollMod !== mod) {
           let txt = await soc.text()
           let defs = JSON.parse(txt)
           this.scraper = new fraidyscrape(defs, this.dom, this.xpath,
             {useragent: this.userAgent || 'User-Agent'})
-          pollDate = new Date()
           pollMod = mod
         }
       }
@@ -94,7 +96,8 @@ module.exports = {
     try { inc = await this.readSynced('follows') } catch {}
     if (saved)
       Object.assign(this, saved)
-    obj.settings = inc.settings
+    if (inc.settings)
+      obj.settings = inc.settings
     Object.assign(this, obj)
     this.update(obj, sender)
 
@@ -119,20 +122,18 @@ module.exports = {
       if (upd && !upd.done)
         continue
       let follow = this.all[id]
-      if (!isOutOfDate(follow, this.fetched))
+      let timeLeft = isOutOfDate(follow, this.fetched)
+      if (timeLeft > 0)
         continue
 
       // let oldest = qual.reduce((old, follow) =>
       //   (fetchedAt(this.fetched, id) || 0) > (fetchedAt(this.fetched, id) || 0) ? follow : old)
-      try {
-        let feed = await this.fetchfeed(follow)
+      this.fetchfeed(follow).then(feed => {
         if (feed.fresh) {
           this.update({op: 'replace', path: `/all/${id}`, value: follow})
           this.write({update: false})
         }
-      } catch (e) {
-        console.log(e)
-      }
+      }).catch(console.log)
       maxToQueue--
     }
   },
@@ -184,6 +185,10 @@ module.exports = {
 
         let obj = await this.scraper.scrape(tasks, req, res)
         feed = obj.out
+        if (!feed) {
+          throw new Error("This follow is temporarily down.")
+        }
+
         feed.etag = res.headers.get('etag')
           || res.headers.get('last-modified')
           || res.headers.get('date')
@@ -271,7 +276,7 @@ module.exports = {
       //
       Object.assign(meta, feed)
       meta.sortedBy = sortedBy
-      meta.posts.sort((a, b) => b[sortedBy] - a[sortedBy])
+      meta.posts.sort((a, b) => b[sortedBy] > a[sortedBy] ? 1 : -1)
     }
 
     feed.fresh = fresh
@@ -332,7 +337,7 @@ module.exports = {
     // Add some posts from the other sort method, in case it is toggled.
     //
     let sortOpposite = meta.sortedBy === 'publishedAt' ? 'updatedAt' : 'publishedAt'
-    let oppo = meta.posts.concat().sort((a, b) => b[sortOpposite] - a[sortOpposite])
+    let oppo = meta.posts.concat().sort((a, b) => b[sortOpposite] > a[sortOpposite] ? 1 : -1)
     follow.limit = POSTS_IN_MAIN_INDEX
     follow.posts = meta.posts.slice(0, POSTS_IN_MAIN_INDEX)
     follow.posts = follow.posts.concat(oppo.slice(0, POSTS_IN_MAIN_INDEX).
@@ -476,7 +481,7 @@ module.exports = {
       this.write({update: follows.length > 0, follows})
     }
 
-    if ('settings' in inc) {
+    if (inc.settings) {
       Object.assign(this.settings, inc.settings)
       this.update({op: 'replace', path: '/settings', value: this.settings})
     }

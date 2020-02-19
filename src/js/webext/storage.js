@@ -190,7 +190,9 @@ class WebextStorage {
 
     let extUrl = browser.extension.getURL("/")
     let rewriteUserAgentHeader = e => {
-      if (e.tabId === -1 && e.initiator && extUrl && extUrl.startsWith(e.initiator)) {
+      // console.log(e)
+      let initiator = e.initiator || e.originUrl
+      if (e.tabId === -1 && initiator && extUrl && (initiator + "/").startsWith(extUrl)) {
         let hdrs = [], ua = null
         for (var header of e.requestHeaders) {
           let name = header.name.toLowerCase()

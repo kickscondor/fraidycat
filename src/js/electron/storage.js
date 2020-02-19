@@ -111,7 +111,6 @@ class NodeStorage {
   //
   async readSynced(subkey) {
     let files = await this.listFiles("/sync") 
-    console.log(files)
     let obj = {}
     for (let file of files) {
       if (file.endsWith(".json")) {

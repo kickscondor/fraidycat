@@ -14,7 +14,7 @@ const openAboutWindow = require('about-window').default
 const { autoUpdater } = require('electron-updater')
 
 const isMac = process.platform === 'darwin'
-const DEBUG = false
+const DEBUG = true
 
 const homepage = 'https://fraidyc.at/'
 const bug_report_url = 'https://github.com/kickscondor/fraidycat/issues'
@@ -136,7 +136,7 @@ function createWindow() {
   // Used to rewrite the user-agent.
   //
   bg.webContents.session.webRequest.onBeforeSendHeaders((details, callback) => {
-    console.log(details.requestHeaders)
+    // console.log(details.requestHeaders)
     if (details.requestHeaders['X-FC-User-Agent'])
       details.requestHeaders['User-Agent'] = details.requestHeaders['X-FC-User-Agent']
     callback({ cancel: false, requestHeaders: details.requestHeaders })
