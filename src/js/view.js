@@ -139,23 +139,17 @@ const AddFollow = ({ match, setup }) => ({follows}) => {
 
 const AddFeed = () => ({follows, settings}, actions) => {
   let {list, site} = follows.feeds
-  return list.length == 0 ? 
-      <div id="feed-select">
-        <h2>No Feeds Discovered</h2>
-        <p>This URL seems to have no feeds. Check with the site's owner&mdash;perhaps
-          they can give you the direct feed URL.</p>
-      </div>
-    : <div id="feed-select">
-        <h2>Select a Feed</h2>
-        <p>{followTitle(site)} has several feeds:</p>
-        <form class="feeds" onsubmit={FormFreeze}>
-        <ul>
-        {list.map(feed =>
-          <li><input type="checkbox" onclick={e => feed.selected = e.target.checked} value={feed.url} /> {feed.title}<br /><em>{feed.url}</em></li>)}
-        </ul>
-        <button onclick={_ => actions.follows.subscribe(follows.feeds)}>Subscribe</button>
-        </form>
-      </div>
+  return <div id="feed-select">
+    <h2>Select a Feed</h2>
+    <p>{site.url} has several feeds:</p>
+    <form class="feeds" onsubmit={FormFreeze}>
+    <ul>
+    {list.map(feed =>
+      <li><input type="checkbox" onclick={e => feed.selected = e.target.checked} value={feed.url} /> {feed.title}<br /><em>{feed.url}</em></li>)}
+    </ul>
+    <button onclick={_ => actions.follows.subscribe(follows.feeds)}>Subscribe</button>
+    </form>
+  </div>
 }
 
 function timeAgo(from_time, to_time) {
@@ -221,36 +215,17 @@ function sparkpoints(el, ary, daily) {
 
 function lastPostTime(follow, sortPosts) {
   let lastPostAt = new Date(0)
-  if (follow.posts) {
+  if (follow.posts instanceof Array) {
     let lastPost = follow.posts[0]
     if (lastPost)
       lastPostAt = lastPost[sortPosts]
   }
-  if (follow.status) {
+  if (follow.status instanceof Array) {
     let lastPost = follow.status[0]
     if (lastPost && lastPost[sortPosts] > lastPostAt)
       lastPostAt = lastPost[sortPosts]
   }
   return lastPostAt
-}
-
-const ViewFollowById = ({ match }) => ({follows}, actions) => {
-  let now = new Date()
-  let follow = follows.all[match.params.id]
-  let posts = actions.follows.getPosts(follow.id, 0, 20)
-  return <div id="reader">
-    <h2>{followTitle(follow)}</h2>
-    {follow.description && <div class="note">{follow.description}</div>}
-    <ol>{posts && posts.slice(0, 20).map(post => {
-      let details = actions.follows.getPostDetails({post, id: follow.id})
-      return <li key={post.id}>
-        <h3>{details && details.title}</h3>
-        <div class="content"><custom-element>{details && (details.description || details.content_html || (details.content ? details.content.text : ""))}</custom-element></div>
-        <div class="meta">{timeAgo(post.updatedAt, now)} ago</div>
-      </li>
-    })}
-    </ol>
-    </div>
 }
 
 const ListFollow = ({ location, match }) => ({follows}, actions) => {
@@ -261,7 +236,7 @@ const ListFollow = ({ location, match }) => ({follows}, actions) => {
   let viewable = Object.values(follows.all).filter(follow => {
     let ftags = (follow.tags || [house])
     let lastPost = null
-    if (follow.posts && follow.posts[0]) {
+    if (follow.posts instanceof Array && follow.posts[0]) {
       if (follow.sortedBy !== sortPosts) {
         follow.sortedBy = sortPosts
         follow.posts.sort((a, b) => b[sortPosts] > a[sortPosts] ? 1 : -1)
@@ -341,7 +316,7 @@ const ListFollow = ({ location, match }) => ({follows}, actions) => {
                   onerror={e => e.target.src=follows.baseHref + svg['globe']} width="20" height="20" />
               </Link>
               <Link class="url" to={linkUrl}>{followTitle(follow)}</Link>
-              {follow.status && follow.status.map && follow.status.map(st =>
+              {follow.status instanceof Array && follow.status.map(st =>
                 <a class={`status status-${st.type}`} oncreate={ToggleHover} href={st.url || follow.url}
                   >{st.type === 'live' ? <span>&#x25cf; LIVE</span> : <span>&#x1f5d2;</span>}
                   <div>{st.title || st.text || <span innerHTML={st.html} />}
@@ -355,11 +330,13 @@ const ListFollow = ({ location, match }) => ({follows}, actions) => {
                 <Link to={`/edit/${follow.id}`} class="edit" title="edit"><img src={follows.baseHref + images['270f']} /></Link>
             </h3>
             <div class={`extra ${follows.settings['mode-expand'] || "trunc"}`}>
-              <div class="post">{follow.posts &&
+              <div class="post">{follow.posts instanceof Array &&
                 <ol class="title">{follow.posts.slice(0, follow.limit || 10).map(f => {
                   let postAge = timeAgo(f[sortPosts], now)
-                  return <li class={timeDarkness(f[sortPosts], now)}>{follow.fetchesContent ? f.title : <a href={f.url}>{f.title}</a>}
-                    <span>{timeAgo(f[sortPosts], now)}</span>
+                  return <li class={timeDarkness(f[sortPosts], now)}>
+                    {f.author && <span class="author">{f.author}</span>}
+                    {follow.fetchesContent ? f.title : <a href={f.url}>{f.title}</a>}
+                    <span class="ago">{timeAgo(f[sortPosts], now)}</span>
                   </li>
                 })}</ol>}
                 {!follow.fetchesContent && <a class="collapse" href="#"
@@ -387,8 +364,14 @@ const ImportFrom = (format) => {
   imp.click()
 }
 
-const ChangeSettings = ({ match, setup }) => (_, {follows}) => {
+const ChangeSettings = ({ match, setup }) => (state, {follows}) => {
   return <div id="settings">
+    <div class="about">
+      <a href="https://fraidyc.at/"><img src={state.follows.baseHref + images['flatcat-512']} alt="Fraidycat" title="Fraidycat" /></a>
+      <h2><a href="https://fraidyc.at/">fraidyc.at</a></h2>
+      <p>Follow the <em>whole</em> Web.</p>
+      <p class="report">Report bugs and ideas <a href="https://github.com/kickscondor/fraidycat/issues">here</a>.</p>
+    </div>
     <form onsubmit={e => e.preventDefault()}>
     <input type="file" id="fileImp" style="display: none" name=""
       onchange={e => follows.importFrom(e)} />
@@ -413,15 +396,6 @@ const ChangeSettings = ({ match, setup }) => (_, {follows}) => {
         <button onclick={e => follows.exportTo('html')}>Export Follows</button>
       </p>
       <p class="note">This is just for fun - a bookmarks list in HTML.</p>
-    </div>
-    <h3>About Fraidycat</h3>
-    <div>
-      <p>
-        Fraidycat is a desktop app or browser extension for Firefox or Chrome. You can use it to follow people (hundreds) on whatever platform they choose - Twitter, a blog, YouTube, even on a public TiddlyWiki.
-      </p>
-      <p>
-        You can learn more about Fraidycat in its <a href="https://fraidyc.at/">home page</a>.
-      </p>
     </div>
     </form>
   </div>
@@ -462,9 +436,6 @@ export default (state, actions) => {
   return <div class={`theme--${state.follows.settings['mode-theme'] || "auto"}`}>
     <article>
       <header>
-        <h1><Link to="/"><img src={state.follows.baseHref + images['fc']} alt="Fraidycat" title="Fraidycat" /></Link></h1>
-      </header>
-      <section>
         <div id="menu">
           {!settings && <ul>
             {updTotal > 2 ?	
@@ -478,13 +449,14 @@ export default (state, actions) => {
             <li><Link to="/settings" title="Settings">&#x2699;&#xfe0f;</Link></li>
           </ul>}
         </div>
-
+        <h1><Link to="/"><img src={state.follows.baseHref + images['fc']} alt="Fraidycat" title="Fraidycat" /></Link></h1>
+      </header>
+      <section>
         <Switch>
           <Route path="/settings" render={ChangeSettings} />
           <Route path="/add" render={AddFollow} />
           <Route path="/add-feed" render={AddFeed} />
           <Route path="/edit/:id" render={EditFollowById} />
-          <Route path="/view/:id" render={ViewFollowById} />
           <Route path="/tag/:tag" render={ListFollow} />
           <Route render={settings ? ChangeSettings : ListFollow} />
         </Switch>

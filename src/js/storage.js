@@ -246,6 +246,21 @@ module.exports = {
           posts.push(index)
         }
 
+        if (item.publishedAt && index.publishedAt) {
+          //
+          // If this is an older version of a post, backdate it and leave.
+          // Or, if it's a newer version, convert it into an update.
+          //
+          if (item.publishedAt < index.publishedAt) {
+            index.publishedAt = item.publishedAt
+            continue
+          }
+          if (item.publishedAt > index.publishedAt && !item.updatedAt) {
+            item.updatedAt = item.publishedAt
+            delete item.publishedAt
+          }
+        }
+
         index.title = (ident === 0 && item.title) || item.text
         if (!index.title)
           index.title = u("<div>" + item.html).text()
@@ -253,6 +268,7 @@ module.exports = {
           index.title = item.publishedAt.toLocaleString()
         if (!index.title && ident !== 0)
           index.title = item.title
+        index.author = item.author
         index.title = index.title.toString().trim()
         index.publishedAt = item.publishedAt || index.publishedAt || index.createdAt
         index.updatedAt = (item.updatedAt && item.updatedAt < now ? item.updatedAt : index.publishedAt)
@@ -641,8 +657,12 @@ module.exports = {
     follow.updatedAt = new Date()
 
     let feed = await this.fetchfeed(follow)
-    if (feed.sources)
+    if (feed.sources) {
+      if (feed.sources.length === 0) {
+        throw "Cannot find an RSS feed or social media account to follow at this URL."
+      }
       return feed.sources
+    }
     
     if (!savedId && this.all[follow.id])
       throw `${follow.url} is already a subscription of yours.`

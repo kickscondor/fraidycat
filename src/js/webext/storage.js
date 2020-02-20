@@ -14,7 +14,6 @@ class WebextStorage {
     this.id = id 
     this.dom = new DOMParser()
     this.userAgent = 'X-FC-User-Agent'
-    this.tabs = {}
     this.baseHref = browser.runtime.getURL ?
       browser.runtime.getURL('/').slice(0, -1) : ''
     this.xpath = xpathDom
@@ -138,7 +137,6 @@ class WebextStorage {
     browser.runtime.onMessage.addListener(async (msg, sender) => {
       if (sender.tab) {
         msg.sender = sender.tab.id
-        this.tabs[sender.tab.id] = new Date()
         if (msg.data)
           msg.data = this.decode(msg.data)
         fn(msg)
@@ -160,12 +158,19 @@ class WebextStorage {
     browser.runtime.sendMessage({action, data}).then(console.log, console.error)
   }
 
-  update(data, receiver) {
-    data = this.encode(data)
-    let tabs = (receiver ? [receiver] : Object.keys(this.tabs))
+  sendUpdate(data, tabs) {
     for (let id of tabs) {
-      browser.tabs.sendMessage(Number(id), data).
-        catch(e => delete this.tabs[id])
+      browser.tabs.sendMessage(id, this.encode(data)).
+        catch(console.log)
+    }
+  }
+
+  update(data, receiver) {
+    if (receiver) {
+      this.sendUpdate(data, [receiver])
+    } else {
+      browser.tabs.query({url: "https://fraidyc.at/s/"}).then(tabs =>
+        this.sendUpdate(data, tabs.map(x => x.id)))
     }
   }
 

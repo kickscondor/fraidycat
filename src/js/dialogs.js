@@ -25,5 +25,8 @@ if (process.env.STORAGE === 'electron') {
     }
   }
 } else {
-  module.exports = {alert: window.alert, confirm: window.confirm}
+  module.exports = {
+    alert: str => window.alert(str),
+    confirm: str => window.confirm(str)
+  }
 }

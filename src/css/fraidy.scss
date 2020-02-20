@@ -64,9 +64,15 @@ $themes: (
 @mixin themed() {
   @each $theme, $map in $themes {
     $theme-map: map-get($themes, $theme) !global;
-    @media (prefers-color-scheme: #{$theme}) {
+    @if $theme == light {
       .theme--auto & {
         @content;
+      }
+    } @else {
+      @media (prefers-color-scheme: #{$theme}) {
+        .theme--auto & {
+          @content;
+        }
       }
     }
     .theme--#{$theme} & {
@@ -150,7 +156,6 @@ footer {
 #menu,
 div.intro {
   ul {
-    margin: -40px 0 0 0;
     float: right;
     list-style: none;
     padding: 0;
@@ -457,7 +462,7 @@ div.intro {
 
   @include themed() {
     .latest {
-      background-color: t('title');
+      background-color: t('notice');
       color: t('latest');
     }
 
@@ -537,6 +542,20 @@ div.intro {
           }
         }
 
+        span.author {
+          @include themed() {
+            color: t('title');
+          }
+        }
+
+        span.author::before {
+          content: "[";
+        }
+
+        span.author::after {
+          content: "]\0000a0";
+        }
+
         // a:visited {
         //   color: #CA5;
         // }
@@ -549,7 +568,7 @@ div.intro {
         }
 
         @include themed() {
-          span {
+          span.ago {
             margin-left: 8px;
             font-size: 0.9rem;
             color: t('span');
@@ -557,7 +576,7 @@ div.intro {
 
           &.age-d,
           &.age-w {
-            span {
+            span.ago {
               color: t('spanold');
               font-weight: bold;
             }
@@ -565,7 +584,7 @@ div.intro {
 
           &.age-m,
           &.age-h {
-            span {
+            span.ago {
               color: t('spanfresh');
               font-weight: bold;
             }
@@ -679,6 +698,12 @@ div.intro {
   }
 }
 
+#add-feed {
+  a.emoji {
+    margin-left: 6px;
+  }
+}
+
 #edit-feed {
   button {
     margin-right: 12px;
@@ -686,6 +711,28 @@ div.intro {
 }
 
 #settings {
+  .about {
+    margin-top: 40px;
+    float: right;
+    text-align: center;
+
+    img {
+      width: 240px;
+    }
+
+    h2 {
+      margin-bottom: 0;
+    }
+
+    p {
+      margin: 6px;
+    }
+
+    p.report {
+      font-size: 0.9rem;
+    }
+  }
+
   button {
     margin-left: 12px;
   }
