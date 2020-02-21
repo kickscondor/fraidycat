@@ -33,6 +33,8 @@ const SYNC_EXTERNAL = 3
 const POSTS_IN_MAIN_INDEX = 10
 const ACTIVITY_IN_MAIN_INDEX = 180
 
+import rules from '../../defs/social.json'
+
 function fetchedAt(fetched, id) {
   let fetch = fetched[id]
   return fetch ? fetch.at : 0
@@ -69,18 +71,31 @@ module.exports = {
     Object.assign(this, {fetched: {}, follows: {}, index: {},
       postCache: new quicklru({maxSize: 1000})})
 
-    let pollFreq = 1000, pollDate = new Date(0), pollMod = "X"
+    let pollFreq = 1000, pollDate = new Date(0), pollMod = "1"
     let fetchScraper = async () => {
-      if (new Date() - pollDate > (2 * 60 * 1000)) { 
-        let soc = await this.fetch("https://fraidyc.at/defs/social.json")
-        let mod = soc.headers.get('last-modified')
-        pollDate = new Date()
-        if (pollMod !== mod) {
-          let txt = await soc.text()
-          let defs = JSON.parse(txt)
-          this.scraper = new fraidyscrape(defs, this.dom, this.xpath,
-            {useragent: this.userAgent || 'User-Agent'})
-          pollMod = mod
+      if (new Date() - pollDate > (2 * 60 * 1000)) {
+        let mod, defs
+        try {
+          let soc = await this.fetch("https://fraidyc.at/defs/social.json")
+          mod = soc.headers.get('last-modified')
+          if (pollMod !== mod) {
+            let txt = await soc.text()
+            defs = JSON.parse(txt)
+          }
+        } catch {
+          if (!this.scraper) {
+            mod = "2"
+            defs = rules
+          }
+        }
+
+        if (defs) {
+          pollDate = new Date()
+          if (pollMod !== mod) {
+            this.scraper = new fraidyscrape(defs, this.dom, this.xpath,
+              {useragent: this.userAgent || 'User-Agent'})
+            pollMod = mod
+          }
         }
       }
     }

@@ -93,7 +93,7 @@
     "ava": "^2.4.0",
     "babel-core": "^6.26.3",
     "babel-preset-stage-0": "^6.24.1",
-    "electron": "^7.1.12",
+    "electron": "^7.1.13",
     "electron-builder": "^21.2.0",
     "node-sass": "^4.13.1",
     "parcel-plugin-web-extension": "^1.6.1",

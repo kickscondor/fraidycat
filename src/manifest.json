@@ -18,7 +18,7 @@
     "js": ["js/index.js"],
     "css": ["css/fraidy.scss"]
   }],
-  "web_accessible_resources": ["images/*.png", "images/*.svg"],
+  "web_accessible_resources": ["fonts/*.woff2", "images/*.png", "images/*.svg"],
   "background": {
     "scripts": ["background.js"]
   },
