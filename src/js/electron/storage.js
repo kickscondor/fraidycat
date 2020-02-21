@@ -1,5 +1,5 @@
 const { remote, ipcRenderer } = require('electron')
-import { xpathDom } from '../util'
+import { fixupHeaders, xpathDom } from '../util'
 import { jsonDateParser } from "json-date-parser"
 const fs = require('fs')
 const path = require('path')
@@ -9,7 +9,6 @@ class NodeStorage {
   constructor(session) {
     this.session = session
     this.id = remote.getCurrentWebContents().id
-    this.userAgent = 'X-FC-User-Agent'
     this.dom = new DOMParser()
     this.appPath = path.join(remote.app.getPath('userData'), 'File Storage')
     this.xpath = xpathDom
@@ -31,7 +30,7 @@ class NodeStorage {
   // I/O functions.
   //
   async fetch(url, options) {
-    let req = new Request(url, options)
+    let req = new Request(url, fixupHeaders(options, ['Cookie', 'User-Agent']))
     return fetch(req)
   }
 

@@ -1,9 +1,9 @@
 {
   "domains": {
     "api.twitch.tv": {"headers:Client-Id": "vnvcshh0aehfkq0bvu6rzpbtaf25et"},
-    "m.facebook.com": {"headers:$useragent": "curl/7.58.0"},
-    "twitter.com": {"headers:$useragent": "curl/7.58.0"},
-    "www.instagram.com": {"headers:$useragent": "curl/7.58.0"}
+    "m.facebook.com": {"headers:User-Agent": "curl/7.58.0"},
+    "twitter.com": {"headers:User-Agent": "curl/7.58.0"},
+    "www.instagram.com": {"headers:User-Agent": "curl/7.58.0"}
   },
 
   "default": {
@@ -20,8 +20,20 @@
     "namespaces": {
       "content": "http://purl.org/rss/1.0/modules/content/",
       "dc": "http://purl.org/dc/elements/1.1/",
+      "fc": "http://fraidyc.at/ext/1.0",
       "rdf": "http://www.w3.org/1999/02/22-rdf-syntax-ns#",
       "rss": "http://purl.org/rss/1.0/"
+    },
+    "rules": {
+      "entry": [
+        {"var": "out:title", "op": "./rss:title/text()"},
+        {"var": "out:html", "op": ["./content:encoded", "./rss:description"]},
+        {"var": "out:url", "op": ["./rss:link/text()",
+          "./rss:link[@type='text/html' and @rel='alternate']/@href",
+          "./rss:link[@rel='alternate' or @type='text/html']/@href",
+          "./rss:link[not(@rel)]/@href"]},
+        {"var": "out:publishedAt", "op": "./dc:date/text()", "mod": ["date"]}
+      ]
     },
     "acceptXml": [
       {"op": "//rdf:RDF", "acceptXml": [
@@ -34,14 +46,13 @@
           "./rss:channel/rss:link[@rel='alternate' or @type='text/html']/@href",
           "./rss:channel/rss:link[not(@rel)]/@href"]},
         {"var": "out:publishedAt", "op": "./rss:channel/dc:date/text()", "mod": ["date"]},
+        {"op": "./fc:status", "var": "out:status", "acceptXml": [
+          {"var": "out:label", "op": "@label"},
+          {"var": "out:type", "op": "@type"},
+          {"rule": "entry"}
+        ]},
         {"op": "./rss:item", "var": "out:posts", "acceptXml": [
-          {"var": "out:title", "op": "./rss:title/text()"},
-          {"var": "out:html", "op": ["./content:encoded", "./rss:description"]},
-          {"var": "out:url", "op": ["./rss:link/text()",
-            "./rss:link[@type='text/html' and @rel='alternate']/@href",
-            "./rss:link[@rel='alternate' or @type='text/html']/@href",
-            "./rss:link[not(@rel)]/@href"]},
-          {"var": "out:publishedAt", "op": "./dc:date/text()", "mod": ["date"]}
+          {"rule": "entry"}
         ]}
       ]}
     ]
@@ -49,7 +60,19 @@
 
   "rss": {
     "namespaces": {
-      "content": "http://purl.org/rss/1.0/modules/content/"
+      "content": "http://purl.org/rss/1.0/modules/content/",
+      "fc": "http://fraidyc.at/ext/1.0"
+    },
+    "rules": {
+      "entry": [
+        {"var": "out:title", "op": "./title/text()"},
+        {"var": "out:html", "op": ["./content:encoded", "./description"]},
+        {"var": "out:url", "op": ["./link/text()",
+          "./link[@type='text/html' and @rel='alternate']/@href",
+          "./link[@rel='alternate' or @type='text/html']/@href",
+          "./link[not(@rel)]/@href"]},
+        {"var": "out:publishedAt", "op": "./pubDate/text()", "mod": ["date"]}
+      ]
     },
     "acceptXml": [
       {"op": "//rss", "acceptXml": [
@@ -60,14 +83,13 @@
           "./channel/link[@type='text/html' and @rel='alternate']/@href",
           "./channel/link[@rel='alternate' or @type='text/html']/@href",
           "./channel/link[not(@rel)]/@href"]},
+        {"op": ["./fc:status", "./channel/fc:status"], "var": "out:status", "acceptXml": [
+          {"var": "out:label", "op": "@label"},
+          {"var": "out:type", "op": "@type"},
+          {"rule": "entry"}
+        ]},
         {"op": ["./item", "./channel/item"], "var": "out:posts", "acceptXml": [
-          {"var": "out:title", "op": "./title/text()"},
-          {"var": "out:html", "op": ["./content:encoded", "./description"]},
-          {"var": "out:url", "op": ["./link/text()",
-            "./link[@type='text/html' and @rel='alternate']/@href",
-            "./link[@rel='alternate' or @type='text/html']/@href",
-            "./link[not(@rel)]/@href"]},
-          {"var": "out:publishedAt", "op": "./pubDate/text()", "mod": ["date"]}
+          {"rule": "entry"}
         ]}
       ]}
     ]
@@ -75,7 +97,19 @@
 
   "atom": {
     "namespaces": {
-      "atom": "http://www.w3.org/2005/Atom"
+      "atom": "http://www.w3.org/2005/Atom",
+      "fc": "http://fraidyc.at/ext/1.0"
+    },
+    "rules": {
+      "entry": [
+        {"var": "out:title", "op": "./atom:title/text()"},
+        {"var": "out:html", "op": "./atom:content[@type='html']"},
+        {"var": "out:url", "op": ["./atom:link[@type='text/html' and @rel='alternate']/@href",
+          "./atom:link[@rel='alternate' or @type='text/html']/@href",
+          "./atom:link[not(@rel)]/@href", "./atom:id/text()"], "mod": ["url"]},
+        {"var": "out:publishedAt", "op": ["./atom:published/text()", "./atom:updated/text()"], "mod": ["date"]},
+        {"var": "out:updatedAt", "op": "./atom:updated/text()", "mod": ["date"]}
+      ]
     },
     "acceptXml": [
       {"op": "//atom:feed", "acceptXml": [
@@ -86,14 +120,13 @@
           "./atom:link[@rel='alternate' or @type='text/html']/@href",
           "./atom:link[not(@rel)]/@href"],
           "mod": ["url"]},
+        {"op": "./fc:status", "var": "out:status", "acceptHtml": [
+          {"var": "out:label", "op": "@label"},
+          {"var": "out:type", "op": "@type"},
+          {"rule": "entry"}
+        ]},
         {"op": "./atom:entry", "var": "out:posts", "acceptXml": [
-          {"var": "out:title", "op": "./atom:title/text()"},
-          {"var": "out:html", "op": "./atom:content[@type='html']"},
-          {"var": "out:url", "op": ["./atom:link[@type='text/html' and @rel='alternate']/@href",
-            "./atom:link[@rel='alternate' or @type='text/html']/@href",
-            "./atom:link[not(@rel)]/@href", "./atom:id/text()"], "mod": ["url"]},
-          {"var": "out:publishedAt", "op": ["./atom:published/text()", "./atom:updated/text()"], "mod": ["date"]},
-          {"var": "out:updatedAt", "op": "./atom:updated/text()", "mod": ["date"]}
+          {"rule": "entry"}
         ]}
       ]}
     ]

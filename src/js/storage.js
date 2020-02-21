@@ -100,8 +100,7 @@ module.exports = {
         if (defs) {
           pollDate = now
           if (pollMod !== mod) {
-            this.scraper = new fraidyscrape(defs, this.dom, this.xpath,
-              {useragent: this.userAgent || 'User-Agent'})
+            this.scraper = new fraidyscrape(defs, this.dom, this.xpath)
             pollMod = mod
             this.writeFile('/social.json', {defs, mod})
           }

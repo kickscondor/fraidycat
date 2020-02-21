@@ -35,7 +35,7 @@ class WebextStorage {
   // I/O functions.
   //
   async fetch(url, options) {
-    let req = new Request(url, options)
+    let req = new Request(url, fixupHeaders(options, ['Cookie', 'User-Agent']))
     return fetch(req)
   }
 

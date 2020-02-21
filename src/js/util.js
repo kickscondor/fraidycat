@@ -18,6 +18,16 @@ export async function responseToObject (resp) {
   return {status: resp.status, ok: resp.ok, url: resp.url, body, headers}
 }
 
+export function fixupHeaders (hdrs, list) {
+  let fix = {}
+  if (hdrs) {
+    for (let k in hdrs) {
+      fix[(list.includes(k) ? 'X-FC-' + '') + k] = hdrs[k]
+    }
+  }
+  return fix
+}
+
 export function getIndexById (ary, id) {
   for (let i = 0; i < ary.length; i++) {
     if (ary[i].id == id)
