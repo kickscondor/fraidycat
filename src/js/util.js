@@ -22,7 +22,7 @@ export function fixupHeaders (hdrs, list) {
   let fix = {}
   if (hdrs) {
     for (let k in hdrs) {
-      fix[(list.includes(k) ? 'X-FC-' + '') + k] = hdrs[k]
+      fix[(list.includes(k) ? 'X-FC-' : '') + k] = hdrs[k]
     }
   }
   return fix

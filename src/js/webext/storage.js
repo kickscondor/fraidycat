@@ -4,7 +4,7 @@
 // Chrome.)
 //
 import { jsonDateParser } from "json-date-parser"
-import { xpathDom } from '../util'
+import { fixupHeaders, xpathDom } from '../util'
 const browser = require("webextension-polyfill")
 const frago = require('../frago')
 const path = require('path')
