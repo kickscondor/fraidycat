@@ -8,6 +8,7 @@ import { xpathDom } from '../util'
 const browser = require("webextension-polyfill")
 const frago = require('../frago')
 const path = require('path')
+const homepage = 'https://fraidyc.at/s/'
 
 class WebextStorage {
   constructor(id) {
@@ -155,13 +156,12 @@ class WebextStorage {
   command(action, data) {
     if (data)
       data = this.encode(data)
-    browser.runtime.sendMessage({action, data}).then(console.log, console.error)
+    browser.runtime.sendMessage({action, data})
   }
 
   sendUpdate(data, tabs) {
     for (let id of tabs) {
-      browser.tabs.sendMessage(id, this.encode(data)).
-        catch(console.log)
+      browser.tabs.sendMessage(id, this.encode(data))
     }
   }
 
@@ -169,7 +169,7 @@ class WebextStorage {
     if (receiver) {
       this.sendUpdate(data, [receiver])
     } else {
-      browser.tabs.query({url: "https://fraidyc.at/s/"}).then(tabs =>
+      browser.tabs.query({url: homepage}).then(tabs =>
         this.sendUpdate(data, tabs.map(x => x.id)))
     }
   }
@@ -217,11 +217,14 @@ class WebextStorage {
     }
 
     browser.browserAction.onClicked.addListener(tab => {
-      browser.tabs.create({url: "https://fraidyc.at/s/"})
+      browser.tabs.create({url: homepage})
     })
 
     browser.webRequest.onBeforeSendHeaders.addListener(rewriteUserAgentHeader,
       {urls: ["<all_urls>"], types: ["xmlhttprequest"]}, ["blocking", "requestHeaders"])
+
+    browser.tabs.query({url: homepage}).then(tabs => {
+      tabs.map(x => browser.tabs.reload(x.id))})
   }
 }
 

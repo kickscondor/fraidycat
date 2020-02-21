@@ -73,7 +73,8 @@ module.exports = {
 
     let pollFreq = 1000, pollDate = new Date(0), pollMod = "none"
     let fetchScraper = async () => {
-      if (new Date() - pollDate > (2 * 60 * 1000)) {
+      let now = new Date()
+      if (now - pollDate > (60 * 60 * 1000)) {
         let mod, defs
         try {
           let soc = await this.fetch("https://fraidyc.at/defs/social.json")
@@ -97,7 +98,7 @@ module.exports = {
         }
 
         if (defs) {
-          pollDate = new Date()
+          pollDate = now
           if (pollMod !== mod) {
             this.scraper = new fraidyscrape(defs, this.dom, this.xpath,
               {useragent: this.userAgent || 'User-Agent'})
@@ -476,6 +477,7 @@ module.exports = {
               if (current) {
                 delete this.all[id]
                 this.update({op: 'remove', path: `/all/${id}`})
+                this.deleteFile(`/feeds/${id}.json`)
                 follows.push(id)
               }
             } else {
