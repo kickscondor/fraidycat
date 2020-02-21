@@ -133,18 +133,28 @@
   },
 
   "jsonfeed": {
+    "rules": {
+      "entry": [
+        {"var": "out:title", "op": "$.title"},
+        {"var": "out:html", "op": "$.content_html"},
+        {"var": "out:url", "op": "$.url", "mod": ["url"]},
+        {"var": "out:publishedAt", "op": "$.date_published", "mod": ["date"]},
+        {"var": "out:updatedAt", "op": "$.date_modified", "mod": ["date"]}
+      ]
+    },
     "acceptJson": [
       {"var": "out:title", "op": "$.title"},
       {"var": "out:photos:avatar", "op": "$.icon", "mod": ["url"]},
       {"var": "out:photos:favicon", "op": "$.favicon"},
       {"var": "out:description", "op": "$.description"},
       {"var": "out:url", "op": "$.home_page_url"},
+      {"op": "$._status.*", "var": "out:status", "acceptJson": [
+        {"var": "out:label", "op": "$.label"},
+        {"var": "out:type", "op": "$.type"},
+        {"rule": "entry"}
+      ]},
       {"op": "$.items.*", "var": "out:posts", "acceptJson": [
-        {"var": "out:title", "op": "$.title"},
-        {"var": "out:html", "op": "$.content_html"},
-        {"var": "out:url", "op": "$.url", "mod": ["url"]},
-        {"var": "out:publishedAt", "op": "$.date_published", "mod": ["date"]},
-        {"var": "out:updatedAt", "op": "$.date_modified", "mod": ["date"]}
+        {"rule": "entry"}
       ]}
     ]
   },
