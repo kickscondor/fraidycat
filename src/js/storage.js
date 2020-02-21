@@ -71,7 +71,7 @@ module.exports = {
     Object.assign(this, {fetched: {}, follows: {}, index: {},
       postCache: new quicklru({maxSize: 1000})})
 
-    let pollFreq = 1000, pollDate = new Date(0), pollMod = "1"
+    let pollFreq = 1000, pollDate = new Date(0), pollMod = "none"
     let fetchScraper = async () => {
       if (new Date() - pollDate > (2 * 60 * 1000)) {
         let mod, defs
@@ -84,8 +84,15 @@ module.exports = {
           }
         } catch {
           if (!this.scraper) {
-            mod = "2"
-            defs = rules
+            let obj
+            try { obj = await this.readFile('/social.json') } catch {}
+            if (obj && obj.mod && obj.defs) {
+              mod = obj.mod
+              defs = obj.defs
+            } else {
+              mod = "built-in"
+              defs = rules
+            }
           }
         }
 
@@ -95,6 +102,7 @@ module.exports = {
             this.scraper = new fraidyscrape(defs, this.dom, this.xpath,
               {useragent: this.userAgent || 'User-Agent'})
             pollMod = mod
+            this.writeFile('/social.json', {defs, mod})
           }
         }
       }
