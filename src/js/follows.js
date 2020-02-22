@@ -54,6 +54,7 @@ export default ({
           }
         }}
       } else if (patch.op === 'error') {
+        u('#working').attr('style', '')
         u('form button').each(ele => ele.disabled = false)
         alert(patch.message)
       } else if (patch.op) {

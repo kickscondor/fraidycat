@@ -2,12 +2,14 @@ import { followTitle, getIndexById, house, Importances } from './util'
 import { h } from 'hyperapp'
 import { jsonDateParser } from "json-date-parser"
 import { Link, Route, Switch } from '@kickscondor/router'
-import svg from '../images/*.svg'
-import images from '../images/*.png'
 import EmojiButton from '@kickscondor/emoji-button'
 const url = require('url')
 const sparkline = require('./sparkline')
 import u from '@kickscondor/umbrellajs'
+
+import svg from '../images/*.svg'
+import images from '../images/*.png'
+import webp from '../images/*.webp'
 
 const CAN_ARCHIVE = (process.env.STORAGE === 'dat')
 
@@ -109,8 +111,15 @@ const FollowForm = (match, setup, isNew) => ({follows}, actions) => {
         <p class="note">(Check this to save a copy of complete posts and read them from Fraidycat.)</p>
       </div>}
 
-    <button onclick={e => actions.follows.save(follow)}>Save</button>
+    <button onclick={e => {u('#working').attr('style', 'display: block'); return actions.follows.save(follow)}}>Save</button>
     {!isNew && <button class="delete" onclick={_ => actions.follows.confirmRemove(follow)}>Delete This</button>}
+
+    <div id="working">
+      <div>
+        <img src={follows.baseHref + webp['working']} />
+        <p>WORKING</p>
+      </div>
+    </div>
   </form>
 }
 

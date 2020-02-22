@@ -811,6 +811,46 @@ button.delete {
   color: white;
 }
 
+/* "working" animation */
+#working {
+  position: fixed;
+  margin: auto;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  right: 0;
+  text-align: center;
+  display: none;
+  background: rgba(30, 30, 30, 0.8);
+
+  div {
+    padding-top: 10vh;
+
+    img {
+      width: 100%;
+      max-width: 640px;
+    }
+
+    p {
+      font-weight: bold;
+      font-size: 2rem;
+      color: #def;
+      animation: blink 1s linear 0.5s infinite;
+    }
+  }
+}
+
+@keyframes blink {
+  from {
+    text-decoration: underline;
+    font-style: italic;
+  }
+  to {
+    text-decoration: none;
+    font-style: none;
+  }
+}
+
 /* signika font */
 @font-face {
   font-family: 'Signika';
