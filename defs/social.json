@@ -246,6 +246,12 @@
     "match": "^kickstarter\\.com/projects/([-\\w]+/[-\\w]+)",
     "arguments": [0, {"var": "path"}],
     "url": "https://www.kickstarter.com/projects/$path/posts.atom",
+    "patch": [
+      {"var": "out:posts", "op": "$.posts.*", "patch": [
+        {"var": "out", "op": "$"},
+        {"var": "out:updatedAt"}
+      ]}
+    ],
     "accept": ["atom"]
   },
 
