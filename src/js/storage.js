@@ -76,6 +76,8 @@ module.exports = {
       let now = new Date()
       if (now - pollDate > (60 * 60 * 1000)) {
         let mod, defs
+        pollDate = now
+
         try {
           let soc = await this.fetch("https://fraidyc.at/defs/social.json")
           mod = soc.headers.get('last-modified')
@@ -98,7 +100,6 @@ module.exports = {
         }
 
         if (defs) {
-          pollDate = now
           if (pollMod !== mod) {
             this.scraper = new fraidyscrape(defs, this.dom, this.xpath)
             pollMod = mod
