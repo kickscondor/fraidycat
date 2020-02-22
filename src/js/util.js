@@ -18,14 +18,16 @@ export async function responseToObject (resp) {
   return {status: resp.status, ok: resp.ok, url: resp.url, body, headers}
 }
 
-export function fixupHeaders (hdrs, list) {
-  let fix = {}
-  if (hdrs) {
-    for (let k in hdrs) {
-      fix[(list.includes(k) ? 'X-FC-' : '') + k] = hdrs[k]
+export function fixupHeaders (options, list) {
+  if (options && options.headers) {
+    let fix = {}
+    for (let k in options.headers) {
+      fix[(list.includes(k) ? 'X-FC-' : '') + k] = options.headers[k]
     }
+    options.headers = fix
+    console.log(fix)
   }
-  return fix
+  return options
 }
 
 export function getIndexById (ary, id) {
