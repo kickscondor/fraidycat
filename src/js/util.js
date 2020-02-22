@@ -25,7 +25,6 @@ export function fixupHeaders (options, list) {
       fix[(list.includes(k) ? 'X-FC-' : '') + k] = options.headers[k]
     }
     options.headers = fix
-    console.log(fix)
   }
   return options
 }

@@ -14,7 +14,7 @@ const openAboutWindow = require('about-window').default
 const { autoUpdater } = require('electron-updater')
 
 const isMac = process.platform === 'darwin'
-const DEBUG = true
+const DEBUG = false
 
 const homepage = 'https://fraidyc.at/'
 const bug_report_url = 'https://github.com/kickscondor/fraidycat/issues'
