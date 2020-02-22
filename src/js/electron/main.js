@@ -212,6 +212,7 @@ if (!canRun) {
   //
   ipcMain.handle("fraidy", (e, msg) => {
     if (msg.action === 'autoUpdateApproved') {
+      app.isQuitting = true
       autoUpdater.quitAndInstall()  
     } else if (msg.receiver) {
       webContents.fromId(msg.receiver).send('fraidy', msg)
