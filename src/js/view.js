@@ -117,7 +117,7 @@ const FollowForm = (match, setup, isNew) => ({follows}, actions) => {
     <div id="working">
       <div>
         <img src={follows.baseHref + webp['working']} />
-        <p>WORKING</p>
+        <p>FOLLOWING</p>
       </div>
     </div>
   </form>

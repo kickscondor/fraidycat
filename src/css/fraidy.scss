@@ -821,7 +821,15 @@ button.delete {
   right: 0;
   text-align: center;
   display: none;
-  background: rgba(30, 30, 30, 0.8);
+  // background: rgba(30, 30, 30, 0.8);
+
+  animation: scroll 5s linear 0s infinite;
+  background-image: repeating-linear-gradient(44deg,
+    rgba(0, 0, 0, 0.7),
+    rgba(0, 0, 0, 0.7) 50px,
+    rgba(255, 0, 255, 0.7) 50px,
+    rgba(0, 255, 192, 0.7) 100px
+  );
 
   div {
     padding-top: 10vh;
@@ -838,6 +846,11 @@ button.delete {
       animation: blink 1s linear 0.5s infinite;
     }
   }
+}
+
+@keyframes scroll {
+  from { background-position: 0px 0px }
+  to   { background-position: 70px -70px }
 }
 
 @keyframes blink {
