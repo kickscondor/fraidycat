@@ -229,7 +229,7 @@ module.exports = {
     // Merge the new posts into the feed's master post list.
     //
     let sortedBy = this.settings['mode-updates'] || 'publishedAt'
-    let fresh = (feed.etag !== meta.etag || sortedBy !== meta.sortedBy)
+    let fresh = ((!feed.etag || feed.etag !== meta.etag) || sortedBy !== meta.sortedBy)
     if (!fresh) {
       console.log(`${meta.feed} hasn't changed.`)
     }
