@@ -24,7 +24,7 @@
     "dat": "fsbin emptyDir build/dat && fsbin copy src/root/dat build/dat && cross-env STORAGE=dat parcel build src/index.html --no-cache -d build/dat",
     "webext": "fsbin emptyDir build/webext && cross-env STORAGE=webext parcel build src/manifest.json --no-cache -d build/webext",
     "webext:lint": "web-ext lint --source-dir ./build/webext/",
-    "webext:safe": "find build/webext -type f -name '*.js' | xargs sed -i 's/\\([=:]\\)Function(/\\1(/g'",
+    "webext:safe": "find build/webext -type f -name '*.js' | xargs sed -i -e 's/Function(\"return this\")/function(){return this}/g' -e 's/\\([=: ]\\)Function(/\\1(function(){})(/g'",
     "publish": "electron-builder -wl -p always",
     "publish:windows": "electron-builder -w -p always"
   },
@@ -44,7 +44,10 @@
       "icon": "src/images/flatcat-512.png"
     },
     "linux": {
-      "target": "deb",
+      "target": [
+        "appImage",
+        "deb"
+      ],
       "icon": "src/images/flatcat-512.png",
       "category": "News"
     },
@@ -78,7 +81,6 @@
     "fsbin": "^1.0.9",
     "hyperapp": "^1.2.9",
     "json-date-parser": "^1.0.1",
-    "jsonpath": "^1.0.2",
     "node-fetch": "^2.6.0",
     "normalize-url": "^4.5.0",
     "opml-generator": "^1.1.1",
