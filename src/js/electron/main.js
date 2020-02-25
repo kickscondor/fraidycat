@@ -4,7 +4,6 @@
 // Electron-specific customizations and window dressing. Also, notification of
 // updates are down at the end.
 //
-// import 'babel-polyfill'
 import '../../js/environment'
 import images from '../../images/*.png'
 const { Worker, isMainThread, parentPort } = require('worker_threads')

@@ -152,7 +152,7 @@ module.exports = {
 
       // let oldest = qual.reduce((old, follow) =>
       //   (fetchedAt(this.fetched, id) || 0) > (fetchedAt(this.fetched, id) || 0) ? follow : old)
-      this.fetchfeed(follow).then(feed => {
+      this.fetchfeed(follow, false).then(feed => {
         if (feed.fresh) {
           this.update({op: 'replace', path: `/all/${id}`, value: follow})
           this.write({update: false})
@@ -185,7 +185,7 @@ module.exports = {
   // the feed object, updating the 'meta' object with the discovered posts and
   // metadata.
   //
-  async scrape(meta) {
+  async scrape(meta, force) {
     let req, feed
     let tasks = this.scraper.detect(meta.feed)
     while (req = this.scraper.nextRequest(tasks)) {
@@ -229,7 +229,7 @@ module.exports = {
     // Merge the new posts into the feed's master post list.
     //
     let sortedBy = this.settings['mode-updates'] || 'publishedAt'
-    let fresh = ((!feed.etag || feed.etag !== meta.etag) || sortedBy !== meta.sortedBy)
+    let fresh = (force || !feed.etag || feed.etag !== meta.etag || sortedBy !== meta.sortedBy)
     if (!fresh) {
       console.log(`${meta.feed} hasn't changed.`)
     }
@@ -335,7 +335,7 @@ module.exports = {
   // is stored in the 'follow' object here because it's used to broadcast
   // not just the main URL, but the feed URL being used here.
   //
-  async refetch(follow) {
+  async refetch(follow, force) {
     let meta = {createdAt: new Date(), originalUrl: follow.url,
       url: follow.url, feed: follow.url, posts: []}
     if (follow.id) {
@@ -344,7 +344,7 @@ module.exports = {
       } catch (e) {}
     }
 
-    let feed = await this.scrape(meta)
+    let feed = await this.scrape(meta, force)
     if (!feed.fresh)
       return feed
 
@@ -354,7 +354,7 @@ module.exports = {
     if (feed.sources && feed.sources.length > 0) {
       if (feed.sources.length == 1) {
         meta.feed = feed.sources[0].url
-        feed = await this.scrape(meta)
+        feed = await this.scrape(meta, force)
       } else {
         return feed
       }
@@ -409,13 +409,13 @@ module.exports = {
     return feed
   },
 
-  async fetchfeed(follow) {
+  async fetchfeed(follow, force) {
     let id = follow.id || urlToID(urlToNormal(follow.url))
     this.noteUpdate([id], false)
     console.log(`Updating ${followTitle(follow)}`)
     let feed
     try {
-      feed = await this.refetch(follow)
+      feed = await this.refetch(follow, force)
     } finally {
       this.fetched[id] =
         {at: Number(new Date()), delay: Math.ceil(50 + (Math.random() * 50))}
@@ -681,7 +681,7 @@ module.exports = {
     }
     follow.updatedAt = new Date()
 
-    let feed = await this.fetchfeed(follow)
+    let feed = await this.fetchfeed(follow, true)
     if (feed.sources) {
       if (feed.sources.length === 0) {
         throw "Cannot find an RSS feed or social media account to follow at this URL."

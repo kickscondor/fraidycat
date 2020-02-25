@@ -22,9 +22,9 @@
     "electron:windows": "npm run electron:setup && electron-builder -w",
     "electron:setup": "fsbin emptyDir build/electron && cross-env parcel build src/js/electron/main.js src/index.html src/background.html --target=electron --public-url ./ -d build/electron",
     "dat": "fsbin emptyDir build/dat && fsbin copy src/root/dat build/dat && cross-env STORAGE=dat parcel build src/index.html --no-cache -d build/dat",
-    "webext": "fsbin emptyDir build/webext && cross-env STORAGE=webext parcel build src/manifest.json --no-cache -d build/webext",
+    "webext": "fsbin emptyDir build/webext && cross-env STORAGE=webext parcel build src/manifest.json --no-cache --no-source-maps -d build/webext",
     "webext:lint": "web-ext lint --source-dir ./build/webext/",
-    "webext:safe": "find build/webext -type f -name '*.js' | xargs sed -i -e 's/Function(\"return this\")/function(){return this}/g' -e 's/\\([=: ]\\)Function(/\\1(function(){return function(){}})(/g'",
+    "webext:safe": "find build/webext -type f -name '*.js' | xargs sed -i -e 's/Function(\"return this\")/function(){return this}/g' -e 's/\\([=: {]\\)Function(/\\1(function(){return function(){}})(/g'",
     "publish": "electron-builder -wml -p always",
     "publish:windows": "electron-builder -w -p always"
   },
@@ -67,6 +67,7 @@
       }
     ]
   },
+  "browserslist": "firefox >= 56, chrome >= 49",
   "dependencies": {
     "@kickscondor/elasticlunr": "^0.9.8",
     "@kickscondor/emoji-button": "^2.1.4",
@@ -74,10 +75,6 @@
     "@kickscondor/umbrellajs": "^3.1.2",
     "@shelacek/ubjson": "^1.0.1",
     "about-window": "^1.13.2",
-    "babel-plugin-transform-react-jsx": "^6.24.1",
-    "babel-polyfill": "^6.26.0",
-    "babel-preset-env": "^1.7.0",
-    "babel-preset-es2015": "^6.24.1",
     "cross-env": "^6.0.3",
     "electron-log": "^4.0.6",
     "electron-process": "^0.2.0",
@@ -93,15 +90,16 @@
     "opml-generator": "^1.1.1",
     "parcel-bundler": "^1.12.4",
     "quick-lru": "^4.0.1",
+    "regenerator-runtime": "^0.13.3",
     "taggle": "^1.15.0",
     "xmldom": "^0.2.1",
     "xpath": "0.0.27",
     "yarn": "^1.22.0"
   },
   "devDependencies": {
+    "@babel/core": "^7.8.4",
+    "@babel/preset-env": "^7.8.4",
     "ava": "^2.4.0",
-    "babel-core": "^6.26.3",
-    "babel-preset-stage-0": "^6.24.1",
     "electron": "^7.1.13",
     "electron-builder": "^21.2.0",
     "electron-notarize": "^0.2.1",

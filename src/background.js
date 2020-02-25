@@ -2,7 +2,7 @@
 // src/background.js
 //
 import './js/environment'
-import 'babel-polyfill'
+import 'regenerator-runtime/runtime'
 const mixin = require('./js/storage')
 const storage = require('./js/storage-platform')
 

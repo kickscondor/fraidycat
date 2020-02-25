@@ -200,6 +200,7 @@ function timeDarkness(from_time, to_time) {
 }
 
 function sparkpoints(el, ary, daily) {
+  if (!ary) ary = []
   let points = [], len = ary.length
   if (daily) {
     points = ary.slice(0, 60)
