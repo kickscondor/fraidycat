@@ -1,9 +1,10 @@
+# Settings
+.env
+.syncc
+sign-it
+
 # Temp
 .cache/
 build/
 dist/
 node_modules/
-
-# Misc
-.syncc
-sign-it

@@ -25,7 +25,7 @@
     "webext": "fsbin emptyDir build/webext && cross-env STORAGE=webext parcel build src/manifest.json --no-cache -d build/webext",
     "webext:lint": "web-ext lint --source-dir ./build/webext/",
     "webext:safe": "find build/webext -type f -name '*.js' | xargs sed -i -e 's/Function(\"return this\")/function(){return this}/g' -e 's/\\([=: ]\\)Function(/\\1(function(){return function(){}})(/g'",
-    "publish": "electron-builder -wl -p always",
+    "publish": "electron-builder -wml -p always",
     "publish:windows": "electron-builder -w -p always"
   },
   "build": {
@@ -37,6 +37,9 @@
     "mac": {
       "category": "public.app-category.news",
       "target": "dmg",
+      "entitlements": "src/entitlements.mac.plist",
+      "entitlementsInherit": "src/entitlements.mac.plist",
+      "hardenedRuntime": true,
       "icon": "src/images/flatcat-512.png"
     },
     "win": {
@@ -51,9 +54,13 @@
       "icon": "src/images/flatcat-512.png",
       "category": "News"
     },
+    "dmg": {
+      "sign": false
+    },
     "nsis": {
       "deleteAppDataOnUninstall": true
     },
+    "afterSign": "src/notarize.js",
     "publish": [
       {
         "provider": "github"
@@ -97,6 +104,7 @@
     "babel-preset-stage-0": "^6.24.1",
     "electron": "^7.1.13",
     "electron-builder": "^21.2.0",
+    "electron-notarize": "^0.2.1",
     "node-sass": "^4.13.1",
     "parcel-plugin-web-extension": "^1.6.1",
     "web-ext": "^3.2.1",
