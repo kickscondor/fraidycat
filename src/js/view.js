@@ -318,7 +318,7 @@ const ListFollow = ({ location, match }) => ({follows}, actions) => {
           let daily = follow.importance < 7
           let linkUrl = follow.fetchesContent ? `/view/${follow.id}` : follow.url
           let id = `follow-${follow.id}`
-          return <li key={id} class={dk || 'age-X'}>
+          return <li class={dk || 'age-X'}>
             <a name={id}></a>
             <h3>
               <Link to={linkUrl}>
