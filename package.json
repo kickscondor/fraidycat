@@ -80,7 +80,6 @@
     "electron-process": "^0.2.0",
     "electron-updater": "^4.2.2",
     "fast-json-patch": "^3.0.0-1",
-    "feedme": "^1.2.0",
     "fraidyscrape": "^1.0.3",
     "fsbin": "^1.0.9",
     "hyperapp": "^1.2.9",
@@ -89,11 +88,7 @@
     "normalize-url": "^4.5.0",
     "opml-generator": "^1.1.1",
     "parcel-bundler": "^1.12.4",
-    "quick-lru": "^4.0.1",
     "regenerator-runtime": "^0.13.3",
-    "taggle": "^1.15.0",
-    "xmldom": "^0.2.1",
-    "xpath": "0.0.27",
     "yarn": "^1.22.0"
   },
   "devDependencies": {

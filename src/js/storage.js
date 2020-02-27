@@ -22,8 +22,6 @@ import u from '@kickscondor/umbrellajs'
 
 const fraidyscrape = require('fraidyscrape')
 const og = require('opml-generator')
-const quicklru = require('quick-lru')
-const sax = require('sax')
 const url = require('url')
 
 const SYNC_FULL = 1
@@ -68,8 +66,7 @@ module.exports = {
       return
     }
 
-    Object.assign(this, {fetched: {}, follows: {}, index: {},
-      postCache: new quicklru({maxSize: 1000})})
+    Object.assign(this, {fetched: {}, follows: {}, index: {}})
 
     let pollFreq = 1000, pollDate = new Date(0), pollMod = "none"
     let fetchScraper = async () => {
@@ -460,7 +457,7 @@ module.exports = {
   //
   async sync(inc, syncType) {
     let updated = false, follows = []
-    // console.log(inc)
+    console.log(inc)
     if ('follows' in inc) {
       if ('index' in inc)
         Object.assign(this.index, inc.index)
@@ -545,49 +542,52 @@ module.exports = {
       //
       // Import follows from the OPML - everything that's missing.
       //
-      let follows = {}, parents = []
-      let xml = sax.createStream(false, {lowercasetags: true}), currentTag = null
-      xml.on('opentag', node => {
-        if (node.name == 'outline') {
-          let url = node.attributes.xmlurl || node.attributes.htmlurl
-          if (url) {
-            let tags = [], match = null, importance = 0
-            if (node.attributes.category) {
-              tags = node.attributes.category.split(',')
-            }
-            tags = tags.concat(parents).filter(tag => {
-              if ((match = tag.match(/^importance\/(\d+)$/)) !== null) {
-                importance = Number(match[1])
-                return false
-              }
-              return true
-            })
-
-            if (tags.length == 0)
-              tags = null
-            follows[urlToID(urlToNormal(url))] =
-              {url, tags, importance, title: node.attributes.title,
-                editedAt: new Date(node.attributes.created)}
-          }
-
-          if (!node.isSelfClosing) {
-            parents.push(node.attributes.text)
-          }
-        }
-      }).on('closetag', name => {
-        if (name == 'outline') {
-          parents.pop()
-        }
-      })
-      xml.write(data.contents)
-      if (Object.keys(follows).length > 0)
+      let follows = {}
+      let doc = this.dom.parseFromString(data.contents, 'text/xml')
+      let list = this.xpath(doc, doc, '//body/outline')
+      this.importList(doc, list, [], 0, follows)
+      if (Object.keys(follows).length > 0) {
         this.sync({follows}, SYNC_EXTERNAL)
+      }
     } else {
-
       //
       // Import all settings from a JSON file.
       //
       this.sync(this.decode(data.contents), SYNC_EXTERNAL)
+    }
+  },
+
+  importList(doc, list, parents, importance, follows) {
+    for (let i = 0; i < list.length; i++) {
+      let node = list[i], tags = parents.concat(), match = null
+      let url = node.attributes.xmlUrl || node.attributes.htmlUrl
+      let title = node.attributes.title || node.attributes.text
+      if (url)
+        url = url.value
+      if (!url && node.attributes.text)
+        tags.push(node.attributes.text.value)
+      if (node.attributes.category) {
+        tags.concat(node.attributes.category.value.split(','))
+      }
+      tags = tags.filter(tag => {
+        if ((match = tag.match(/^importance\/(\d+)$/)) !== null) {
+          importance = Number(match[1])
+          return false
+        }
+        return true
+      })
+
+      let children = this.xpath(doc, node, './outline')
+      this.importList(doc, children, tags, importance, follows)
+
+      if (url) {
+        if (tags.length == 0)
+          tags = null
+        follows[urlToID(urlToNormal(url))] =
+          {url, tags, importance,
+            title: title && title.value,
+            editedAt: node.attributes.created ? new Date(node.attributes.created.value) : new Date())}
+      }
     }
   },
 
