@@ -284,7 +284,7 @@ const ListFollow = ({ location, match }) => ({follows}, actions) => {
 
   return <div id="follows">
     <ul id="tags">
-    {tagTabs.map(t => <li class={timeDarkness(tags[t], now)}><Link to={`/tag/${t}`} class={t == tag ? 'active ' : null}>{t}</Link></li>)}
+    {tagTabs.map(t => <li class={timeDarkness(tags[t], now)}><Link to={`/tag/${encodeURIComponent(t)}`} class={t == tag ? 'active ' : null}>{t}</Link></li>)}
     </ul>
     <div class="sort">
       <a href="#" onclick={e => ToggleShow(e, "div")}>
@@ -308,7 +308,7 @@ const ListFollow = ({ location, match }) => ({follows}, actions) => {
     <ul id="imps">
     {Importances.map(sel => (sel[0] == imp ? <li class='active'>{sel[2]} {sel[1]}</li> :
       ((imps[sel[0]] || sel[0] === 0) &&
-        <li>{sel[2]} <Link to={`/tag/${tag}?importance=${sel[0]}`}>{sel[1]}</Link></li>)))}
+        <li>{sel[2]} <Link to={`/tag/${encodeURIComponent(tag)}?importance=${sel[0]}`}>{sel[1]}</Link></li>)))}
     </ul>
     {viewable.length > 0 ?
       <ol>{viewable.map(follow => {

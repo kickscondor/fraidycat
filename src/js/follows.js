@@ -36,7 +36,7 @@ export default ({
         return {feeds: {list: patch.feeds, site: patch.follow}}
       } else if (patch.op === 'subscription') {
         location.go(`/${patch.follow.tags && patch.follow.tags[0] &&
-          `tag/${patch.follow.tags[0]}`}?importance=${patch.follow.importance}`)
+          `tag/${encodeURIComponent(patch.follow.tags[0])}`}?importance=${patch.follow.importance}`)
       } else if (patch.op === 'exported') {
         var data = "data:" + patch.mimeType +
           ";charset=UTF-8," + encodeURIComponent(patch.contents)
