@@ -253,8 +253,8 @@ module.exports = {
         if (typeof(item.url) !== 'string' ||
           (item.publishedAt && item.publishedAt > now))
           continue
-        item.id = item.url.replace(/^([a-z]+:\/+[^\/#]+)?[\/#]*/, '').replace(/\W+/g, '_')
-        let i = getIndexById(meta.posts, item.id), index = null
+        item.id = urlToID(urlToNormal(item.url))
+        let i = getIndexById(meta.posts, item.url, 'url'), index = null
         if (i < 0) {
           index = {id: item.id, url: item.url, createdAt: now}
           if (feed.flags !== 'COMPLETE') {
@@ -586,7 +586,7 @@ module.exports = {
         follows[urlToID(urlToNormal(url))] =
           {url, tags, importance,
             title: title && title.value,
-            editedAt: node.attributes.created ? new Date(node.attributes.created.value) : new Date())}
+            editedAt: node.attributes.created ? new Date(node.attributes.created.value) : new Date()}
       }
     }
   },

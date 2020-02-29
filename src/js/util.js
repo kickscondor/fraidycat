@@ -29,9 +29,9 @@ export function fixupHeaders (options, list) {
   return options
 }
 
-export function getIndexById (ary, id) {
+export function getIndexById (ary, id, field = 'id') {
   for (let i = 0; i < ary.length; i++) {
-    if (ary[i].id == id)
+    if (ary[i][field] == id)
       return i
   }
   return -1
