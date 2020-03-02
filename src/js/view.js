@@ -312,6 +312,7 @@ const ListFollow = ({ location, match }) => ({follows}, actions) => {
     </ul>
     {viewable.length > 0 ?
       <ol>{viewable.map(follow => {
+        try {
           let lastPostAt = lastPostTime(follow, sortPosts), tags = []
           let ago = timeAgo(lastPostAt, now)
           let dk = timeDarkness(lastPostAt, now)
@@ -357,7 +358,13 @@ const ListFollow = ({ location, match }) => ({follows}, actions) => {
               </div>
             </div>
           </li>
-        })}</ol> :
+        } catch (e) {
+          console.error(e)
+          return <li><h3>{follow.url}
+            <Link to={`/edit/${follow.id}`} class="edit" title="edit"><img src={follows.baseHref + images['270f']} /></Link>
+          </h3></li>
+        }
+      })}</ol> :
         <div class="intro">
           <h3>Ready?</h3>
           <p>Let's get Fraidycat going, yeah?</p>
