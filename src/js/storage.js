@@ -570,7 +570,7 @@ module.exports = {
       if (!url && node.attributes.text)
         tags.push(node.attributes.text.value)
       if (node.attributes.category) {
-        tags.concat(node.attributes.category.value.split(','))
+        tags = tags.concat(node.attributes.category.value.split(','))
       }
       tags = tags.filter(tag => {
         if ((match = tag.match(/^importance\/(\d+)$/)) !== null) {
