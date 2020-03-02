@@ -319,7 +319,7 @@ const ListFollow = ({ location, match }) => ({follows}, actions) => {
           let daily = follow.importance < 7
           let linkUrl = follow.fetchesContent ? `/view/${follow.id}` : follow.url
           let id = `follow-${follow.id}`
-          return <li class={dk || 'age-X'}>
+          return <li key={id} class={dk || 'age-X'}>
             <a name={id}></a>
             <h3>
               <Link to={linkUrl}>
@@ -360,7 +360,7 @@ const ListFollow = ({ location, match }) => ({follows}, actions) => {
           </li>
         } catch (e) {
           console.error(e)
-          return <li><h3>{follow.url}
+          return <li><h3>{followTitle(follow) || follow.id}
             <Link to={`/edit/${follow.id}`} class="edit" title="edit"><img src={follows.baseHref + images['270f']} /></Link>
           </h3></li>
         }
@@ -450,6 +450,7 @@ export default (state, actions) => {
     }	
   }
 
+  // console.log(state.follows.all)
   return <div class={`theme--${state.follows.settings['mode-theme'] || "auto"}`}>
     <article>
       <header>

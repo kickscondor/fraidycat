@@ -142,24 +142,26 @@ module.exports = {
   // Periodically update a follow.
   //
   async poll() {
-    let ago = {}
     for (let id in this.all) {
       let upd = this.updating[id]
       if (upd && !upd.done)
         continue
       let follow = this.all[id]
       let timeLeft = isOutOfDate(follow, this.fetched)
-      ago[id] = timeLeft
       if (timeLeft > 0)
         continue
 
-      this.fetchfeed(follow, false).then(feed => {
-        if (feed.fresh) {
-          this.update({op: 'replace', path: `/all/${id}`, value: follow})
-          this.write({update: false})
-        }
-      }).catch(console.log)
+      this.pollfetch(follow)
     }
+  },
+
+  pollfetch(follow) {
+    this.fetchfeed(follow, false).then(feed => {
+      if (feed.fresh) {
+        this.update({op: 'replace', path: `/all/${follow.id}`, value: follow})
+        this.write({update: false})
+      }
+    }).catch(console.log)
   },
 
   noteUpdate(list, isDone) {
@@ -177,7 +179,7 @@ module.exports = {
     if (clearAll) {
       this.updating = {}
     }
-    this.update({op: 'replace', path: '/updating', value: this.updating})
+    // this.update({op: 'replace', path: '/updating', value: this.updating})
   },
 
   //
@@ -186,44 +188,49 @@ module.exports = {
   // metadata.
   //
   async scrape(meta, force) {
-    let req, feed
-    let tasks = this.scraper.detect(meta.feed)
-    while (req = this.scraper.nextRequest(tasks)) {
-      // console.log(req)
-      let err = null
-      try {
-        //
-        // 'no-cache' is used to ensure that, at minimum, a conditional request
-        // is sent to check for changed content. The 'etag' will then be used
-        // to determine if we need to update the item. (Don't use the 'age'
-        // header - it's possible that another request could have pulled a fresh
-        // request and we're now getting one out of the cache that is technically
-        // fresh to this operation.)
-        //
-        let res = await this.fetch(req.url,
-          Object.assign(req.options, {cache: 'no-cache'}))
-        if (!res.ok) {
-          console.log(`${req.url} is giving a ${res.status} error.`)
-          err = `${req.url} is giving a ${res.status} error.`
-        }
+    let req, feed, err = null
+    if (!meta.feed) {
+      err = "This follow has no feed URL."
+    } else {
+      let tasks = this.scraper.detect(meta.feed)
+      while (req = this.scraper.nextRequest(tasks)) {
+        // console.log(req)
+        try {
+          //
+          // 'no-cache' is used to ensure that, at minimum, a conditional request
+          // is sent to check for changed content. The 'etag' will then be used
+          // to determine if we need to update the item. (Don't use the 'age'
+          // header - it's possible that another request could have pulled a fresh
+          // request and we're now getting one out of the cache that is technically
+          // fresh to this operation.)
+          //
+          let res = await this.fetch(req.url,
+            Object.assign(req.options, {cache: 'no-cache'}))
+          if (!res.ok) {
+            console.log(`${req.url} is giving a ${res.status} error.`)
+            err = `${req.url} is giving a ${res.status} error.`
+          }
 
-        let obj = await this.scraper.scrape(tasks, req, res)
-        feed = obj.out
-        if (!feed) {
-          throw new Error("This follow is temporarily down.")
-        }
+          let obj = await this.scraper.scrape(tasks, req, res)
+          feed = obj.out
+          if (!feed) {
+            throw new Error("This follow is temporarily down.")
+          }
 
-        feed.etag = res.headers.get('etag')
-          || res.headers.get('last-modified')
-          || res.headers.get('date')
-      } catch (e) {
-        err = e.message
-        if (err === "Failed to fetch")
-          err = "Couldn't connect - check your spelling, be sure this URL really exists."
+          feed.etag = res.headers.get('etag')
+            || res.headers.get('last-modified')
+            || res.headers.get('date')
+        } catch (e) {
+          err = e.message
+          if (err === "Failed to fetch")
+            err = "Couldn't connect - check your spelling, be sure this URL really exists."
+          break
+        }
       }
-      if (err != null)
-        throw err
     }
+
+    if (err != null)
+      throw err
 
     //
     // Merge the new posts into the feed's master post list.
@@ -256,10 +263,9 @@ module.exports = {
         if (typeof(item.url) !== 'string' ||
           (item.publishedAt && item.publishedAt > now))
           continue
-        item.id = urlToID(urlToNormal(item.url))
         let i = getIndexById(meta.posts, item.url, 'url'), index = null
         if (i < 0) {
-          index = {id: item.id, url: item.url, createdAt: now}
+          index = {id: urlToID(urlToNormal(item.url)), url: item.url, createdAt: now}
           if (feed.flags !== 'COMPLETE') {
             meta.posts.unshift(index)
           }
@@ -335,12 +341,14 @@ module.exports = {
   // is stored in the 'follow' object here because it's used to broadcast
   // not just the main URL, but the feed URL being used here.
   //
-  async refetch(follow, force) {
+  async refetch(id, follow, force) {
     let meta = {createdAt: new Date(), originalUrl: follow.url,
-      url: follow.url, feed: follow.url, posts: []}
+      url: follow.url, feed: follow.feed || follow.url, posts: []}
     if (follow.id) {
       try {
         meta = await this.readFile(`/feeds/${follow.id}.json`)
+        if (follow.url !== meta.url)
+          force = true
       } catch (e) {}
     }
 
@@ -364,7 +372,7 @@ module.exports = {
     // Index a portion of the metadata. Don't need all the 'rels' and
     // 'photos' and other metadata that may come in useful later.
     //
-    follow.id = urlToID(urlToNormal(meta.feed))
+    follow.id = id
     follow.feed = meta.feed
     follow.url = meta.url
     follow.actualTitle = meta.title
@@ -409,13 +417,19 @@ module.exports = {
     return feed
   },
 
+  //
+  // ID is generated once, based on the feed URL. However, this doesn't stay
+  // in sync as the feed URL changes. This ensures that changes don't litter
+  // the sync files with deleted old URLs. Also, if the hashing algorithm changes,
+  // we don't need to recompute all the hashes necessarily.
+  //
   async fetchfeed(follow, force) {
     let id = follow.id || urlToID(urlToNormal(follow.url))
     this.noteUpdate([id], false)
     console.log(`Updating ${followTitle(follow)}`)
     let feed
     try {
-      feed = await this.refetch(follow, force)
+      feed = await this.refetch(id, follow, force)
     } finally {
       this.fetched[id] =
         {at: Number(new Date()), delay: Math.ceil(50 + (Math.random() * 50))}
@@ -468,40 +482,42 @@ module.exports = {
       this.noteUpdate(Object.keys(inc.follows), false)
       for (let id in inc.follows) {
         try {
-          let current = this.all[id], incoming = inc.follows[id], notify = false
-          if (!(id in this.follows))
-            this.follows[id] = inc.follows[id]
-          if (!current || current.editedAt < incoming.editedAt) {
-            if (incoming.deleted) {
+          if (id.match && id.match(/-\w{8}$/)) {
+            let current = this.all[id], incoming = inc.follows[id], notify = false
+            if (!(id in this.follows))
               this.follows[id] = incoming
-              if (current) {
-                delete this.all[id]
-                this.update({op: 'remove', path: `/all/${id}`})
-                this.deleteFile(`/feeds/${id}.json`)
-                follows.push(id)
-              }
-            } else {
-              if (current)
-                incoming.id = id
-              try {
-                await this.refresh(incoming)
-                if (syncType === SYNC_EXTERNAL) {
-                  current = this.all[id]
-                  notify = true
+            if (!current || current.editedAt < incoming.editedAt) {
+              if (incoming.deleted) {
+                this.follows[id] = incoming
+                if (current) {
+                  delete this.all[id]
+                  this.update({op: 'remove', path: `/all/${id}`})
+                  this.deleteFile(`/feeds/${id}.json`)
+                  follows.push(id)
                 }
-              } catch {}
-              // catch(msg => console.log(`${incoming.url} is ${msg}`))
+              } else {
+                if (current)
+                  incoming.id = id
+                try {
+                  await this.refresh(incoming)
+                  if (syncType === SYNC_EXTERNAL) {
+                    current = this.all[id]
+                    notify = true
+                  }
+                } catch {}
+                // catch(msg => console.log(`${incoming.url} is ${msg}`))
+              }
+              updated = true
+            } else if (current.editedAt > incoming.editedAt) {
+              if (syncType !== SYNC_EXTERNAL) {
+                notify = true
+              }
             }
-            updated = true
-          } else if (current.editedAt > incoming.editedAt) {
-            if (syncType !== SYNC_EXTERNAL) {
-              notify = true
-            }
-          }
 
-          if (notify && current) {
-            follows.push(id)
-            this.notifyFollow(current)
+            if (notify && current) {
+              follows.push(id)
+              this.notifyFollow(current)
+            }
           }
         } finally {
           this.noteUpdate([id], true)
@@ -692,8 +708,12 @@ module.exports = {
       return feed.sources
     }
     
-    if (!savedId && this.all[follow.id])
-      throw `${follow.url} is already a subscription of yours.`
+    if (!savedId) {
+      let found = false
+      for (let f of this.all)
+        if (f.feed === follow.feed)
+          throw `${follow.feed} is already a subscription of yours.`
+    }
 
     this.all[follow.id] = follow
     this.update({op: 'replace', path: `/all/${follow.id}`, value: follow})

@@ -5,6 +5,7 @@
 // updates are down at the end.
 //
 import '../../js/environment'
+import 'regenerator-runtime/runtime'
 import images from '../../images/*.png'
 const { Worker, isMainThread, parentPort } = require('worker_threads')
 const { app, BrowserWindow, ipcMain, webContents, Menu, session, shell, Tray } = require('electron')
