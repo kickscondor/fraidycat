@@ -42,7 +42,7 @@ function isOutOfDate(follow, fetched) {
   let imp = Number(follow.importance)
   let age = (new Date()) - (fetchedAt(fetched, follow.id) || 0)
   if (fetched[follow.id])
-    age *= ((fetched[follow.id].delay || 100) * 0.01)
+    age += age * Math.ceil(fetched[follow.id].delay || 100) * 0.01
   if (imp < 1) {
     // Real-time is currently a 5 to 10 minute check.
     return (5 * 60 * 1000) - age
@@ -68,6 +68,9 @@ module.exports = {
 
     Object.assign(this, {fetched: {}, follows: {}, index: {}})
 
+    //
+    // Update the scraping rules once an hour.
+    //
     let pollFreq = 1000, pollDate = new Date(0), pollMod = "none"
     let fetchScraper = async () => {
       let now = new Date()
@@ -105,12 +108,16 @@ module.exports = {
         }
       }
     }
+
     let pollFn = () => {
       this.poll()
       fetchScraper()
       setTimeout(pollFn, pollFreq)
     }
 
+    //
+    // Load the follows and various application states.
+    //
     let saved = null, inc = {}
     try { obj.all = await this.readFile('/follows.json') } catch {}
     try { saved = await this.localGet('fraidycat') } catch {}
@@ -135,27 +142,23 @@ module.exports = {
   // Periodically update a follow.
   //
   async poll() {
-    let maxToQueue = 5
+    let ago = {}
     for (let id in this.all) {
-      if (!maxToQueue)
-        break
       let upd = this.updating[id]
       if (upd && !upd.done)
         continue
       let follow = this.all[id]
       let timeLeft = isOutOfDate(follow, this.fetched)
+      ago[id] = timeLeft
       if (timeLeft > 0)
         continue
 
-      // let oldest = qual.reduce((old, follow) =>
-      //   (fetchedAt(this.fetched, id) || 0) > (fetchedAt(this.fetched, id) || 0) ? follow : old)
       this.fetchfeed(follow, false).then(feed => {
         if (feed.fresh) {
           this.update({op: 'replace', path: `/all/${id}`, value: follow})
           this.write({update: false})
         }
       }).catch(console.log)
-      maxToQueue--
     }
   },
 
