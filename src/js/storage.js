@@ -710,8 +710,8 @@ module.exports = {
     
     if (!savedId) {
       let found = false
-      for (let f of this.all)
-        if (f.feed === follow.feed)
+      for (let id in this.all)
+        if (id === follow.id || this.all[id].feed === follow.feed)
           throw `${follow.feed} is already a subscription of yours.`
     }
 
