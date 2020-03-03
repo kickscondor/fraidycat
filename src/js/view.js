@@ -1,4 +1,4 @@
-import { followTitle, getIndexById, house, Importances } from './util'
+import { followTitle, html2text, getIndexById, house, Importances } from './util'
 import { h } from 'hyperapp'
 import { jsonDateParser } from "json-date-parser"
 import { Link, Route, Switch } from '@kickscondor/router'
@@ -376,7 +376,7 @@ const ListFollow = ({ location, match }) => ({follows}, actions) => {
               {follow.status instanceof Array && follow.status.map(st =>
                 <a class={`status status-${st.type}`} oncreate={ToggleHover} href={st.url || follow.url}
                   >{st.type === 'live' ? <span>&#x25cf; LIVE</span> : <span>&#x1f5d2;</span>}
-                  <div>{st.title || st.text || <span innerHTML={st.html} />}
+                  <div>{st.title || st.text || html2text(st.html)}
                     {st[sortPosts] && <span class="ago">{timeAgo(st[sortPosts], now)}</span>}</div>
                 </a>)}
               {ago && <span class="latest">{ago}</span>}

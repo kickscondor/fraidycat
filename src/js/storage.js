@@ -16,7 +16,7 @@
 // instance to pull down feeds and operate independently. This allows the
 // instance to run alone, with no syncing, should the user want it that way.
 //
-import { followTitle, house, getIndexById, Importances,
+import { followTitle, house, html2text, getIndexById, Importances,
   urlToFeed, urlToID, urlToNormal } from './util'
 import u from '@kickscondor/umbrellajs'
 
@@ -292,8 +292,8 @@ module.exports = {
         }
 
         index.title = (ident === 0 && item.title) || item.text
-        if (!index.title)
-          index.title = u("<div>" + item.html).text()
+        if (!index.title && item.html)
+          index.title = html2text(item.html)
         if (!index.title && item.publishedAt)
           index.title = item.publishedAt.toLocaleString()
         if (!index.title && ident !== 0)
@@ -314,6 +314,10 @@ module.exports = {
       if (feed.status instanceof Array) {
         for (let item of feed.status) {
           item.updatedAt = item.updatedAt || item.publishedAt
+          if (!item.text && item.html) {
+            item.text = html2text(item.html)
+            delete item.html
+          }
         }
       }
 

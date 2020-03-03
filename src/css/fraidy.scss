@@ -296,6 +296,7 @@ div.intro {
 
     ul {
       white-space: nowrap;
+      margin-top: 4px;
 
       @include themed() {
         border-bottom: solid 4px t('border');

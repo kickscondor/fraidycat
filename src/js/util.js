@@ -1,4 +1,5 @@
 const normalizeUrl = require('normalize-url')
+import u from '@kickscondor/umbrellajs'
 
 export const house = "\u{1f3e0}"
 
@@ -42,6 +43,12 @@ export function getMaxIndex (index) {
   if (vals.length == 0)
     return 0
   return Math.max(...vals)
+}
+
+export function html2text (html) {
+  if (html.replace)
+    html = html.replace(/[a-z]+:\/\//g, ' ')
+  return u("<div>" + html).text()
 }
 
 export function urlToFeed(abs, href) {
