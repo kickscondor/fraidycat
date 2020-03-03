@@ -284,17 +284,22 @@ div.intro {
     }
   }
 
-  & > ul > li {
+  & > div > ul > li {
     display: inline-block;
   }
 
   #tags {
-    white-space: nowrap;
-    width: 100%;
+    position: relative;
     margin-bottom: 12px;
+    overflow-x: hidden;
+    width: 100%;
 
-    @include themed() {
-      border-bottom: solid 4px t('border');
+    ul {
+      white-space: nowrap;
+
+      @include themed() {
+        border-bottom: solid 4px t('border');
+      }
     }
 
     li {
@@ -327,11 +332,31 @@ div.intro {
         }
 
         a.active {
-          padding-top: 8px;
+          padding-top: 4px;
           border: solid 4px t('border');
           background-color: t('background');
           border-bottom: 0;
         }
+      }
+    }
+
+    & > a {
+      display: block;
+      position: absolute;
+      top: 0;
+      padding: 0 8px;
+      height: 100%;
+      font-size: 2rem;
+      text-decoration: none;
+      display: none;
+
+      @include themed() {
+        background-color: t('border');
+        color: t('link');
+      }
+
+      &.right {
+        right: 0;
       }
     }
   }

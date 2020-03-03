@@ -51,6 +51,39 @@ const ToggleShow = (e, parentSel, cls) => {
   u(e.target).closest(parentSel).toggleClass(cls || "show")
 }
 
+const Nudge = (x) => a => {
+  let div = u(a.parentNode)
+  let ul = div.children('ul').first()
+  let moveTimer = null
+  let moveFn = () => {
+    if (ul.style) {
+      let newx = parseInt(ul.style.marginLeft || 0, 10) + x
+      let endx = ul.scrollWidth - a.parentNode.clientWidth
+      if (newx >= 0) {
+        newx = 0
+        clearInterval(moveTimer)
+      } else if (newx < -endx) {
+        newx = -endx
+        clearInterval(moveTimer)
+      }
+      div.find('.left').attr('style', 'display: ' + (newx == 0 ? 'none' : 'block'))
+      ul.style.marginLeft = newx + "px"
+    }
+  }
+  u(a).on('mousedown', e => {
+    moveTimer = setInterval(moveFn, 100)
+  }).on('mouseup', e => clearInterval(moveTimer)).
+    on('click', e => e.preventDefault())
+
+  let calcNudge = () => {
+    div.children('a').attr('style', 'display: ' +
+      (a.parentNode.clientWidth < ul.scrollWidth ? 'block' : 'none'))
+  }
+
+  window.addEventListener('resize', calcNudge, false)
+  calcNudge()
+}
+
 const FollowForm = (match, setup, isNew) => ({follows}, actions) => {
   let follow = follows.editing
   let picker = new EmojiButton()
@@ -283,9 +316,13 @@ const ListFollow = ({ location, match }) => ({follows}, actions) => {
   u('a.pink').attr('href', (location.hashRouting ? '#!' : '') + addLink)
 
   return <div id="follows">
-    <ul id="tags">
-    {tagTabs.map(t => <li class={timeDarkness(tags[t], now)}><Link to={`/tag/${encodeURIComponent(t)}`} class={t == tag ? 'active ' : null}>{t}</Link></li>)}
-    </ul>
+    <div id="tags">
+      <ul>
+      {tagTabs.map(t => <li class={timeDarkness(tags[t], now)}><Link to={`/tag/${encodeURIComponent(t)}`} class={t == tag ? 'active ' : null}>{t}</Link></li>)}
+      </ul>
+      <a href="#" class="left" oncreate={Nudge(30)}>&#x1f840;</a>
+      <a href="#" class="right" oncreate={Nudge(-30)}>&#x1f842;</a>
+    </div>
     <div class="sort">
       <a href="#" onclick={e => ToggleShow(e, "div")}>
         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -305,11 +342,13 @@ const ListFollow = ({ location, match }) => ({follows}, actions) => {
         </ul>
       </div>
     </div>
-    <ul id="imps">
-    {Importances.map(sel => (sel[0] == imp ? <li class='active'>{sel[2]} {sel[1]}</li> :
-      ((imps[sel[0]] || sel[0] === 0) &&
-        <li>{sel[2]} <Link to={`/tag/${encodeURIComponent(tag)}?importance=${sel[0]}`}>{sel[1]}</Link></li>)))}
-    </ul>
+    <div id="imps">
+      <ul>
+      {Importances.map(sel => (sel[0] == imp ? <li class='active'>{sel[2]} {sel[1]}</li> :
+        ((imps[sel[0]] || sel[0] === 0) &&
+          <li>{sel[2]} <Link to={`/tag/${encodeURIComponent(tag)}?importance=${sel[0]}`}>{sel[1]}</Link></li>)))}
+      </ul>
+    </div>
     {viewable.length > 0 ?
       <ol>{viewable.map(follow => {
         try {

@@ -731,6 +731,8 @@ module.exports = {
       }
     } catch (e) {
       console.log(e)
+      if (e.message)
+        e = e.message
       this.update({op: 'error', message: e}, sender)
     }
   },
@@ -757,6 +759,8 @@ module.exports = {
           follows.push(follow.id)
         }
       } catch (msg) {
+        if (msg.message)
+          msg = msg.message
         errors.push(msg)
       }
     }
