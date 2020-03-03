@@ -98,6 +98,13 @@ export default ({
     },
 
     //
+    // Rename a tag.
+    //
+    rename: tag => ({local}) => {
+      local.command("rename", tag)
+    },
+
+    //
     // Import follows from OPML.
     //
     importFrom: (e) => ({local}, {location}) => {

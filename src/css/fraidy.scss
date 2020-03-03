@@ -352,7 +352,7 @@ div.intro {
 
       @include themed() {
         background-color: t('border');
-        color: t('link');
+        color: t('background');
       }
 
       &.right {

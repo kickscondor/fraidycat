@@ -547,10 +547,38 @@ module.exports = {
   //
   // Notify of follow
   //
-  notifyFollow(follow) {
+  notifyFollow(follow, updateLocal = false) {
+    if (updateLocal) {
+      this.all[follow.id] = follow
+      this.update({op: 'replace', path: `/all/${follow.id}`, value: follow})
+    }
     this.follows[follow.id] = {url: follow.feed,
       importance: follow.importance, title: follow.title, tags: follow.tags,
       fetchesContent: follow.fetchesContent, editedAt: follow.editedAt}
+  },
+
+  //
+  // Rename a tag
+  //
+  rename(tag) {
+    if (tag.to instanceof String && tag.from instanceof String) {
+      let follows = []
+      for (let id in this.all) {
+        let follow = this.all[id]
+        if (follow.tags) {
+          let index = follow.tags.indexOf(tag.from)
+          if (index >= 0) {
+            follow.tags[index] = tag.to
+            follows.push(follow.id)
+            this.notifyFollow(follow, true)
+          }
+        }
+      }
+
+      if (follows.length > 0) {
+        this.write({update: true, follows})
+      }
+    }
   },
 
   //
@@ -715,9 +743,7 @@ module.exports = {
           throw `${follow.feed} is already a subscription of yours.`
     }
 
-    this.all[follow.id] = follow
-    this.update({op: 'replace', path: `/all/${follow.id}`, value: follow})
-    this.notifyFollow(follow)
+    this.notifyFollow(follow, true)
   },
 
   async save(follow, sender) {

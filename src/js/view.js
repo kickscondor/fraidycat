@@ -66,18 +66,25 @@ const Nudge = (x) => a => {
         newx = -endx
         clearInterval(moveTimer)
       }
-      div.find('.left').attr('style', 'display: ' + (newx == 0 ? 'none' : 'block'))
+      div.children('.left').attr('style', 'display: ' + (newx == 0 ? 'none' : 'block'))
+      div.children('.right').attr('style', 'display: ' + (newx == -endx ? 'none' : 'block'))
       ul.style.marginLeft = newx + "px"
     }
   }
   u(a).on('mousedown', e => {
-    moveTimer = setInterval(moveFn, 100)
+    moveFn()
+    moveTimer = setInterval(moveFn, 50)
   }).on('mouseup', e => clearInterval(moveTimer)).
     on('click', e => e.preventDefault())
 
   let calcNudge = () => {
-    div.children('a').attr('style', 'display: ' +
-      (a.parentNode.clientWidth < ul.scrollWidth ? 'block' : 'none'))
+    let mx = parseInt(ul.style.marginLeft || 0, 10)
+    ul.style.marginLeft = "0px"
+    let show = a.parentNode.clientWidth < ul.scrollWidth
+    div.children('.left').attr('style', 'display: ' +
+      (show && mx > 0 ? 'block' : 'none'))
+    div.children('.right').attr('style', 'display: ' +
+      (show ? 'block' : 'none'))
   }
 
   window.addEventListener('resize', calcNudge, false)
@@ -318,10 +325,10 @@ const ListFollow = ({ location, match }) => ({follows}, actions) => {
   return <div id="follows">
     <div id="tags">
       <ul>
-      {tagTabs.map(t => <li class={timeDarkness(tags[t], now)}><Link to={`/tag/${encodeURIComponent(t)}`} class={t == tag ? 'active ' : null}>{t}</Link></li>)}
+      {tagTabs.map(t => <li class={timeDarkness(tags[t], now)}><Link to={`/tag/${encodeURIComponent(t)}`} class={t === tag && 'active'}>{t}</Link></li>)}
       </ul>
-      <a href="#" class="left" oncreate={Nudge(30)}>&#x1f840;</a>
-      <a href="#" class="right" oncreate={Nudge(-30)}>&#x1f842;</a>
+      <a href="#" class="left" oncreate={Nudge(30)}>&lsaquo;</a>
+      <a href="#" class="right" oncreate={Nudge(-30)}>&rsaquo;</a>
     </div>
     <div class="sort">
       <a href="#" onclick={e => ToggleShow(e, "div")}>
