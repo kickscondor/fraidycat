@@ -391,6 +391,9 @@
       {"op": "//div[@data-tweet-id and contains(@class, 'pinned')]",
        "var": "out:status", "acceptHtml": [
         {"var": "out:type", "op": "=pinned"},
+        {"op": "@data-supports-broadcast-player", "acceptHtml": [
+          {"var": "out:type", "op": "=live"}
+        ]},
         {"var": "out:url", "op": "@data-permalink-path", "mod": ["url"]},
         {"var": "out:publishedAt", "op": ".//span[@data-time]/@data-time",
           "mod": ["int", "*1000", "date"]},
