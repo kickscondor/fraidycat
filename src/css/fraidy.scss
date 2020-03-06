@@ -85,6 +85,10 @@ $themes: (
   @return map-get($theme-map, $key);
 }
 
+html {
+  overflow-y: scroll;
+}
+
 body {
   margin: 0;
   padding: 0;
