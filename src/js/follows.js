@@ -92,7 +92,7 @@ export default ({
     // Delete confirmation event from HTML.
     //
     confirmRemove: follow => ({local}, {location}) => {
-      if (confirm("Delete " + follow.url + "?")) {
+      if (confirm("Delete " + follow.title + "?\n" + "URL:" + follow.url)) {
         local.command("remove", follow)
       }
     },
