@@ -239,18 +239,14 @@ function timeDarkness(from_time, to_time) {
   return 'age-M'
 }
 
-function sparkpoints(el, ary, daily) {
+function sparkpoints(el, ary) {
   if (!ary) ary = []
-  let points = [], len = ary.length
+  let points = ary.slice(0, 60), len = 60
+  let daily = points.reduce((a, b) => a + b, 0) > 3
+
   if (daily) {
-    points = ary.slice(0, 60)
-    if (points.every(x => x == 0))
-      daily = false
-    else
-      len = points.length
-  }
-  if (!daily) {
-    len = Math.ceil(len / 3)
+    len = points.length
+  } else {
     for (let i = 0; i < len; i++) {
       let x = i * 3
       points[i] = (ary[x] || 0) + (ary[x + 1] || 0) + (ary[x + 2] || 0)
@@ -258,7 +254,8 @@ function sparkpoints(el, ary, daily) {
     if (points.every(x => x == 0))
       len = 0
   }
-  u(el).addClass(`sparkline-${daily ? "d" : "w"}`).attr('width', len * 2)
+  u(el).empty().addClass(`sparkline-${daily ? "d" : "w"}`).attr('width', len * 2)
+  el.parentNode.title = `graph of the last ${daily ? 'two' : 'six'} months`
   if (len > 0)
     sparkline(el, points.reverse())
 }
@@ -362,7 +359,6 @@ const ListFollow = ({ location, match }) => ({follows}, actions) => {
           let lastPostAt = lastPostTime(follow, sortPosts), tags = []
           let ago = timeAgo(lastPostAt, now)
           let dk = timeDarkness(lastPostAt, now)
-          let daily = follow.importance < 7
           let linkUrl = follow.fetchesContent ? `/view/${follow.id}` : follow.url
           let id = `follow-${follow.id}`
           return <li key={id} class={dk || 'age-X'}>
@@ -380,11 +376,11 @@ const ListFollow = ({ location, match }) => ({follows}, actions) => {
                     {st[sortPosts] && <span class="ago">{timeAgo(st[sortPosts], now)}</span>}</div>
                 </a>)}
               {ago && <span class="latest">{ago}</span>}
-              <span title={`graph of the last ${daily ? 'two' : 'six'} months`}>
-                <svg class="sparkline"
-                  width="120" height="20" stroke-width="2"
-                  oncreate={el => sparkpoints(el, follow.activity, daily)}></svg></span>
-                <Link to={`/edit/${follow.id}`} class="edit" title="edit"><img src={follows.baseHref + images['270f']} /></Link>
+              <a><svg class="sparkline"
+                width="120" height="20" stroke-width="2"
+                oncreate={el => sparkpoints(el, follow.activity)}
+                onupdate={el => sparkpoints(el, follow.activity)}></svg></a>
+              <Link to={`/edit/${follow.id}`} class="edit" title="edit"><img src={follows.baseHref + images['270f']} /></Link>
             </h3>
             <div class={`extra ${follows.settings['mode-expand'] || "trunc"}`}>
               <div class="post">{follow.posts instanceof Array &&
