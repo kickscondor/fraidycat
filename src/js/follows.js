@@ -10,6 +10,7 @@ const storage = require('./storage-platform')
 const { alert, confirm } = require('./dialogs')
 
 import { applyOperation } from 'fast-json-patch'
+import { followTitle } from './util'
 import u from '@kickscondor/umbrellajs'
 
 export default ({
@@ -92,7 +93,7 @@ export default ({
     // Delete confirmation event from HTML.
     //
     confirmRemove: follow => ({local}, {location}) => {
-      if (confirm("Delete " + follow.title + "?\n" + "URL:" + follow.url)) {
+      if (confirm(`Delete ${followTitle(follow)}?\n(${follow.url})`)) {
         local.command("remove", follow)
       }
     },
