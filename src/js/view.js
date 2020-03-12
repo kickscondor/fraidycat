@@ -152,7 +152,7 @@ const FollowForm = (match, setup, isNew) => ({follows}, actions) => {
       </div>}
 
     <button onclick={e => {u('#working').attr('style', 'display: block'); return actions.follows.save(follow)}}>Save</button>
-    {!isNew && <button class="delete" onclick={_ => actions.follows.confirmRemove(follow)}>Delete This</button>}
+    {!isNew && <button type="button" class="delete" onclick={_ => actions.follows.confirmRemove(follow)}>Delete This</button>}
 
     <div id="working">
       <div>
