@@ -104,9 +104,9 @@
       "entry": [
         {"var": "out:title", "op": "./atom:title/text()"},
         {"var": "out:html", "op": "./atom:content[@type='html']"},
-        {"var": "out:url", "op": ["./atom:link[@type='text/html' and @rel='alternate']/@href",
-          "./atom:link[@rel='alternate' or @type='text/html']/@href",
-          "./atom:link[not(@rel)]/@href", "./atom:id/text()"], "mod": ["url"]},
+        {"var": "out:url", "op": ["./atom:link[@type='text/html' and @rel='alternate'][1]/@href",
+          "./atom:link[@rel='alternate' or @type='text/html'][1]/@href",
+          "./atom:link[not(@rel)][1]/@href", "./atom:id/text()"], "mod": ["url"]},
         {"var": "out:publishedAt", "op": ["./atom:published/text()", "./atom:updated/text()"], "mod": ["date"]},
         {"var": "out:updatedAt", "op": "./atom:updated/text()", "mod": ["date"]}
       ]
@@ -116,9 +116,9 @@
         {"var": "out:title", "op": "./atom:title/text()"},
         {"var": "out:photos:avatar", "op": ["./atom:logo/text()", "./atom:link[@rel='avatar']/@href"], "mod": ["url"]},
         {"var": "out:description", "op": "./atom:subtitle/text()"},
-        {"var": "out:url", "op": ["./atom:link[@type='text/html' and @rel='alternate']/@href",
-          "./atom:link[@rel='alternate' or @type='text/html']/@href",
-          "./atom:link[not(@rel)]/@href"],
+        {"var": "out:url", "op": ["./atom:link[@type='text/html' and @rel='alternate'][1]/@href",
+          "./atom:link[@rel='alternate' or @type='text/html'][1]/@href",
+          "./atom:link[not(@rel)][1]/@href"],
           "mod": ["url"]},
         {"op": "./fc:status", "var": "out:status", "acceptHtml": [
           {"var": "out:label", "op": "@label"},
@@ -223,7 +223,7 @@
     "acceptHtml": [
       {"op": "//link[@rel='canonical' and contains(@href, 'instagram.com/accounts/')]", "use": "down"},
       {"var": "out:title", "op": "//title/text()"},
-      {"op": "//script", "match": "[^{]+?({.*profile_pic_url[^;]*});",
+      {"op": "//script[contains(text(), 'profile_pic_url')]", "match": "({.+});",
         "acceptJson": [
           {"op": "$.entry_data.ProfilePage[0].graphql.user", "acceptJson": [
             {"var": "out:description", "op": "$.biography"},
@@ -452,6 +452,13 @@
         ]}
       ]}
     ]
+  },
+
+  "are.na:page": {
+    "match": "^are\\.na/(.+?)((/feed/rss)?/?$)",
+    "arguments": [0, {"var": "page"}],
+    "url": "https://www.are.na/$page/feed/rss",
+    "accept": ["rss"]
   },
 
   "legiblenews.com:archives": {
