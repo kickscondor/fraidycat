@@ -135,9 +135,12 @@ crucial. I also have a proof-of-concept Dat website - but Beaker still
 needs to release some fixes I have submitted - only then I will feel okay
 promoting it on the Dat network.
 
-### Firefox / Chrome Web Extension
+### Building the Firefox / Chrome Web Extension
 
-To build the web extension, use:
+If you're checking out the code from Github, make sure you've installed
+[git-lfs](https://git-lfs.github.com) first. Then, clone normally.
+
+Then, to build the web extension, use:
 
     npm install
     npm run webext
@@ -155,12 +158,17 @@ To use Fraidycat, click on the 'F' icon in the browser toolbar.
 (Be aware that syncing may not work when using the extension in this way - it
 does in Chrome, though.)
 
-### Windows / Max / Linux Standalone
+### Building the Windows / Max / Linux Standalone
 
-To build the Electron app:
+If you're checking out the code from Github, make sure you've installed
+[git-lfs](https://git-lfs.github.com) first. Then, clone normally.
 
-    npm install
-    npm run electron
+Then, to build the Electron app:
+
+    npm install -D
+    npm run electron:mac
+    (or: npm run electron:windows)
+    (or: npm run electron:linux)
 
 A `dist` directory will contain the appropriate installers.
 
