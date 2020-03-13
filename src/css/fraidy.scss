@@ -400,6 +400,19 @@ div.intro {
         list-style: none;
       }
 
+      li.light-mode {
+        display: none;
+      }
+
+      @media (prefers-color-scheme: dark) {
+        li.light-mode {
+          display: block;
+        }
+        li.dark-mode {
+          display: none;
+        }
+      }
+
       li > a {
         font-size: 1rem;
         display: block;

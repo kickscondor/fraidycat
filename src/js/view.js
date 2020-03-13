@@ -342,7 +342,8 @@ const ListFollow = ({ location, match }) => ({follows}, actions) => {
           <li class="sep"><Setting name="sort-follows" value="title">A to Z</Setting></li>
           <li><Setting name="mode-updates" value="updatedAt">Show Post Updates</Setting></li>
           <li><Setting name="mode-expand" value="all">Expand All</Setting></li>
-          <li><Setting name="mode-theme" value="dark">Dark Mode</Setting></li>
+          <li class="dark-mode"><Setting name="mode-theme" value="dark">Dark Mode</Setting></li>
+          <li class="light-mode"><Setting name="mode-theme" value="light">Light Mode</Setting></li>
         </ul>
       </div>
     </div>
