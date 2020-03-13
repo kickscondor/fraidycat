@@ -175,8 +175,9 @@ const EditFollowById = ({ match, setup }) => ({follows}) => {
 }
 
 const AddFollow = ({ match, setup }) => ({follows}) => {
-  if (setup)
-    follows.editing = {importance: 0}
+  if (setup) {
+    follows.editing = {url: match.params.url, title: match.params.title, importance: 0}
+  }
 
   return <div id="add-feed">
     <h2>Add a Follow</h2>
