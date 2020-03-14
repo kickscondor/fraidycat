@@ -33,8 +33,18 @@
       "64": "images/flatcat-64.png"
     }
   },
-  "permissions": ["http://*/", "https://*/", "storage", "tabs",
-    "unlimitedStorage", "webRequest", "webRequestBlocking"],
+  "permissions": [
+    "http://*/",
+    "https://*/",
+    "https://instagram.com/*",
+    "https://www.instagram.com/*",
+    "storage",
+    "tabs",
+    "unlimitedStorage",
+    "webRequest",
+    "webRequestBlocking"
+  ],
+
 
   "browser_specific_settings": {
     "gecko": {
