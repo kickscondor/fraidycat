@@ -36,8 +36,10 @@
   "permissions": [
     "http://*/",
     "https://*/",
-    "https://instagram.com/*",
+    "https://m.facebook.com/*",
     "https://www.instagram.com/*",
+    "https://www.reddit.com/*",
+    "https://twitter.com/*",
     "storage",
     "tabs",
     "unlimitedStorage",

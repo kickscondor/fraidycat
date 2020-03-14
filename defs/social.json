@@ -219,7 +219,9 @@
   },
 
   "instagram.com:user": {
-    "match": "^instagram\\.com/",
+    "match": "^instagram\\.com/(.+)",
+    "arguments": [0, {"var": "username"}],
+    "url": "https://www.instagram.com/$username",
     "acceptHtml": [
       {"op": "//link[@rel='canonical' and contains(@href, 'instagram.com/accounts/')]", "use": "down"},
       {"var": "out:title", "op": "//title/text()"},
@@ -379,7 +381,9 @@
   },
 
   "twitter.com:user": {
-    "match": "^twitter\\.com/",
+    "match": "^twitter\\.com/(.+)",
+    "arguments": [0, {"var": "username"}],
+    "url": "https://twitter.com/$username",
     "acceptHtml": [
       {"var": "out:title", "op": "//h1/a/text()"},
       {"var": "out:photos:avatar", "op": "//img[contains(@class, 'ProfileAvatar-image')]/@src"},
