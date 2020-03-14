@@ -313,14 +313,14 @@
   "reddit.com:sub": {
     "match": "^(?:[\\.\\w]+\\.)?reddit\\.com\\/r\\/([^\\/]+)",
     "arguments": [0, {"var": "sub"}],
-    "url": "http://www.reddit.com/r/$sub/top/.rss?sort=top",
+    "url": "https://www.reddit.com/r/$sub/top/.rss?sort=top",
     "accept": ["atom"]
   },
 
   "reddit.com:user": {
     "match": "^(?:[\\.\\w]+\\.)?reddit\\.com\\/user\\/([^\\/]+)",
     "arguments": [0, {"var": "user"}],
-    "url": "http://www.reddit.com/user/$user/.rss",
+    "url": "https://www.reddit.com/user/$user/.rss",
     "accept": ["atom"]
   },
 
