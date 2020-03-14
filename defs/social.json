@@ -424,6 +424,19 @@
     "accept": ["atom"]
   },
 
+  "youtube.com:playlist": {
+    "match": "^youtube\\.com\\/playlist.*[?&]list=([^&]+)",
+    "arguments": [0, {"var": "id"}],
+    "url": "https://www.youtube.com/feeds/videos.xml?playlist_id=$id",
+    "patch": [
+      {"var": "out:posts", "op": "$.posts.*", "patch": [
+        {"var": "out", "op": "$"},
+        {"var": "out:updatedAt"}
+      ]}
+    ],
+    "accept": ["atom"]
+  },
+
   "youtube.com:user": {
     "match": "^youtube\\.com\\/user\\/",
     "acceptHtml": [

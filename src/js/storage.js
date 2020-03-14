@@ -241,7 +241,6 @@ module.exports = {
       console.log(`${meta.feed} hasn't changed.`)
     }
     if (fresh && feed.posts) {
-      let now = new Date()
       //
       // If all entries have identical titles, use the descriptions.
       //
@@ -260,6 +259,7 @@ module.exports = {
       //
       let posts = []
       for (let item of feed.posts) {
+        let now = new Date()
         if (typeof(item.url) !== 'string' ||
           (item.publishedAt && item.publishedAt > now))
           continue
