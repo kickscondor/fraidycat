@@ -11,7 +11,7 @@
   "repository": {
     "url": "https://github.com/kickscondor/fraidycat"
   },
-  "version": "1.1.2",
+  "version": "1.1.3",
   "scripts": {
     "start": "electron ./src",
     "start:firefox": "web-ext run --source-dir ./build/webext/",
@@ -24,7 +24,7 @@
     "dat": "fsbin emptyDir build/dat && fsbin copy src/root/dat build/dat && cross-env STORAGE=dat parcel build src/index.html --no-cache -d build/dat",
     "webext": "fsbin emptyDir build/webext && cross-env STORAGE=webext parcel build src/manifest.json --no-cache --no-source-maps -d build/webext",
     "webext:lint": "web-ext lint --source-dir ./build/webext/",
-    "webext:safe": "find build/webext -type f -name '*.js' | xargs sed -i '' -e 's/Function(\"return this\")/function(){return this}/g' -e 's/\\([=: {]\\)Function(/\\1(function(){return function(){}})(/g'",
+    "webext:safe": "find build/webext -type f -name '*.js' | xargs sed -i='' -e 's/Function(\"return this\")/function(){return this}/g' -e 's/\\([=: {]\\)Function(/\\1(function(){return function(){}})(/g'",
     "publish": "electron-builder -wml -p always",
     "publish:windows": "electron-builder -w -p always"
   },
