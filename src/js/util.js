@@ -56,7 +56,11 @@ export function urlToFeed(abs, href) {
 }
 
 export function urlToNormal (link) {
-  return normalizeUrl(link, {stripProtocol: true, removeDirectoryIndex: true, stripHash: true})
+  try {
+    return normalizeUrl(link, {stripProtocol: true, removeDirectoryIndex: true, stripHash: true})
+  } catch {
+    return link
+  }
 }
 
 export function urlToID (normLink) {

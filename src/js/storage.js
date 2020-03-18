@@ -71,7 +71,7 @@ module.exports = {
     //
     // Update the scraping rules once an hour.
     //
-    let pollFreq = 1000, pollDate = new Date(0), pollMod = "none"
+    let pollFreq = 3000, pollDate = new Date(0), pollMod = "none"
     let fetchScraper = async () => {
       let now = new Date()
       if (now - pollDate > (60 * 60 * 1000)) {
@@ -142,7 +142,10 @@ module.exports = {
   // Periodically update a follow.
   //
   async poll() {
+    let maxToQueue = 8
     for (let id in this.all) {
+      if (!maxToQueue)
+        break
       let upd = this.updating[id]
       if (upd && !upd.done)
         continue
@@ -152,6 +155,7 @@ module.exports = {
         continue
 
       this.pollfetch(follow)
+      maxToQueue--
     }
   },
 
