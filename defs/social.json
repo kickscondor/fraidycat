@@ -3,7 +3,8 @@
     "api.twitch.tv": {"headers:Client-Id": "vnvcshh0aehfkq0bvu6rzpbtaf25et"},
     "m.facebook.com": {"headers:User-Agent": "curl/7.58.0"},
     "twitter.com": {"headers:User-Agent": "curl/7.58.0"},
-    "www.instagram.com": {"headers:User-Agent": "curl/7.58.0"}
+    "www.instagram.com": {"headers:User-Agent": "curl/7.58.0"},
+    "www.googleapis.com": {"query:key": "AIzaSyDURlhB6IxlauyaVdbHdbE31rhJjdiCAyU"}
   },
 
   "default": {
@@ -428,14 +429,31 @@
     "accept": ["atom"]
   },
 
+  "youtube.com:playlistInfo": {
+    "url": "https://www.googleapis.com/youtube/v3/playlists",
+    "request": {"query:part": "snippet", "query:id": "$id"},
+    "acceptJson": [
+      {"op": "$.items[0].snippet", "acceptJson": [
+        {"var": "out:title",         "op": "$.title"},
+        {"var": "out:photos:avatar", "op": "$.thumbnails.default.url"},
+        {"var": "out:description",   "op": "$.description"}
+      ]}
+    ]
+  },
+
   "youtube.com:playlist": {
     "match": "^youtube\\.com\\/playlist.*[?&]list=([^&]+)",
     "arguments": [0, {"var": "id"}],
-    "url": "https://www.youtube.com/feeds/videos.xml?playlist_id=$id",
-    "patch": [
-      {"var": "out:posts", "op": "$.posts.*", "patch": [
-        {"var": "out", "op": "$"},
-        {"var": "out:updatedAt"}
+    "url": "https://www.googleapis.com/youtube/v3/playlistItems",
+    "request": {"query:part": "snippet", "query:playlistId": "$id", "query:maxResults": 50},
+    "depends": ["youtube.com:playlistInfo"], 
+    "acceptJson": [
+      {"op": "$.items.*", "var": "out:posts", "acceptJson": [
+        {"var": "videoId",         "op": "$.snippet.resourceId.videoId"},
+        {"var": "out:title",       "op": "$.snippet.title"},
+        {"var": "out:text",        "op": "$.snippet.description"},
+        {"var": "out:url",         "op": "=https://www.youtube.com/watch?v=$videoId&list=$id"},
+        {"var": "out:publishedAt", "op": "$.snippet.publishedAt", "mod": ["date"]}
       ]}
     ],
     "accept": ["atom"]
