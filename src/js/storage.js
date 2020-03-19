@@ -22,6 +22,7 @@ import u from '@kickscondor/umbrellajs'
 
 const fraidyscrape = require('fraidyscrape')
 const og = require('opml-generator')
+const frago = require('./frago')
 const url = require('url')
 
 const SYNC_FULL = 1
@@ -329,8 +330,7 @@ module.exports = {
       // Sort posts based on the settings.
       //
       Object.assign(meta, feed)
-      meta.sortedBy = sortedBy
-      meta.posts.sort((a, b) => b[sortedBy] > a[sortedBy] ? 1 : -1)
+      frago.sort(meta, this.settings)
     }
 
     feed.fresh = fresh
@@ -385,19 +385,17 @@ module.exports = {
     follow.url = meta.url
     follow.actualTitle = meta.title
     follow.status = meta.status
-    follow.sortedBy = meta.sortedBy
+    follow.author = meta.author
     if (meta.photos)
       follow.photo = meta.photos['avatar'] || Object.values(meta.photos)[0]
 
     //
-    // Add some posts from the other sort method, in case it is toggled.
+    // Select the top posts for every possible sort method, to give us a limited
+    // index of the posts that each filter method would select.
     //
-    let sortOpposite = meta.sortedBy === 'publishedAt' ? 'updatedAt' : 'publishedAt'
-    let oppo = meta.posts.concat().sort((a, b) => b[sortOpposite] > a[sortOpposite] ? 1 : -1)
+    follow.posts = frago.master(meta, ['publishedAt', 'updatedAt'], POSTS_IN_MAIN_INDEX)
+    follow.sortedBy = meta.sortedBy
     follow.limit = POSTS_IN_MAIN_INDEX
-    follow.posts = meta.posts.slice(0, POSTS_IN_MAIN_INDEX)
-    follow.posts = follow.posts.concat(oppo.slice(0, POSTS_IN_MAIN_INDEX).
-      filter(o => !follow.posts.includes(o)))
 
     //
     // Build the 'activity' array - most recent first, then trim

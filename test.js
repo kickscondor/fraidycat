@@ -2,16 +2,18 @@ import test from 'ava'
 const fs = require('fs')
 const frago = require('./src/js/frago')
 
+//
+// 'frago' - piece merging tests
+//
 const syncParts = JSON.parse(fs.readFileSync('test/sync.json'))
 
 test('basic merge on load', t => {
-  t.plan(6)
+  t.plan(5)
   let sync = frago.merge(syncParts, 'follows')
   t.deepEqual(sync.follows['blog.presentandcorrect.com-f29bc778'],
     syncParts['follows/1']['blog.presentandcorrect.com-f29bc778'])
   t.is(1, sync.index['blog.presentandcorrect.com-f29bc778'])
   t.is(0, sync.index['warpdoor.com-3ae79d0c'])
-  t.is(1, sync.maxIndex)
   t.is(61, Object.keys(sync.follows).length)
   t.false(sync.settings.broadcast)
 })
@@ -85,4 +87,19 @@ test('separation on deletions', async t => {
       len += Object.keys(v).length
     })
   t.is(61, len)
+})
+
+//
+// Utility function tests
+//
+const feed = JSON.parse(fs.readFileSync('test/electrolemon.json'))
+
+test('sort by fields', t => {
+  t.plan(2)
+
+  frago.sort(feed, {'mode-updates': 'updatedAt'})
+  t.is(feed.posts.slice(0, 4).map(x => x.id).join(','),
+    'twitter.com-9dde7abc,twitter.com-cab7bde,twitter.com-10a61e13,twitter.com-95ad78d1')
+  let posts = frago.master(feed, ['publishedAt', 'updatedAt'], 10)
+  t.assert(posts.some(x => x.id === 'twitter.com-104e3097'))
 })

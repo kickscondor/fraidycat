@@ -5,6 +5,55 @@
 //
 module.exports = {
   //
+  // Compare two 'post' objects
+  //
+  cmp(follow, a, b, sortPosts, showReposts) {
+    if (!showReposts) {
+      if (!b.author || b.author === follow.author) {
+        if (a.author && a.author !== follow.author)
+          return 1
+      }
+    }
+    return b[sortPosts] > a[sortPosts] ? 1 : -1
+  },
+
+  //
+  // Sort a feed using the above sort function.
+  //
+  sort(follow, settings) {
+    let sortPosts = settings['mode-updates'] || 'publishedAt'
+    let showReposts = settings['mode-reposts'] === 'all'
+    let sortedBy = [sortPosts, showReposts].join(',')
+    if (follow.sortedBy !== sortedBy) {
+      follow.sortedBy = sortedBy
+      follow.posts.sort((a, b) =>
+        this.cmp(follow, a, b, sortPosts, showReposts))
+    }
+  },
+
+  //
+  // Build a truncated master index of various sorts.
+  //
+  master(follow, sortFields, limit) {
+    let posts = follow.posts.slice(0, limit)
+    if (posts.length > 0) {
+      for (let sortField of sortFields) {
+        for (let reposts of [true, false]) {
+          let sb = [sortField, reposts].join(',')
+          if (follow.sortedBy !== sb) {
+            let add = follow.posts.concat().sort((a, b) =>
+              this.cmp(follow, a, b, sortField, reposts)).
+              slice(0, limit)
+            posts = posts.concat(add)
+          }
+        }
+      }
+      posts = Array.from(new Set(posts))
+    }
+    return posts
+  },
+
+  //
   // Merge separated objects back into a single object. The 'items' object is
   // a dictionary with keys of the form 'follows/0', 'follows/1' ... 'follows/N'
   // that are fragments of the 'follows' object. (There can be holes - this will

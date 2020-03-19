@@ -3,6 +3,7 @@ import { h } from 'hyperapp'
 import { jsonDateParser } from "json-date-parser"
 import { Link, Route, Switch } from '@kickscondor/router'
 import EmojiButton from '@kickscondor/emoji-button'
+const frago = require('./frago')
 const url = require('url')
 const sparkline = require('./sparkline')
 import u from '@kickscondor/umbrellajs'
@@ -281,14 +282,12 @@ const ListFollow = ({ location, match }) => ({follows}, actions) => {
   let tag = match.params.tag ? match.params.tag : house
   let tags = {}, imps = {}
   let sortPosts = follows.settings['mode-updates'] || 'publishedAt'
+  let showReposts = follows.settings['mode-reposts'] === 'all'
   let viewable = Object.values(follows.all).filter(follow => {
     let ftags = (follow.tags || [house])
     let lastPost = null
     if (follow.posts instanceof Array && follow.posts[0]) {
-      if (follow.sortedBy !== sortPosts) {
-        follow.sortedBy = sortPosts
-        follow.posts.sort((a, b) => b[sortPosts] > a[sortPosts] ? 1 : -1)
-      }
+      frago.sort(follow, follows.settings)
       lastPost = follow.posts[0]
     }
     ftags.forEach(k => {
@@ -342,6 +341,7 @@ const ListFollow = ({ location, match }) => ({follows}, actions) => {
           <li><Setting name="sort-follows" value="createdAt">Recently Followed</Setting></li>
           <li class="sep"><Setting name="sort-follows" value="title">A to Z</Setting></li>
           <li><Setting name="mode-updates" value="updatedAt">Show Post Updates</Setting></li>
+          <li><Setting name="mode-reposts" value="all">Show Reposts</Setting></li>
           <li><Setting name="mode-expand" value="all">Expand All</Setting></li>
           <li class="dark-mode"><Setting name="mode-theme" value="dark">Dark Mode</Setting></li>
           <li class="light-mode"><Setting name="mode-theme" value="light">Light Mode</Setting></li>
@@ -386,14 +386,15 @@ const ListFollow = ({ location, match }) => ({follows}, actions) => {
             </h3>
             <div class={`extra ${follows.settings['mode-expand'] || "trunc"}`}>
               <div class="post">{follow.posts instanceof Array &&
-                <ol class="title">{follow.posts.slice(0, follow.limit || 10).map(f => {
-                  let postAge = timeAgo(f[sortPosts], now)
-                  return <li class={timeDarkness(f[sortPosts], now)}>
-                    {f.author && <span class="author">{f.author}</span>}
-                    {follow.fetchesContent ? f.title : <a href={f.url}>{f.title}</a>}
-                    <span class="ago">{timeAgo(f[sortPosts], now)}</span>
-                  </li>
-                })}</ol>}
+                <ol class="title">{(showReposts ? follow.posts : follow.posts.filter(x => !x.author || x.author === follow.author)).
+                  slice(0, follow.limit || 10).map(f => {
+                    let postAge = timeAgo(f[sortPosts], now)
+                    return <li class={timeDarkness(f[sortPosts], now)}>
+                      {f.author && <span class="author">{f.author}</span>}
+                      {follow.fetchesContent ? f.title : <a href={f.url}>{f.title}</a>}
+                      <span class="ago">{timeAgo(f[sortPosts], now)}</span>
+                    </li>
+                  })}</ol>}
                 {!follow.fetchesContent && <a class="collapse" href="#"
                   onclick={e => ToggleShow(e, ".extra", "trunc")}>
                     <span class="enter">&#x2ba8;</span>
