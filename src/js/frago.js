@@ -22,7 +22,7 @@ module.exports = {
   //
   sort(follow, settings) {
     let sortPosts = settings['mode-updates'] || 'publishedAt'
-    let showReposts = settings['mode-reposts'] === 'all'
+    let showReposts = settings['mode-reposts'] !== 'hide'
     let sortedBy = [sortPosts, showReposts].join(',')
     if (follow.sortedBy !== sortedBy) {
       follow.sortedBy = sortedBy
