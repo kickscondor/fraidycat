@@ -1,3 +1,4 @@
+const ent = require('ent/decode')
 const normalizeUrl = require('normalize-url')
 import u from '@kickscondor/umbrellajs'
 
@@ -76,7 +77,7 @@ export function followTitle(follow) {
 // HTML traversal and string building.
 //
 function innerHtmlDom(node) {
-  let v = node.value || node.nodeValue
+  let v = node.value || (node.nodeValue && ent(node.nodeValue))
   if (v) return v
 
   if (node.hasChildNodes())
@@ -84,12 +85,11 @@ function innerHtmlDom(node) {
     v = ''
     for (let c = 0; c < node.childNodes.length; c++) {
       let n = node.childNodes[c]
-      v += n.value || n.nodeValue || n.innerHTML
+      v += n.value || (n.nodeValue ? ent(n.nodeValue) : n.innerHTML)
     }
   }
   return v
 }
-
 
 export function xpathDom(doc, node, path, asText, ns) {
   let lookup = null
@@ -107,4 +107,3 @@ export function xpathDom(doc, node, path, asText, ns) {
   }
   return list
 }
-

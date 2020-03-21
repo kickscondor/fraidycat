@@ -390,7 +390,7 @@ const ListFollow = ({ location, match }) => ({follows}, actions) => {
                   slice(0, follow.limit || 10).map(f => {
                     let postAge = timeAgo(f[sortPosts], now)
                     return <li class={timeDarkness(f[sortPosts], now)}>
-                      {f.author && <span class="author">{f.author}</span>}
+                      {f.author && f.author !== follow.author && <span class="author">{f.author}</span>}
                       {follow.fetchesContent ? f.title : <a href={f.url}>{f.title}</a>}
                       <span class="ago">{timeAgo(f[sortPosts], now)}</span>
                     </li>

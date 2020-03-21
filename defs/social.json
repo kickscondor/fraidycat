@@ -84,12 +84,12 @@
           "./channel/link[@type='text/html' and @rel='alternate']/@href",
           "./channel/link[@rel='alternate' or @type='text/html']/@href",
           "./channel/link[not(@rel)]/@href"]},
-        {"op": ["./fc:status", "./channel/fc:status"], "var": "out:status", "acceptXml": [
+        {"op": "./channel/fc:status", "var": "out:status", "acceptXml": [
           {"var": "out:label", "op": "@label"},
           {"var": "out:type", "op": "@type"},
           {"rule": "entry"}
         ]},
-        {"op": ["./item", "./channel/item"], "var": "out:posts", "acceptXml": [
+        {"op": "./channel/item", "var": "out:posts", "acceptXml": [
           {"rule": "entry"}
         ]}
       ]}
@@ -195,6 +195,42 @@
         {"var": "out:updatedAt", "op": "@modified", "mod": ["date"]},
         {"var": "out:url", "op": "=$title", "mod": ["slug", "url"]},
         {"var": "out:title", "op": "=$title"}
+      ]}
+    ]
+  },
+
+  "bandcamp.com:artist-meta": {
+    "url": "https://$artist.bandcamp.com/music",
+    "acceptHtml": [
+      {"var": "out:title", "op": "//meta[@name='title']/@content"},
+      {"var": "out:photos:avatar", "op": "//link[@rel='shortcut icon']/@href"},
+      {"var": "out:description", "op": "//meta[@name='Description']/@content"},
+      {"op": "//ol[@id='band-links']/li/a", "var": "out:rels", "acceptHtml": [
+        {"var": "out:url", "op": "@href", "mod": ["url"]},
+        {"var": "out:title", "op": "text()"}
+      ]},
+      {"op": ["//li[contains(@class, 'music-grid-item')]"],
+       "var": "*", "acceptHtml": [
+        {"var": "id", "op": "@data-item-id"},
+        {"var": "items:$id", "op": ".//a/@href"}
+      ]},
+      {"var": "id", "op": "//div[@id='pagedata']/@data-blob",
+       "match": "band_id=(\\d+)"}
+    ]
+  },
+
+  "bandcamp.com:artist": {
+    "match": "^([\\-\\.\\w]+)\\.bandcamp\\.com(/|$)",
+    "arguments": [0, {"var": "artist"}],
+    "depends": ["bandcamp.com:artist-meta"],
+    "url": "https://bandcamp.com/api/mobile/22/band_details?band_id=$id",
+    "acceptJson": [
+      {"op": "$.discography.*", "var": "out:posts", "acceptJson": [
+        {"var": "itemId", "op": "$.item_id"},
+        {"var": "itemType", "op": "$.item_type"},
+        {"var": "out:url", "op": ["=${items:$itemType-$itemId}", "=/releases"], "mod": ["url"]},
+        {"var": "out:title", "op": "$.title"},
+        {"var": "out:publishedAt", "op": "$.release_date", "mod": ["date"]}
       ]}
     ]
   },
@@ -338,6 +374,22 @@
         {"var": "out:title", "op": ".//a[@itemprop='url']/text()"}
       ]}
     ]
+  },
+
+  "tumblr.com:user": {
+    "match": "^([\\-\\.\\w]+)\\.tumblr\\.com\\/rss",
+    "arguments": [0, {"var": "user"}],
+    "patch": [
+      {"var": "out:author", "op": "=$user"},
+      {"var": "out:posts", "op": "$.posts.*", "patch": [
+        {"var": "out", "op": "$"},
+        {"op": "$.html", "acceptHtml": [
+          {"var": "out:title"},
+          {"var": "out:author", "op": "/p/a[@class='tumblr_blog']"}
+        ]}
+      ]}
+    ],
+    "accept": ["rss"]
   },
 
   "twitch.tv:user": {
