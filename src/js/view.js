@@ -1,4 +1,4 @@
-import { followTitle, html2text, getIndexById, house, Importances } from './util'
+import { followTitle, html2text, getIndexById, house, sortBySettings, Importances } from './util'
 import { h } from 'hyperapp'
 import { jsonDateParser } from "json-date-parser"
 import { Link, Route, Switch } from '@kickscondor/router'

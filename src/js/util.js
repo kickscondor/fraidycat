@@ -73,6 +73,18 @@ export function followTitle(follow) {
   return follow.title || follow.actualTitle || follow.url
 }
 
+export function sortBySettings(follow, settings) {
+  let sortPosts = settings['mode-updates'] || 'publishedAt'
+  let showReposts = settings['mode-reposts'] === 'all'
+  let sortedBy = [sortPosts, showReposts].join(',')
+  if (follow.sortedBy !== sortedBy) {
+    follow.sortedBy = sortedBy
+    follow.posts.sort((a, b) =>
+      ((showReposts || !b.author || b.author === follow.author)
+        && b[sortPosts] > a[sortPosts]) ? 1 : -1)
+  }
+}
+
 //
 // HTML traversal and string building.
 //
