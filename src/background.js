@@ -17,6 +17,7 @@ let start = async function () {
   console.log(`Started up Fraidycat background script. (${local.id})`)
   await local.setup()
   local.server(msg => local[msg.action](msg.data, msg.sender))
+  // local.server(console.log)
   local.backgroundSetup()
 }
 start()

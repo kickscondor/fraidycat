@@ -201,30 +201,38 @@ module.exports = {
       while (req = this.scraper.nextRequest(tasks)) {
         // console.log(req)
         try {
-          //
-          // 'no-cache' is used to ensure that, at minimum, a conditional request
-          // is sent to check for changed content. The 'etag' will then be used
-          // to determine if we need to update the item. (Don't use the 'age'
-          // header - it's possible that another request could have pulled a fresh
-          // request and we're now getting one out of the cache that is technically
-          // fresh to this operation.)
-          //
-          let res = await this.fetch(req.url,
-            Object.assign(req.options, {cache: 'no-cache'}))
-          if (!res.ok) {
-            console.log(`${req.url} is giving a ${res.status} error.`)
-            err = `${req.url} is giving a ${res.status} error.`
+          let obj
+          if (req.render) {
+            obj = await this.render(req.url, this.scraper.options[req.id], tasks)
+          } else {
+            //
+            // 'no-cache' is used to ensure that, at minimum, a conditional request
+            // is sent to check for changed content. The 'etag' will then be used
+            // to determine if we need to update the item. (Don't use the 'age'
+            // header - it's possible that another request could have pulled a fresh
+            // request and we're now getting one out of the cache that is technically
+            // fresh to this operation.)
+            //
+            let res = await this.fetch(req.url,
+              Object.assign(req.options, {cache: 'no-cache'}))
+            if (!res.ok) {
+              console.log(`${req.url} is giving a ${res.status} error.`)
+              err = `${req.url} is giving a ${res.status} error.`
+            }
+
+            obj = await this.scraper.scrape(tasks, req, res)
+
+            if (obj.out && res.headers) {
+              obj.out.etag = res.headers.get('etag')
+                || res.headers.get('last-modified')
+                || res.headers.get('date')
+            }
           }
 
-          let obj = await this.scraper.scrape(tasks, req, res)
           feed = obj.out
           if (!feed) {
             throw new Error("This follow is temporarily down.")
           }
-
-          feed.etag = res.headers.get('etag')
-            || res.headers.get('last-modified')
-            || res.headers.get('date')
         } catch (e) {
           err = e.message
           if (err === "Failed to fetch")
@@ -455,6 +463,13 @@ module.exports = {
   onSync(changes) {
     let obj = this.mergeSynced(changes, 'follows')
     this.sync(obj, SYNC_PARTIAL)
+  },
+
+  onRender(url) {
+    this.scraper.lookupWatch(url, async (r, tasks) => {
+      let res = await fetch(url)
+      try { await this.scraper.scrapeRule(tasks, res, r) } catch {}
+    })
   },
 
   //

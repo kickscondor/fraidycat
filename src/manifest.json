@@ -17,11 +17,17 @@
     "page": "settings.html"
   },
   "content_scripts": [{
-    "matches": ["https://fraidyc.at/s/"],
+    "matches": ["https://fraidyc.at/s/*"],
     "js": ["js/index.js"],
-    "css": ["css/fraidy.scss"]
+    "css": ["css/fraidy.scss"],
+    "all_frames": true
+  }, {
+    "matches": ["*://*/*"],
+    "exclude_matches": ["https://fraidyc.at/s/*"],
+    "js": ["js/webext/content-script.js"],
+    "all_frames": true
   }],
-  "web_accessible_resources": ["fonts/*.*", "images/*.*"],
+  "web_accessible_resources": ["js/iframe.js", "js/index.js", "css/fraidy.scss", "fonts/*.*", "images/*.*"],
   "background": {
     "scripts": ["background.js"]
   },

@@ -128,7 +128,7 @@ const inputMenu = Menu.buildFromTemplate([
 //
 function createWindow() {
   bg = new BrowserWindow({
-    webPreferences: {nodeIntegration: true},
+    webPreferences: {nodeIntegration: true, webviewTag: true},
     show: false
   })
 
@@ -139,7 +139,30 @@ function createWindow() {
     // console.log(details.requestHeaders)
     if (details.requestHeaders['X-FC-User-Agent'])
       details.requestHeaders['User-Agent'] = details.requestHeaders['X-FC-User-Agent']
-    callback({ cancel: false, requestHeaders: details.requestHeaders })
+    callback({cancel: false, requestHeaders: details.requestHeaders})
+  })
+
+  //
+  // Used to whack the x-frame-options header.
+  //
+  bg.webContents.session.webRequest.onHeadersReceived((details, callback) => {
+    if (details.resourceType === 'subFrame') {
+      if (details.responseHeaders['x-frame-options'])
+        delete details.responseHeaders['x-frame-options']
+      if (details.responseHeaders['frame-options'])
+        delete details.responseHeaders['frame-options']
+    }
+    callback({cancel: false, responseHeaders: details.responseHeaders})
+  })
+
+  //
+  // Watch iframe script loading, to allow interception of API calls.
+  //
+  bg.webContents.session.webRequest.onCompleted(details => {
+    if (details.resourceType === 'xhr' && details.webContentsId === bg.webContents.id) {
+      console.log(details)
+      // this.onRender(details.url)
+    }
   })
 
   bg.loadURL(`file://${path.resolve(__dirname, "../../background.html")}`)
@@ -236,6 +259,7 @@ if (!canRun) {
       const contextMenu = Menu.buildFromTemplate([
         { label: 'Fraidycat', click: () => win.show() },
         ...(DEBUG ? [
+          { label: 'Background', click: () => bg.show() },
           { label: 'Update', click: () => {	
             for (var wc of webContents.getAllWebContents()) {	
               wc.send('fraidy', {action: 'updated', data:

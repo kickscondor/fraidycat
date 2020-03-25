@@ -20,7 +20,7 @@
     "electron:linux": "npm run electron:setup && electron-builder -l",
     "electron:mac": "npm run electron:setup && electron-builder -m",
     "electron:windows": "npm run electron:setup && electron-builder -w",
-    "electron:setup": "fsbin emptyDir build/electron && cross-env parcel build src/js/electron/main.js src/index.html src/background.html --target=electron --public-url ./ -d build/electron",
+    "electron:setup": "fsbin emptyDir build/electron && cross-env parcel build src/js/electron/main.js src/js/electron/content-script.js src/index.html src/background.html --target=electron --public-url ./ -d build/electron",
     "dat": "fsbin emptyDir build/dat && fsbin copy src/root/dat build/dat && cross-env STORAGE=dat parcel build src/index.html --no-cache -d build/dat",
     "webext": "fsbin emptyDir build/webext && cross-env STORAGE=webext parcel build src/manifest.json --no-cache --no-source-maps -d build/webext",
     "webext:lint": "web-ext lint --source-dir ./build/webext/",

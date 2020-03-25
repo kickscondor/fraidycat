@@ -14,7 +14,6 @@ class WebextStorage {
   constructor(id) {
     this.id = id 
     this.dom = new DOMParser()
-    this.userAgent = 'X-FC-User-Agent'
     this.baseHref = browser.runtime.getURL ?
       browser.runtime.getURL('/').slice(0, -1) : ''
     this.xpath = xpathDom
@@ -37,6 +36,20 @@ class WebextStorage {
   async fetch(url, options) {
     let req = new Request(url, fixupHeaders(options, ['Cookie', 'User-Agent']))
     return fetch(req)
+  }
+
+  async render(url, site, tasks) {
+    let iframe = document.createElement("iframe")
+    iframe.src = url
+    return new Promise((resolve, reject) => {
+      iframe.addEventListener('load', e => {
+        this.scraper.addWatch(url, {tasks, resolve, reject, iframe, render: site.render,
+          remove: () => document.body.removeChild(iframe)})
+        iframe.contentWindow.postMessage({url, tasks, site}, '*')
+      })
+      document.body.appendChild(iframe)
+      setTimeout(() => this.scraper.removeWatch(url, this.scraper.watch[url]), 40000)
+    })
   }
 
   async mkdir(dest) {
@@ -193,6 +206,12 @@ class WebextStorage {
       this.onSync(changes)
     })
 
+    window.addEventListener('message', e => {
+      let {url, tasks, error} = e.data
+      let entry = this.scraper.watch[url]
+      this.scraper.updateWatch(url, entry, tasks, error)
+    }, false)
+
     let extUrl = browser.extension.getURL("/")
     let rewriteUserAgentHeader = e => {
       // console.log(e)
@@ -222,6 +241,27 @@ class WebextStorage {
 
     browser.webRequest.onBeforeSendHeaders.addListener(rewriteUserAgentHeader,
       {urls: ["<all_urls>"], types: ["xmlhttprequest"]}, ["blocking", "requestHeaders"])
+
+    browser.webRequest.onHeadersReceived.addListener(e => {
+      let initiator = e.initiator || e.originUrl
+      let headers = e.responseHeaders
+      if (e.tabId === -1 && initiator && extUrl && (initiator + "/").startsWith(extUrl)) {
+        for (let i = headers.length - 1; i >= 0; --i) {
+          let header = headers[i].name.toLowerCase()
+          if (header == 'x-frame-options' || header == 'frame-options') {
+            headers.splice(i, 1)
+          }
+        }
+      }
+      return {responseHeaders: headers};
+    }, {urls: ["<all_urls>"]}, ["blocking", "responseHeaders"])
+
+    browser.webRequest.onCompleted.addListener(async e => {
+      let headers = e.responseHeaders
+      if (e.tabId === -1 && e.parentFrameId === 0) {
+        this.onRender(e.url)
+      }
+    }, {urls: ["<all_urls>"], types: ["xmlhttprequest"]})
 
     browser.tabs.query({url: homepage}).then(tabs => {
       tabs.map(x => browser.tabs.reload(x.id))})

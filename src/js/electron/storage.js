@@ -34,6 +34,23 @@ class NodeStorage {
     return fetch(req)
   }
 
+  async render(url, site, tasks) {
+    let iframe = document.createElement("webview")
+    iframe.preload = "./js/electron/content-script.js"
+    iframe.src = url
+    return new Promise((resolve, reject) => {
+      iframe.addEventListener('dom-ready', () => {
+        this.scraper.addWatch(url, {tasks, resolve, reject, iframe, render: site.render,
+          remove: () => document.body.removeChild(iframe)})
+        iframe.send('scrape', {url, tasks, site})
+      })
+      // iframe.addEventListener('console-message', e =>
+      //   console.log(["WebView", e.message]))
+      document.body.appendChild(iframe)
+      setTimeout(() => this.scraper.removeWatch(url, this.scraper.watch[url]), 40000)
+    })
+  }
+
   async mkdir(dest) {
     return new Promise((resolve, reject) => {
       fs.mkdir(dest, {recursive: true}, err => {
@@ -169,7 +186,14 @@ class NodeStorage {
     this.sendMessage({action: 'updated', data, receiver})
   }
 
-  backgroundSetup() { }
+  backgroundSetup() {
+    ipcRenderer.on('scrape', (e, msg) => {
+      let {url, tasks, error} = msg
+      console.log(msg)
+      let entry = this.scraper.watch[url]
+      this.scraper.updateWatch(url, entry, tasks, error)
+    })
+  }
 }
 
 module.exports = async function () {

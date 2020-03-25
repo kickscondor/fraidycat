@@ -15,8 +15,6 @@
     "accept": ["rss", "atom", "rdf", "jsonfeed"]
   },
 
-  "down": {},
-
   "rdf": {
     "namespaces": {
       "content": "http://purl.org/rss/1.0/modules/content/",
@@ -89,7 +87,7 @@
           {"var": "out:type", "op": "@type"},
           {"rule": "entry"}
         ]},
-        {"op": "./channel/item", "var": "out:posts", "acceptXml": [
+        {"op": ["./item", "./channel/item"], "var": "out:posts", "acceptXml": [
           {"rule": "entry"}
         ]}
       ]}
@@ -390,6 +388,38 @@
       ]}
     ],
     "accept": ["rss"]
+  },
+
+  "tiktok.com:profile": {
+    "match": "^([\\.\\w]+\\.)?tiktok\\.com\\/([^\\/?]+)",
+    "arguments": [0, 0, {"var": "user"}],
+    "url": "https://www.tiktok.com/$user",
+    "render": [{
+      "match": "^m\\.tiktok\\.com\\/share\\/item\\/list.+&id=(\\d+)",
+      "validate": ["userId"],
+      "acceptJson": [
+        {"op": "$.body.itemListData.*", "var": "out:posts", "acceptJson": [
+          {"var": "out:title", "op": "$.itemInfos.text"},
+          {"var": "itemId", "op": "$.itemInfos.id"},
+          {"var": "username", "op": "$.authorInfos.uniqueId"},
+          {"var": "out:publishedAt", "op": "$.itemInfos.createTime",
+            "mod": ["int", "*1000", "date"]},
+          {"var": "out:graphic:full", "op": ["$.itemInfos.coversDynamic[0]", "$.itemInfos.covers[0]"]},
+          {"var": "out:url", "op": "=https://www.tiktok.com/@$username/video/$itemId"}
+        ]}
+      ]
+    }],
+    "acceptJson": [
+      {"op": "$.__NEXT_DATA__", "acceptJson": [
+        {"op": "$.props.pageProps.userInfo.user", "acceptJson": [
+          {"var": "userId", "op": "$.id"},
+          {"var": "secUid", "op": "$.secUid"},
+          {"var": "out:title", "op": "$.nickname"},
+          {"var": "out:photos:avatar", "op": "$.avatarThumb"},
+          {"var": "out:description", "op": "$.signature"}
+        ]}
+      ]}
+    ]
   },
 
   "twitch.tv:user": {
