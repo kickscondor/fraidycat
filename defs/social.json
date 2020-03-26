@@ -82,7 +82,7 @@
           "./channel/link[@type='text/html' and @rel='alternate']/@href",
           "./channel/link[@rel='alternate' or @type='text/html']/@href",
           "./channel/link[not(@rel)]/@href"]},
-        {"op": "./channel/fc:status", "var": "out:status", "acceptXml": [
+        {"op": ["./fc:status", "./channel/fc:status"], "var": "out:status", "acceptXml": [
           {"var": "out:label", "op": "@label"},
           {"var": "out:type", "op": "@type"},
           {"rule": "entry"}
@@ -201,7 +201,7 @@
     "url": "https://$artist.bandcamp.com/music",
     "acceptHtml": [
       {"var": "out:title", "op": "//meta[@name='title']/@content"},
-      {"var": "out:photos:avatar", "op": "//link[@rel='shortcut icon']/@href"},
+      {"var": "out:photos:avatar", "op": "//meta[@property='og:image']/@content"},
       {"var": "out:description", "op": "//meta[@name='Description']/@content"},
       {"op": "//ol[@id='band-links']/li/a", "var": "out:rels", "acceptHtml": [
         {"var": "out:url", "op": "@href", "mod": ["url"]},
