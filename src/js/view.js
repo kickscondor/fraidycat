@@ -277,6 +277,12 @@ function lastPostTime(follow, sortPosts) {
   return lastPostAt
 }
 
+const Favicon = function(follow) {
+  let src = null
+  try { src = url.resolve(follow.url, follow.photo || '/favicon.ico') } catch {}
+  return src || (follows.baseHref + svg['globe'])
+}
+
 const ListFollow = ({ location, match }) => ({follows}, actions) => {
   let now = new Date()
   let tag = match.params.tag ? match.params.tag : house
@@ -367,7 +373,7 @@ const ListFollow = ({ location, match }) => ({follows}, actions) => {
             <a name={id}></a>
             <h3>
               <Link to={linkUrl}>
-                <img class="favicon" src={url.resolve(follow.url, follow.photo || '/favicon.ico')}
+                <img class="favicon" src={Favicon(follow)}
                   onerror={e => e.target.src=follows.baseHref + svg['globe']} width="20" height="20" />
               </Link>
               <Link class="url" to={linkUrl}>{followTitle(follow)}</Link>

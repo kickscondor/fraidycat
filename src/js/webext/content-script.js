@@ -1,5 +1,5 @@
 import 'regenerator-runtime/runtime'
-import { xpathDom } from './util' 
+import { xpathDom } from '../util' 
 
 if (window.self !== window.top) {
   const browser = require('webextension-polyfill')
