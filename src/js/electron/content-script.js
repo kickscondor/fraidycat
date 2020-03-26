@@ -7,7 +7,6 @@ const fraidyscrape = require('fraidyscrape')
 ipcRenderer.on('scrape', async (e, msg) => {
   let {tasks, site, url} = msg
   let scraper = new fraidyscrape({}, new DOMParser(), xpathDom)
-  console.log(msg)
   let error = null
   try {
     await scraper.scrapeRender(tasks, site, window)

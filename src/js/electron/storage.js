@@ -5,10 +5,10 @@ const fs = require('fs')
 const path = require('path')
 const util = require('util')
 
-class NodeStorage {
+class ElectronStorage {
   constructor(session) {
     this.session = session
-    this.id = remote.getCurrentWebContents().id
+    this.webContents = remote.getCurrentWebContents()
     this.dom = new DOMParser()
     this.appPath = path.join(remote.app.getPath('userData'), 'File Storage')
     this.xpath = xpathDom
@@ -37,12 +37,18 @@ class NodeStorage {
   async render(url, site, tasks) {
     let iframe = document.createElement("webview")
     iframe.preload = "./js/electron/content-script.js"
+    iframe.enableremotemodule = false
     iframe.src = url
     return new Promise((resolve, reject) => {
       iframe.addEventListener('dom-ready', () => {
         this.scraper.addWatch(url, {tasks, resolve, reject, iframe, render: site.render,
           remove: () => document.body.removeChild(iframe)})
         iframe.send('scrape', {url, tasks, site})
+      })
+      iframe.addEventListener('ipc-message', e => {
+        let {url, tasks, error} = e.args[0]
+        let entry = this.scraper.watch[url]
+        this.scraper.updateWatch(url, entry, tasks, error)
       })
       // iframe.addEventListener('console-message', e =>
       //   console.log(["WebView", e.message]))
@@ -172,7 +178,7 @@ class NodeStorage {
   }
 
   sendMessage(obj) {
-    obj.sender = this.id
+    obj.sender = this.webContents.id
     if (obj.data)
       obj.data = this.encode(obj.data)
     return ipcRenderer.invoke('fraidy', obj)
@@ -187,16 +193,19 @@ class NodeStorage {
   }
 
   backgroundSetup() {
-    ipcRenderer.on('scrape', (e, msg) => {
-      let {url, tasks, error} = msg
-      console.log(msg)
-      let entry = this.scraper.watch[url]
-      this.scraper.updateWatch(url, entry, tasks, error)
+    //
+    // Watch iframe script loading, to allow interception of API calls.
+    //
+    this.webContents.session.webRequest.onCompleted(details => {
+      if (details.resourceType === 'xhr' && details.webContentsId !== this.webContents.id) {
+        // console.log(details.url)
+        this.onRender(details.url)
+      }
     })
   }
 }
 
 module.exports = async function () {
   let session = Math.random().toString(36)
-  return new NodeStorage(session)
+  return new ElectronStorage(session)
 }

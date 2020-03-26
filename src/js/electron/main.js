@@ -155,16 +155,6 @@ function createWindow() {
     callback({cancel: false, responseHeaders: details.responseHeaders})
   })
 
-  //
-  // Watch iframe script loading, to allow interception of API calls.
-  //
-  bg.webContents.session.webRequest.onCompleted(details => {
-    if (details.resourceType === 'xhr' && details.webContentsId === bg.webContents.id) {
-      console.log(details)
-      // this.onRender(details.url)
-    }
-  })
-
   bg.loadURL(`file://${path.resolve(__dirname, "../../background.html")}`)
 
   win = new BrowserWindow({
