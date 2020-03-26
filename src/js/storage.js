@@ -248,8 +248,7 @@ module.exports = {
     //
     // Merge the new posts into the feed's master post list.
     //
-    let sortedBy = this.settings['mode-updates'] || 'publishedAt'
-    let fresh = (force || !feed.etag || feed.etag !== meta.etag || sortedBy !== meta.sortedBy)
+    let fresh = (force || !feed.etag || feed.etag !== meta.etag)
     if (!fresh) {
       console.log(`${meta.feed} hasn't changed.`)
     }
@@ -338,7 +337,8 @@ module.exports = {
       // Sort posts based on the settings.
       //
       Object.assign(meta, feed)
-      frago.sort(meta, this.settings)
+      frago.sort(meta, this.settings['mode-updates'] || 'publishedAt',
+        this.settings['mode-reposts'] !== 'hide')
     }
 
     feed.fresh = fresh

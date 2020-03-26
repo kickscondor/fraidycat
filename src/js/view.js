@@ -286,8 +286,10 @@ const ListFollow = ({ location, match }) => ({follows}, actions) => {
   let viewable = Object.values(follows.all).filter(follow => {
     let ftags = (follow.tags || [house])
     let lastPost = null
+    let isShown = ftags.includes(tag)
+    if (isShown) imps[follow.importance] = true
     if (follow.posts instanceof Array && follow.posts[0]) {
-      frago.sort(follow, follows.settings)
+      frago.sort(follow, sortPosts, showReposts)
       lastPost = follow.posts[0]
     }
     ftags.forEach(k => {
@@ -297,8 +299,6 @@ const ListFollow = ({ location, match }) => ({follows}, actions) => {
       if (lastPost && follow.importance === 0 && at < lastPost[sortPosts])
         tags[k] = lastPost[sortPosts]
     })
-    let isShown = ftags.includes(tag)
-    if (isShown) imps[follow.importance] = true
     return isShown
   }).sort((a, b) => {
     let sortBy = follows.settings['sort-follows']

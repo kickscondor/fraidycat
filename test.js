@@ -97,9 +97,9 @@ const feed = JSON.parse(fs.readFileSync('test/electrolemon.json'))
 test('sort by fields', t => {
   t.plan(2)
 
-  frago.sort(feed, {'mode-updates': 'updatedAt'})
+  frago.sort(feed, 'updatedAt', true)
   t.is(feed.posts.slice(0, 4).map(x => x.id).join(','),
-    'twitter.com-9dde7abc,twitter.com-cab7bde,twitter.com-10a61e13,twitter.com-95ad78d1')
+    'twitter.com-104e3097,twitter.com-9c0d8cfc,twitter.com-9dde7abc,twitter.com-cab7bde')
   let posts = frago.master(feed, ['publishedAt', 'updatedAt'], 10)
   t.assert(posts.some(x => x.id === 'twitter.com-104e3097'))
 })

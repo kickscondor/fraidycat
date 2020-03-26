@@ -7,27 +7,27 @@ module.exports = {
   //
   // Compare two 'post' objects
   //
-  cmp(follow, a, b, sortPosts, showReposts) {
-    if (!showReposts) {
-      if (!b.author || b.author === follow.author) {
-        if (a.author && a.author !== follow.author)
-          return 1
+  cmp(follow, sortPosts, showReposts) {
+    return function(a, b) {
+      if (!showReposts) {
+        let n = (((!b.author || b.author === follow.author) ? 1 : 0) -
+          ((!a.author || a.author === follow.author) ? 1 : 0))
+        if (n != 0)
+          return n
       }
+      return b[sortPosts] > a[sortPosts] ? 1 : -1
     }
-    return b[sortPosts] > a[sortPosts] ? 1 : -1
   },
 
   //
   // Sort a feed using the above sort function.
   //
-  sort(follow, settings) {
-    let sortPosts = settings['mode-updates'] || 'publishedAt'
-    let showReposts = settings['mode-reposts'] !== 'hide'
-    let sortedBy = [sortPosts, showReposts].join(',')
+  sort(follow, sortPosts, showReposts) {
+    let sortedBy = sortPosts + "," + showReposts
     if (follow.sortedBy !== sortedBy) {
       follow.sortedBy = sortedBy
-      follow.posts.sort((a, b) =>
-        this.cmp(follow, a, b, sortPosts, showReposts))
+      let fn = this.cmp(follow, sortPosts, showReposts)
+      follow.posts.sort(fn)
     }
   },
 
@@ -35,20 +35,23 @@ module.exports = {
   // Build a truncated master index of various sorts.
   //
   master(follow, sortFields, limit) {
-    let posts = follow.posts.slice(0, limit)
-    if (posts.length > 0) {
+    let posts = follow.posts
+    if (limit < follow.posts.length) {
+      posts = posts.slice(0, limit)
       for (let sortField of sortFields) {
         for (let reposts of [true, false]) {
-          let sb = [sortField, reposts].join(',')
+          let sb = sortField + "," + reposts
           if (follow.sortedBy !== sb) {
-            let add = follow.posts.concat().sort((a, b) =>
-              this.cmp(follow, a, b, sortField, reposts)).
-              slice(0, limit)
-            posts = posts.concat(add)
+            let fn = this.cmp(follow, sortField, reposts)
+            let add = follow.posts.concat().sort(fn)
+            for (let i = 0; i < limit; i++) {
+              let x = add[i]
+              if (!posts.includes(x))
+                posts.push(x)
+            }
           }
         }
       }
-      posts = Array.from(new Set(posts))
     }
     return posts
   },
