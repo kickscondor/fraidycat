@@ -409,8 +409,8 @@
         ]}
       ]
     }],
-    "acceptJson": [
-      {"op": "$.__NEXT_DATA__", "acceptJson": [
+    "acceptHtml": [
+      {"op": "//script[@id='__NEXT_DATA__']/text()", "match": ".", "acceptJson": [
         {"op": "$.props.pageProps.userInfo.user", "acceptJson": [
           {"var": "userId", "op": "$.id"},
           {"var": "secUid", "op": "$.secUid"},

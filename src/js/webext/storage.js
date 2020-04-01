@@ -45,7 +45,7 @@ class WebextStorage {
       iframe.addEventListener('load', e => {
         this.scraper.addWatch(url, {tasks, resolve, reject, iframe, render: site.render,
           remove: () => document.body.removeChild(iframe)})
-        iframe.contentWindow.postMessage({url, tasks, site}, '*')
+        iframe.contentWindow.postMessage(this.encode({url, tasks, site}), '*')
       })
       document.body.appendChild(iframe)
       setTimeout(() => this.scraper.removeWatch(url, this.scraper.watch[url]), 40000)
@@ -207,7 +207,7 @@ class WebextStorage {
     })
 
     window.addEventListener('message', e => {
-      let {url, tasks, error} = e.data
+      let {url, tasks, error} = this.decode(e.data)
       let entry = this.scraper.watch[url]
       this.scraper.updateWatch(url, entry, tasks, error)
     }, false)

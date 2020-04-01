@@ -214,7 +214,7 @@ if (!canRun) {
 } else {
   app.on('second-instance', () => {
     if (win) {
-      if (win.isMinimized()) win.restore()
+      win.show()
       win.focus()
     }
   })
