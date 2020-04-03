@@ -47,13 +47,12 @@ class ElectronStorage {
       })
       iframe.addEventListener('ipc-message', e => {
         let {url, tasks, error} = e.args[0]
-        let entry = this.scraper.watch[url]
-        this.scraper.updateWatch(url, entry, tasks, error)
+        this.scraper.updateWatch(url, tasks, error)
       })
       // iframe.addEventListener('console-message', e =>
       //   console.log(["WebView", e.message]))
       document.body.appendChild(iframe)
-      setTimeout(() => this.scraper.removeWatch(url, this.scraper.watch[url]), 40000)
+      setTimeout(() => this.scraper.removeWatch(url), 40000)
     })
   }
 

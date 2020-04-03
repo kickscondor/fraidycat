@@ -48,7 +48,7 @@ class WebextStorage {
         iframe.contentWindow.postMessage(this.encode({url, tasks, site}), '*')
       })
       document.body.appendChild(iframe)
-      setTimeout(() => this.scraper.removeWatch(url, this.scraper.watch[url]), 40000)
+      setTimeout(() => this.scraper.removeWatch(url), 40000)
     })
   }
 
@@ -208,8 +208,7 @@ class WebextStorage {
 
     window.addEventListener('message', e => {
       let {url, tasks, error} = this.decode(e.data)
-      let entry = this.scraper.watch[url]
-      this.scraper.updateWatch(url, entry, tasks, error)
+      this.scraper.updateWatch(url, tasks, error)
     }, false)
 
     let extUrl = browser.extension.getURL("/")
