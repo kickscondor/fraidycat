@@ -403,8 +403,8 @@ const ListFollow = ({ location, match }) => ({follows}, actions) => {
                   })}</ol>}
                 {!follow.fetchesContent && <a class="collapse" href="#"
                   onclick={e => ToggleShow(e, ".extra", "trunc")}>
-                    <span class="enter">&#x2ba8;</span>
-                    <span class="close">&#x1f7ab;</span>
+                    <span class="enter">&#x25b6;</span>
+                    <span class="close">&#x2bc6;</span>
                     </a>}
               </div>
             </div>

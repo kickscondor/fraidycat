@@ -20,7 +20,7 @@ $themes: (
     tabfresh: #AADDBB,
     border: #FFAA99,
     button: #EECCAA,
-    rule: #CC7777,
+    rule: #CCCC77,
     paper: #FFFFFF,
     sparkfreshline: #FF0099,
     sparkfreshfill: #FFC0CB,
@@ -477,8 +477,7 @@ div.intro {
       overflow: hidden;
       max-width: calc(100% - 40px);
       white-space: nowrap;
-      margin-bottom: -4px;
-      margin-top: 4px;
+      margin: 4px 4px -6px 4px;
 
       @include themed() {
         color: t('notice');
@@ -561,8 +560,8 @@ div.intro {
 
   div.extra {
     font-size: 1.1rem;
-    margin-bottom: 6px;
-    padding-left: 33px;
+    margin: 6px 0;
+    padding-left: 30px;
 
     .enter {
       display: none;
@@ -573,9 +572,6 @@ div.intro {
     }
 
     ol.title {
-      list-style: square;
-      color: #FA9;
-
       li {
         margin-bottom: 6px;
 
@@ -639,19 +635,21 @@ div.intro {
 
     a.collapse {
       user-select: none;
-      display: inline-block;
+      display: block;
+      position: absolute;
+      top: 0;
+      left: 0;
       border-radius: 7px;
       font-weight: bold;
       font-size: 14px;
       baseline-shift: -3px;
       text-decoration: none;
       padding: 0px 6px 0 4px;
-      margin: 0px 6px;
+      margin: 2px 3px;
       overflow: hidden;
-      background-color: #579;
 
       @include themed() {
-        color: t('tab');
+        color: t('rule');
       }
     }
   }
@@ -676,6 +674,21 @@ div.intro {
       height: 1.5rem;
       white-space: nowrap;
       max-width: calc(100% - 50px);
+
+      &:after {
+        content: "";
+        position: absolute;
+        z-index: 1;
+        bottom: 0;
+        right: 40px;
+        pointer-events: none;
+        width: 40px;
+        height: 100%;
+
+        @include themed() {
+          background-image: linear-gradient(to right, rgba(t('background'), 0), t('background') 90%);
+        }
+      }
 
       li {
         display: inline-block;
