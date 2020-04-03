@@ -75,8 +75,8 @@
     "@kickscondor/umbrellajs": "^3.1.2",
     "@shelacek/ubjson": "^1.0.1",
     "about-window": "^1.13.2",
-    "cross-env": "^6.0.3",
-    "electron-log": "^4.1.0",
+    "cross-env": "^7.0.2",
+    "electron-log": "^4.1.1",
     "electron-process": "^0.2.0",
     "electron-updater": "^4.2.5",
     "ent": "^2.2.0",
@@ -93,15 +93,15 @@
     "yarn": "^1.22.4"
   },
   "devDependencies": {
-    "@babel/core": "^7.8.7",
-    "@babel/preset-env": "^7.8.7",
+    "@babel/core": "^7.9.0",
+    "@babel/preset-env": "^7.9.0",
     "ava": "^2.4.0",
-    "electron": "^7.1.14",
-    "electron-builder": "^21.2.0",
-    "electron-notarize": "^0.2.1",
+    "electron": "^8.2.0",
+    "electron-builder": "^22.4.1",
+    "electron-notarize": "^0.3.0",
     "node-sass": "^4.13.1",
     "parcel-plugin-web-extension": "^1.6.1",
-    "web-ext": "^3.2.1",
-    "webextension-polyfill": "^0.4.0"
+    "web-ext": "^4.1.0",
+    "webextension-polyfill": "^0.6.0"
   }
 }
