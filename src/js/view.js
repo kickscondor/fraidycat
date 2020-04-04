@@ -204,13 +204,16 @@ const AddFeed = () => ({follows, settings}, actions) => {
 }
 
 function timeAgo(from_time, to_time) {
+  if (Number(from_time) == 0)
+    return ''
+
   from_time = Math.floor(from_time / 1000)
   to_time = Math.floor(to_time / 1000)
   let mins = Math.round(Math.abs(to_time - from_time)/60)
 
-  if (mins >= 0 && mins <= 1) 
+  if (mins == 0)
     return '1m'
-  if (mins >= 2 && mins <= 45)
+  if (mins >= 1 && mins <= 45)
     return mins + 'm'
   if (mins >= 46 && mins <= 90)
     return '1h'
@@ -293,10 +296,12 @@ const ListFollow = ({ location, match }) => ({follows}, actions) => {
     let ftags = (follow.tags || [house])
     let lastPost = null
     let isShown = ftags.includes(tag)
-    if (isShown) imps[follow.importance] = true
-    if (follow.posts instanceof Array && follow.posts[0]) {
-      frago.sort(follow, sortPosts, showReposts)
-      lastPost = follow.posts[0]
+    if (isShown) {
+      imps[follow.importance] = true
+      if (follow.posts instanceof Array && follow.posts[0]) {
+        frago.sort(follow, sortPosts, showReposts)
+        lastPost = follow.posts[0]
+      }
     }
     ftags.forEach(k => {
       let at = tags[k]
