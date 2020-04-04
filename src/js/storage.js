@@ -338,7 +338,7 @@ module.exports = {
       //
       Object.assign(meta, feed)
       frago.sort(meta, this.settings['mode-updates'] || 'publishedAt',
-        this.settings['mode-reposts'] !== 'hide')
+        this.settings['mode-reposts'] !== 'hide', true)
     }
 
     feed.fresh = fresh
