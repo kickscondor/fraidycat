@@ -67,7 +67,7 @@
       }
     ]
   },
-  "browserslist": "firefox >= 56, chrome >= 49",
+  "browserslist": "firefox >= 57, chrome >= 49",
   "dependencies": {
     "@kickscondor/elasticlunr": "^0.9.8",
     "@kickscondor/emoji-button": "^2.1.4",
