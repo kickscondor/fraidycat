@@ -22,9 +22,9 @@ module.exports = {
   //
   // Sort a feed using the above sort function.
   //
-  sort(follow, sortPosts, showReposts) {
+  sort(follow, sortPosts, showReposts, force) {
     let sortedBy = sortPosts + "," + showReposts
-    if (follow.sortedBy !== sortedBy) {
+    if (force || follow.sortedBy !== sortedBy) {
       follow.sortedBy = sortedBy
       let fn = this.cmp(follow, sortPosts, showReposts)
       follow.posts.sort(fn)

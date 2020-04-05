@@ -302,7 +302,7 @@ const ListFollow = ({ location, match }) => ({follows}, actions) => {
     }
     if (follow.posts instanceof Array && follow.posts[0]) {
       if (isShown) {
-        frago.sort(follow, sortPosts, showReposts)
+        frago.sort(follow, sortPosts, showReposts, false)
       }
       lastPost = follow.posts[0]
     }

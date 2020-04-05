@@ -94,10 +94,10 @@ test('separation on deletions', async t => {
 //
 const feed = JSON.parse(fs.readFileSync('test/electrolemon.json'))
 
-test('sort by fields', t => {
+test('electrolemon: sort by fields', t => {
   t.plan(2)
 
-  frago.sort(feed, 'updatedAt', true)
+  frago.sort(feed, 'updatedAt', true, true)
   t.is(feed.posts.slice(0, 4).map(x => x.id).join(','),
     'twitter.com-104e3097,twitter.com-9c0d8cfc,twitter.com-9dde7abc,twitter.com-cab7bde')
   let posts = frago.master(feed, ['publishedAt', 'updatedAt'], 10)
