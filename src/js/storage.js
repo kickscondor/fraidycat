@@ -17,7 +17,7 @@
 // instance to run alone, with no syncing, should the user want it that way.
 //
 import { followTitle, house, html2text, getIndexById, Importances,
-  urlToFeed, urlToID, urlToNormal } from './util'
+  urlToFeed, urlToID, urlToNormal, isValidFollow } from './util'
 import u from '@kickscondor/umbrellajs'
 
 const fraidyscrape = require('fraidyscrape')
@@ -500,14 +500,18 @@ module.exports = {
       if ('index' in inc)
         Object.assign(this.index, inc.index)
 
-      this.noteUpdate(Object.keys(inc.follows), false)
-      for (let id in inc.follows) {
+      let ids = Object.keys(inc.follows)
+      this.noteUpdate(ids, false)
+      for (let id of ids) {
         try {
-          if (id.match && id.match(/-\w{8}$/)) {
-            let current = this.all[id], incoming = inc.follows[id], notify = false
+          let current = this.all[id], incoming = inc.follows[id], notify = false
+          if (isValidFollow(incoming)) {
+            if (!(id.match && id.match(/-\w{8}$/))) {
+              id = urlToID(urlToNormal(incoming.url))
+            }
             if (!(id in this.follows))
               this.follows[id] = incoming
-            if (!current || current.editedAt < incoming.editedAt) {
+            if (!current || current.editedAt < incoming.editedAt || !isValidFollow(current)) {
               if (incoming.deleted) {
                 this.follows[id] = incoming
                 if (current) {

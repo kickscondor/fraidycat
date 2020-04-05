@@ -73,6 +73,10 @@ export function followTitle(follow) {
   return follow.title || follow.actualTitle || follow.url
 }
 
+export function isValidFollow(follow) {
+  return follow.url && follow.feed && follow.id
+}
+
 export function sortBySettings(follow, settings) {
   let sortPosts = settings['mode-updates'] || 'publishedAt'
   let showReposts = settings['mode-reposts'] === 'all'

@@ -1,4 +1,5 @@
-import { followTitle, html2text, getIndexById, house, sortBySettings, Importances } from './util'
+import { followTitle, html2text, getIndexById, house, sortBySettings,
+  isValidFollow, Importances } from './util'
 import { h } from 'hyperapp'
 import { jsonDateParser } from "json-date-parser"
 import { Link, Route, Switch } from '@kickscondor/router'
@@ -280,10 +281,10 @@ function lastPostTime(follow, sortPosts) {
   return lastPostAt
 }
 
-const Favicon = function(follow) {
+const Favicon = function(baseHref, follow) {
   let src = null
   try { src = url.resolve(follow.url, follow.photo || '/favicon.ico') } catch {}
-  return src || (follows.baseHref + svg['globe'])
+  return src || (baseHref + svg['globe'])
 }
 
 const ListFollow = ({ location, match }) => ({follows}, actions) => {
@@ -295,13 +296,15 @@ const ListFollow = ({ location, match }) => ({follows}, actions) => {
   let viewable = Object.values(follows.all).filter(follow => {
     let ftags = (follow.tags || [house])
     let lastPost = null
-    let isShown = ftags.includes(tag)
+    let isShown = ftags.includes(tag) && follow.url && follow.id
     if (isShown) {
       imps[follow.importance] = true
-      if (follow.posts instanceof Array && follow.posts[0]) {
+    }
+    if (follow.posts instanceof Array && follow.posts[0]) {
+      if (isShown) {
         frago.sort(follow, sortPosts, showReposts)
-        lastPost = follow.posts[0]
       }
+      lastPost = follow.posts[0]
     }
     ftags.forEach(k => {
       let at = tags[k]
@@ -378,7 +381,7 @@ const ListFollow = ({ location, match }) => ({follows}, actions) => {
             <a name={id}></a>
             <h3>
               <Link to={linkUrl}>
-                <img class="favicon" src={Favicon(follow)}
+                <img class="favicon" src={Favicon(follows.baseHref, follow)}
                   onerror={e => e.target.src=follows.baseHref + svg['globe']} width="20" height="20" />
               </Link>
               <Link class="url" to={linkUrl}>{followTitle(follow)}</Link>
