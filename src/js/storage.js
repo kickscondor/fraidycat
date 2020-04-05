@@ -505,7 +505,7 @@ module.exports = {
       for (let id of ids) {
         try {
           let current = this.all[id], incoming = inc.follows[id], notify = false
-          if (isValidFollow(incoming)) {
+          if (incoming.url) {
             if (!(id.match && id.match(/-\w{8}$/))) {
               id = urlToID(urlToNormal(incoming.url))
             }
@@ -552,7 +552,7 @@ module.exports = {
 
     if (syncType === SYNC_FULL) {
       for (let id in this.all) {
-        if (!inc.follows || !inc.follows[id]) {
+        if (!this.follows[id]) {
           follows.push(id)
           this.notifyFollow(this.all[id])
         }

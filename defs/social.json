@@ -69,7 +69,7 @@
         {"var": "out:url", "op": ["./link/text()",
           "./link[@type='text/html' and @rel='alternate']/@href",
           "./link[@rel='alternate' or @type='text/html']/@href",
-          "./link[not(@rel)]/@href"]},
+          "./link[not(@rel)]/@href", "./enclosure/@url"]},
         {"var": "out:publishedAt", "op": "./pubDate/text()", "mod": ["date"]}
       ]
     },
