@@ -7,13 +7,14 @@
 import '../../js/environment'
 import 'regenerator-runtime/runtime'
 import images from '../../images/*.png'
-const { Worker, isMainThread, parentPort } = require('worker_threads')
-const { app, BrowserWindow, ipcMain, webContents, Menu, session, shell, Tray } = require('electron')
-const path = require('path')
 const openAboutWindow = require('about-window').default
+const { app, BrowserWindow, ipcMain, webContents, Menu, session, shell, Tray } = require('electron')
 const { autoUpdater } = require('electron-updater')
+const path = require('path')
 
 const isMac = process.platform === 'darwin'
+const isWindows = process.platform === 'windows'
+const isLinux = process.platform === 'linux'
 const DEBUG = false
 
 const homepage = 'https://fraidyc.at/'
@@ -195,6 +196,9 @@ function createWindow() {
   })
   for (let w of [bg, win]) {
     w.on("close", ev => {
+      if (isLinux && w === win) {
+        quit()
+      }
       if (!app.isQuitting) {
         ev.preventDefault()
         w.hide()
@@ -239,12 +243,12 @@ if (!canRun) {
   })
 
   //
-  // On Windows and Linux, a systray icon is used to keep the app in the
+  // On Windows, a systray icon is used to keep the app in the
   // background and allow follows to update there.
   //
   var tray
   app.once("ready", async () => {
-    if (!isMac) {
+    if (isWindows) {
       tray = new Tray(path.resolve(__dirname, "../../", images['flatcat-32']))
       const contextMenu = Menu.buildFromTemplate([
         { label: 'Fraidycat', click: () => win.show() },
@@ -266,7 +270,7 @@ if (!canRun) {
     autoUpdater.checkForUpdatesAndNotify()
   })
 
-  if (isMac) {
+  if (!isWindows) {
     app.on("before-quit", () => {
       app.isQuitting = true
     })
