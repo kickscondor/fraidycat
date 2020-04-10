@@ -216,7 +216,7 @@ module.exports = {
             let res = await this.fetch(req.url,
               Object.assign(req.options, {cache: 'no-cache'}))
             if (!res.ok) {
-              console.log(`${req.url} is giving a ${res.status} error.`)
+              // console.log(`${req.url} is giving a ${res.status} error.`)
               err = `${req.url} is giving a ${res.status} error.`
             }
 
@@ -249,9 +249,9 @@ module.exports = {
     // Merge the new posts into the feed's master post list.
     //
     let fresh = (force || !feed.etag || feed.etag !== meta.etag)
-    if (!fresh) {
-      console.log(`${meta.feed} hasn't changed.`)
-    }
+    // if (!fresh) {
+    //   console.log(`${meta.feed} hasn't changed.`)
+    // }
     if (fresh && feed.posts) {
       //
       // If all entries have identical titles, use the descriptions.
@@ -440,7 +440,7 @@ module.exports = {
   async fetchfeed(follow, force) {
     let id = follow.id || urlToID(urlToNormal(follow.url))
     this.noteUpdate([id], false)
-    console.log(`Updating ${followTitle(follow)}`)
+    // console.log(`Updating ${followTitle(follow)}`)
     let feed
     try {
       feed = await this.refetch(id, follow, force)
@@ -495,7 +495,7 @@ module.exports = {
   //
   async sync(inc, syncType) {
     let updated = false, follows = []
-    console.log(inc)
+    // console.log(inc)
     if ('follows' in inc) {
       if ('index' in inc)
         Object.assign(this.index, inc.index)
@@ -781,7 +781,7 @@ module.exports = {
         this.update({op: 'subscription', follow}, sender)
       }
     } catch (e) {
-      console.log(e)
+      // console.log(e)
       if (e.message)
         e = e.message
       this.update({op: 'error', message: e}, sender)

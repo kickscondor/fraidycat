@@ -303,13 +303,13 @@ div.intro {
       margin-top: 4px;
 
       @include themed() {
-        border-bottom: solid 4px t('border');
+        border-bottom: solid 8px t('border');
       }
     }
 
     li {
       font-family: monospace;
-      font-size: 2rem;
+      font-size: 1.7rem;
       margin-right: 6px;
       text-align: center;
 
@@ -331,14 +331,15 @@ div.intro {
         }
 
         a {
-          padding: 0px 20px 4px 20px;
+          padding: 4px 14px;
           text-decoration: none;
           border-top: solid 4px t('tab');
+          display: block;
         }
 
         a.active {
           border: solid 4px t('border');
-          background-color: t('background');
+          background-color: t('border');
           border-bottom: 0;
         }
       }

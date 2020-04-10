@@ -399,7 +399,8 @@ const ListFollow = ({ location, match }) => ({follows}, actions) => {
               <Link to={`/edit/${follow.id}`} class="edit" title="edit"><img src={follows.baseHref + images['270f']} /></Link>
             </h3>
             <div class={`extra ${follows.settings['mode-expand'] || "trunc"}`}>
-              <div class="post">{follow.posts instanceof Array &&
+              {follow.posts instanceof Array && follow.posts.length > 0 &&
+                <div class="post">
                 <ol class="title">{(showReposts ? follow.posts : follow.posts.filter(x => !x.author || x.author === follow.author)).
                   slice(0, follow.limit || 10).map(f => {
                     let postAge = timeAgo(f[sortPosts], now)
@@ -408,13 +409,13 @@ const ListFollow = ({ location, match }) => ({follows}, actions) => {
                       {follow.fetchesContent ? f.title : <a href={f.url}>{f.title}</a>}
                       <span class="ago">{timeAgo(f[sortPosts], now)}</span>
                     </li>
-                  })}</ol>}
-                {!follow.fetchesContent && <a class="collapse" href="#"
-                  onclick={e => ToggleShow(e, ".extra", "trunc")}>
-                    <span class="enter">&#x25b6;</span>
-                    <span class="close">&#x2bc6;</span>
-                    </a>}
-              </div>
+                  })}</ol>
+                  {!follow.fetchesContent && <a class="collapse" href="#"
+                    onclick={e => ToggleShow(e, ".extra", "trunc")}>
+                      <span class="enter">&#x25b6;</span>
+                      <span class="close">&#x2bc6;</span>
+                      </a>}
+                </div>}
             </div>
           </li>
         } catch (e) {
