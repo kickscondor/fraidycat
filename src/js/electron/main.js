@@ -13,8 +13,8 @@ const { autoUpdater } = require('electron-updater')
 const path = require('path')
 
 const isMac = process.platform === 'darwin'
-const isWindows = process.platform === 'windows'
-const isLinux = process.platform === 'linux'
+const isWindows = process.platform === 'win32'
+const isLinux = (!isMac && !isWindows)
 const DEBUG = false
 
 const homepage = 'https://fraidyc.at/'

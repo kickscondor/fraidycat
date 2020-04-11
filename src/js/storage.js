@@ -310,6 +310,8 @@ module.exports = {
           index.title = item.publishedAt.toLocaleString()
         if (!index.title && ident !== 0)
           index.title = item.title
+        if (!index.title)
+          index.title = "..."
         index.author = item.author
         index.title = index.title.toString().trim()
         index.publishedAt = item.publishedAt || index.publishedAt || index.createdAt
