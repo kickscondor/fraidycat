@@ -92,6 +92,10 @@ export function sortBySettings(follow, settings) {
 //
 // HTML traversal and string building.
 //
+export function parseDom(str, mime) {
+  return (new DOMParser()).parseFromString(str, mime)
+}
+
 function innerHtmlDom(node) {
   let v = node.value || (node.nodeValue && ent(node.nodeValue))
   if (v) return v

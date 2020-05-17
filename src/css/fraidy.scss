@@ -3,7 +3,7 @@ $themes: (
     background: #F7F7E7,
     plain: #000000,
     link: #0000EE,
-    visited: #551199,
+    visited: #BB9944,
     color: #663300,
     hover: #007799,
     title: #888866,
@@ -596,9 +596,11 @@ div.intro {
           content: "]\0000a0";
         }
 
-        // a:visited {
-        //   color: #CA5;
-        // }
+        a:visited {
+          @include themed() {
+            color: t('visited');
+          }
+        }
 
         a:hover {
           text-decoration: underline;

@@ -4,7 +4,7 @@
     "m.facebook.com": {"headers:User-Agent": "curl/7.58.0"},
     "twitter.com": {"headers:User-Agent": "curl/7.58.0"},
     "www.instagram.com": {"headers:User-Agent": "curl/7.58.0"},
-    "www.googleapis.com": {"query:key": "AIzaSyDURlhB6IxlauyaVdbHdbE31rhJjdiCAyU"}
+    "www.youtube.com": {"headers:User-Agent": "curl/7.58.0"}
   },
 
   "default": {
@@ -187,7 +187,7 @@
       {"var": "out:title", "op": "//head/title/text()"},
       {"var": "out:photos:avatar", "op": "//head/link[@id='faviconLink']/@href", "mod": ["url"]},
       {"var": "out:flags", "op": "=COMPLETE"},
-      {"op": "//div[@id='storeArea']/div[not(starts-with(@title, '$:/')) and @created]",
+      {"op": "//div[@id='storeArea']/div[not(starts-with(@title, concat('$', ':/'))) and @created]",
        "var": "out:posts", "acceptHtml": [
         {"var": "title", "op": "@title"},
         {"var": "out:publishedAt", "op": "@created", "mod": ["date"]},
@@ -512,34 +512,20 @@
     "accept": ["atom"]
   },
 
-  "youtube.com:playlistInfo": {
-    "url": "https://www.googleapis.com/youtube/v3/playlists",
-    "request": {"query:part": "snippet", "query:id": "$id"},
-    "acceptJson": [
-      {"op": "$.items[0].snippet", "acceptJson": [
-        {"var": "out:title",         "op": "$.title"},
-        {"var": "out:photos:avatar", "op": "$.thumbnails.default.url"},
-        {"var": "out:description",   "op": "$.description"}
-      ]}
-    ]
-  },
-
   "youtube.com:playlist": {
     "match": "^youtube\\.com\\/playlist.*[?&]list=([^&]+)",
+    "url": "https://www.youtube.com/playlist?list=$id",
     "arguments": [0, {"var": "id"}],
-    "url": "https://www.googleapis.com/youtube/v3/playlistItems",
-    "request": {"query:part": "snippet", "query:playlistId": "$id", "query:maxResults": 50},
-    "depends": ["youtube.com:playlistInfo"], 
-    "acceptJson": [
-      {"op": "$.items.*", "var": "out:posts", "acceptJson": [
-        {"var": "videoId",         "op": "$.snippet.resourceId.videoId"},
-        {"var": "out:title",       "op": "$.snippet.title"},
-        {"var": "out:text",        "op": "$.snippet.description"},
-        {"var": "out:url",         "op": "=https://www.youtube.com/watch?v=$videoId&list=$id"},
-        {"var": "out:publishedAt", "op": "$.snippet.publishedAt", "mod": ["date"]}
+    "acceptHtml": [
+      {"var": "out:title", "op": "//h1[@class='pl-header-title']"},
+      {"var": "out:photos:avatar", "op": "//meta[@property='og:image']/@content"},
+      {"var": "out:description", "op": "//meta[@property='og:description']/@content"},
+      {"op": "//tr", "var": "out:posts", "acceptHtml": [
+        {"var": "videoId",         "op": "@data-video-id"},
+        {"var": "out:title",       "op": "@data-title"},
+        {"var": "out:url",         "op": "=https://www.youtube.com/watch?v=$videoId&list=$id"}
       ]}
-    ],
-    "accept": ["atom"]
+    ]
   },
 
   "youtube.com:user": {

@@ -258,14 +258,27 @@ module.exports = {
       //
       let ident = 0
       if (feed.posts.length > 1) {
+        let oldestDate = new Date(), urls = {}
         let firstTitle = feed.posts[0].title
-        if (firstTitle) {
-          ident = feed.posts.filter(item => item.title === firstTitle).length
-          if (ident != feed.posts.length)
-            ident = 0
-        }
-      }
+        let ident = feed.posts.filter(item => {
+          let at = item.updatedAt || item.publishedAt
+          if (at && oldestDate > at)
+            oldestDate = at
+          urls[item.url] = at
+          return firstTitle && item.title === firstTitle
+        }).length
 
+        if (ident != feed.posts.length)
+          ident = 0
+
+        //
+        // Remove any posts that are within the feed's timestamps,
+        // but which aren't listed.
+        //
+        meta.posts = meta.posts.filter(item =>
+          !((item.updatedAt > oldestDate) && !urls[item.url]))
+      }
+ 
       //
       // Normalize the post entries for display.
       //
@@ -617,7 +630,7 @@ module.exports = {
       // Import follows from the OPML - everything that's missing.
       //
       let follows = {}
-      let doc = this.dom.parseFromString(data.contents, 'text/xml')
+      let doc = this.dom(data.contents, 'text/xml')
       let list = this.xpath(doc, doc, '//body/outline')
       this.importList(doc, list, [], 0, follows)
       if (Object.keys(follows).length > 0) {

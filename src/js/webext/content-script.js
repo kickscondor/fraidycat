@@ -1,12 +1,12 @@
 import 'regenerator-runtime/runtime'
-import { xpathDom } from '../util' 
+import { parseDom, xpathDom } from '../util' 
 import { jsonDateParser } from "json-date-parser"
 
 if (window.self !== window.top) {
   const browser = require('webextension-polyfill')
   const fraidyscrape = require('fraidyscrape')
 
-  let scraper = new fraidyscrape({}, new DOMParser(), xpathDom)
+  let scraper = new fraidyscrape({}, parseDom, xpathDom)
   let extURL = browser.extension.getURL('/').replace(/\/$/, '')
 
   window.addEventListener('message', async e => {

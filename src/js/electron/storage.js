@@ -1,5 +1,5 @@
 const { remote, ipcRenderer } = require('electron')
-import { fixupHeaders, xpathDom } from '../util'
+import { fixupHeaders, parseDom, xpathDom } from '../util'
 import { jsonDateParser } from "json-date-parser"
 const fs = require('fs')
 const path = require('path')
@@ -9,7 +9,7 @@ class ElectronStorage {
   constructor(session) {
     this.session = session
     this.webContents = remote.getCurrentWebContents()
-    this.dom = new DOMParser()
+    this.dom = parseDom
     this.appPath = path.join(remote.app.getPath('userData'), 'File Storage')
     this.xpath = xpathDom
     this.baseHref = ''

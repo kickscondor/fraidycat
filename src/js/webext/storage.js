@@ -4,7 +4,7 @@
 // Chrome.)
 //
 import { jsonDateParser } from "json-date-parser"
-import { fixupHeaders, xpathDom } from '../util'
+import { fixupHeaders, parseDom, xpathDom } from '../util'
 const browser = require("webextension-polyfill")
 const frago = require('../frago')
 const path = require('path')
@@ -13,7 +13,7 @@ const homepage = 'https://fraidyc.at/s/'
 class WebextStorage {
   constructor(id) {
     this.id = id 
-    this.dom = new DOMParser()
+    this.dom = parseDom
     this.baseHref = browser.runtime.getURL ?
       browser.runtime.getURL('/').slice(0, -1) : ''
     this.xpath = xpathDom
