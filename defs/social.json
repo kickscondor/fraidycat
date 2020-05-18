@@ -576,5 +576,24 @@
         {"var": "out:title", "op": "./text()"}
       ]}
     ]
+  },
+
+  "news.ycombinator.com:front": {
+    "match": "^news.ycombinator.com(|/rss|/news)$",
+    "url": "https://hnrss.org/frontpage",
+    "accept": ["rss"]
+  },
+
+  "news.ycombinator.com:best": {
+    "match": "^news.ycombinator.com/best$",
+    "url": "https://hnrss.org/newest?points=300",
+    "accept": ["rss"]
+  },
+
+  "news.ycombinator.com:special": {
+    "match": "^news.ycombinator.com/(ask|newest|show)$",
+    "arguments": [0, {"var": "name"}],
+    "url": "https://hnrss.org/$name",
+    "accept": ["rss"]
   }
 }
