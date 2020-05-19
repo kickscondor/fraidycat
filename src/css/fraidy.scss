@@ -131,10 +131,6 @@ article {
     a {
       color: t('link');
     }
-
-    a:visited {
-      color: t('visited');
-    }
   }
 }
 
@@ -587,6 +583,10 @@ div.intro {
           @include themed() {
             color: t('color');
           }
+        }
+
+        a:visited {
+          color: t('visited');
         }
 
         span.author {
