@@ -397,16 +397,16 @@
     "arguments": [0, 0, {"var": "user"}],
     "url": "https://www.tiktok.com/$user",
     "render": [{
-      "match": "^m\\.tiktok\\.com\\/share\\/item\\/list.+&id=(\\d+)",
+      "match": "^m\\.tiktok\\.com\\/api\\/item_list.+&id=(\\d+)",
       "validate": ["userId"],
       "acceptJson": [
-        {"op": "$.body.itemListData.*", "var": "out:posts", "acceptJson": [
-          {"var": "out:title", "op": "$.itemInfos.text"},
-          {"var": "itemId", "op": "$.itemInfos.id"},
-          {"var": "username", "op": "$.authorInfos.uniqueId"},
-          {"var": "out:publishedAt", "op": "$.itemInfos.createTime",
+        {"op": "$.items.*", "var": "out:posts", "acceptJson": [
+          {"var": "out:title", "op": "$.desc"},
+          {"var": "itemId", "op": "$.id"},
+          {"var": "username", "op": "$.author.uniqueId"},
+          {"var": "out:publishedAt", "op": "$.createTime",
             "mod": ["int", "*1000", "date"]},
-          {"var": "out:graphic:full", "op": ["$.itemInfos.coversDynamic[0]", "$.itemInfos.covers[0]"]},
+          {"var": "out:graphic:full", "op": ["$.video.dynamicCover", "$.video.cover"]},
           {"var": "out:url", "op": "=https://www.tiktok.com/@$username/video/$itemId"}
         ]}
       ]
