@@ -38,17 +38,18 @@ class WebextStorage {
     return fetch(req)
   }
 
-  async render(url, site, tasks) {
+  async render(req, tasks) {
+    let site = this.scraper.options[req.id]
     let iframe = document.createElement("iframe")
-    iframe.src = url
+    iframe.src = req.url
     return new Promise((resolve, reject) => {
+      this.scraper.addWatch(req.url, {tasks, resolve, reject, iframe, render: req.render,
+        remove: () => document.body.removeChild(iframe)})
       iframe.addEventListener('load', e => {
-        this.scraper.addWatch(url, {tasks, resolve, reject, iframe, render: site.render,
-          remove: () => document.body.removeChild(iframe)})
-        iframe.contentWindow.postMessage(this.encode({url, tasks, site}), '*')
+        iframe.contentWindow.postMessage(this.encode({url: req.url, tasks, site}), '*')
       })
       document.body.appendChild(iframe)
-      setTimeout(() => this.scraper.removeWatch(url), 40000)
+      setTimeout(() => this.scraper.removeWatch(req.url), 40000)
     })
   }
 

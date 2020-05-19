@@ -203,7 +203,7 @@ module.exports = {
         try {
           let obj
           if (req.render) {
-            obj = await this.render(req.url, this.scraper.options[req.id], tasks)
+            obj = await this.render(req, tasks)
           } else {
             //
             // 'no-cache' is used to ensure that, at minimum, a conditional request
