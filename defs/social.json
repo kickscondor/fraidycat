@@ -1,6 +1,7 @@
 {
   "domains": {
-    "api.twitch.tv": {"headers:Client-Id": "vnvcshh0aehfkq0bvu6rzpbtaf25et"},
+    "api.twitch.tv": {"headers:Client-Id": "vnvcshh0aehfkq0bvu6rzpbtaf25et",
+      "headers:Authorization": "Bearer wzj7gzgrae4ha1n5rl12jqrofm0vvo"},
     "m.facebook.com": {"headers:User-Agent": "curl/7.58.0"},
     "twitter.com": {"headers:User-Agent": "curl/7.58.0"},
     "www.instagram.com": {"headers:User-Agent": "curl/7.58.0"},
@@ -591,9 +592,16 @@
   },
 
   "news.ycombinator.com:special": {
-    "match": "^news.ycombinator.com/(ask|newest|show)$",
+    "match": "^news.ycombinator.com/(ask|newest|show|jobs)$",
     "arguments": [0, {"var": "name"}],
     "url": "https://hnrss.org/$name",
+    "accept": ["rss"]
+  },
+
+  "news.ycombinator.com:user": {
+    "match": "^news.ycombinator.com/user\\?id=(.+)$",
+    "arguments": [0, {"var": "user"}],
+    "url": "https://hnrss.org/user?id=$user",
     "accept": ["rss"]
   }
 }

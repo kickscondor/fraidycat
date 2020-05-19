@@ -287,6 +287,18 @@ const Favicon = function(baseHref, follow) {
   return src || (baseHref + svg['globe'])
 }
 
+const TitleMaxlen = 60, TitleMinlen = 24
+const TitleTruncRe = new RegExp(`([-,.!;:)]\s[^-,.!;:]{0,${TitleMaxlen - TitleMinlen}}|\\s\\S*)$`)
+const TitleTrunc = function(title) {
+  if (title.length < TitleMaxlen)
+    return title
+  let res = title.slice(0, TitleMaxlen).match(TitleTruncRe)
+  let index = TitleMaxlen
+  if (res != null && res.index > TitleMinlen)
+    index = res.index + 1
+  return <span>{title.slice(0, index)}<s>{title.slice(index)}</s></span>
+}
+
 const ListFollow = ({ location, match }) => ({follows}, actions) => {
   let now = new Date()
   let tag = match.params.tag ? match.params.tag : house
@@ -387,7 +399,7 @@ const ListFollow = ({ location, match }) => ({follows}, actions) => {
               <Link class="url" to={linkUrl}>{followTitle(follow)}</Link>
               {follow.status instanceof Array && follow.status.map(st =>
                 <a class={`status status-${st.type}`} oncreate={ToggleHover} href={st.url || follow.url}
-                  >{st.type === 'live' ? <span>&#x25cf; LIVE</span> : <span>&#x1f5d2;</span>}
+                  >{st.type === 'live' ? <span><img src={follows.baseHref + svg['rec']} width="12" /> LIVE</span> : <span><img src={follows.baseHref + svg['notepad']} width="16" /></span>}
                   <div>{st.title || st.text || html2text(st.html)}
                     {st[sortPosts] && <span class="ago">{timeAgo(st[sortPosts], now)}</span>}</div>
                 </a>)}
@@ -406,14 +418,24 @@ const ListFollow = ({ location, match }) => ({follows}, actions) => {
                     let postAge = timeAgo(f[sortPosts], now)
                     return <li class={timeDarkness(f[sortPosts], now)}>
                       {f.author && f.author !== follow.author && <span class="author">{f.author}</span>}
-                      {follow.fetchesContent ? f.title : <a href={f.url}>{f.title}</a>}
+                      <a href={f.url}>{TitleTrunc(f.title)}</a>
                       <span class="ago">{timeAgo(f[sortPosts], now)}</span>
                     </li>
                   })}</ol>
                   {!follow.fetchesContent && <a class="collapse" href="#"
                     onclick={e => ToggleShow(e, ".extra", "trunc")}>
-                      <span class="enter">&#x25b6;</span>
-                      <span class="close">&#x2bc6;</span>
+                      <span class="enter">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2">
+                          <line x1="3" y1="3" x2="10" y2="9"></line>
+                          <line x1="3" y1="13" x2="10" y2="7"></line>
+                        </svg>
+                      </span>
+                      <span class="close">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2">
+                          <line x1="3" y1="2" x2="9" y2="10"></line>
+                          <line x1="13" y1="3" x2="7" y2="10"></line>
+                        </svg>
+                      </span>
                       </a>}
                 </div>}
             </div>
@@ -428,8 +450,8 @@ const ListFollow = ({ location, match }) => ({follows}, actions) => {
         <div class="intro">
           <h3>Ready?</h3>
           <p>Let's get Fraidycat going, yeah?</p>
-          <p>Click the <Link to={addLink} class="pink" title="Add a Follow">&#xff0b;</Link> button to add someone!</p>
-          <p>Or, click the <Link to="/settings" title="Settings">&#x2699;&#xfe0f;</Link> to import a bunch.</p>
+          <p>Click the <Link to={addLink} class="pink" title="Add a Follow"><img src={follows.baseHref + svg['add']} width="16" /></Link> button to add someone!</p>
+          <p>Or, click the <Link to="/settings" title="Settings"><img src={follows.baseHref + svg['gear']} width="16" /></Link> to import a bunch.</p>
           <p><em>Hey! Follows added to this <strong>Real-time</strong> page will highlight the tab when there are new posts!</em></p>
         </div>}
   </div>
@@ -523,8 +545,8 @@ export default (state, actions) => {
               </li> :	
               (urgent && <li id="urgent"><p><a href="#" onclick={e => {	
                 e.preventDefault(); urgent.approve()}}>{urgent.note}</a></p></li>)}
-            <li><Link to="/add" class="pink" title="Add a Follow">&#xff0b;</Link></li>
-            <li><Link to="/settings" title="Settings">&#x2699;&#xfe0f;</Link></li>
+            <li><Link to="/add" class="pink" title="Add a Follow"><img src={state.follows.baseHref + svg['add']} width="16" /></Link></li>
+            <li><Link to="/settings" title="Settings"><img src={state.follows.baseHref + svg['gear']} width="16" /></Link></li>
           </ul>}
         </div>
         <h1><Link to="/"><img src={state.follows.baseHref + images['fc']} alt="Fraidycat" title="Fraidycat" /></Link></h1>

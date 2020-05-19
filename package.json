@@ -101,6 +101,7 @@
     "electron-notarize": "^0.3.0",
     "node-sass": "^4.14.1",
     "parcel-plugin-web-extension": "^1.6.1",
+    "sass": "^1.26.5",
     "web-ext": "^4.2.0",
     "webextension-polyfill": "^0.6.0"
   }

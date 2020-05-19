@@ -61,6 +61,8 @@ $themes: (
   ),
 );
 
+$theme-map: null;
+
 @mixin themed() {
   @each $theme, $map in $themes {
     $theme-map: map-get($themes, $theme) !global;
@@ -577,6 +579,11 @@ div.intro {
 
         a {
           text-decoration: none;
+
+          s {
+            text-decoration: none;
+          }
+
           @include themed() {
             color: t('color');
           }
@@ -589,11 +596,11 @@ div.intro {
         }
 
         span.author::before {
-          content: "[";
+          content: "@";
         }
 
         span.author::after {
-          content: "]\0000a0";
+          content: ":\0000a0";
         }
 
         a:visited {
@@ -651,7 +658,10 @@ div.intro {
       overflow: hidden;
 
       @include themed() {
-        color: t('rule');
+        svg {
+          padding-top: 2px;
+          stroke: t('rule');
+        }
       }
     }
   }
@@ -705,6 +715,16 @@ div.intro {
         
         &:last-child::after {
           content: "";
+        }
+
+        a {
+          span:after {
+            content: "\2026";
+          }
+
+          s {
+            display: none;
+          }
         }
       }
     }
