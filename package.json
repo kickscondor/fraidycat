@@ -25,8 +25,8 @@
     "webext": "fsbin emptyDir build/webext && cross-env STORAGE=webext parcel build src/manifest.json --no-cache --no-source-maps -d build/webext",
     "webext:lint": "web-ext lint --source-dir ./build/webext/",
     "webext:safe": "find build/webext -type f -name '*.js' | xargs sed -i='' -e 's/Function(\"return this\")/function(){return this}/g' -e 's/\\([=: {]\\)Function(/\\1(function(){return function(){}})(/g'",
-    "publish": "electron-builder -wml -p always",
-    "publish:windows": "electron-builder -w -p always"
+    "publish": "npm run electron:setup && electron-builder -wml -p always",
+    "publish:windows": "npm run electron:setup && electron-builder -w -p always"
   },
   "build": {
     "appId": "at.fraidyc",
@@ -95,7 +95,7 @@
   "devDependencies": {
     "@babel/core": "^7.9.6",
     "@babel/preset-env": "^7.9.6",
-    "ava": "^2.4.0",
+    "ava": "^3.8.2",
     "electron": "^8.3.0",
     "electron-builder": "^22.6.0",
     "electron-notarize": "^0.3.0",
