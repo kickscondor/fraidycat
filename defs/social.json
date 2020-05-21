@@ -315,6 +315,34 @@
     ]
   },
 
+  "patreon.com:feed": {
+    "match": "^patreon\\.com/([-\\w]+)",
+    "arguments": [0, {"var": "user"}],
+    "url": "https://www.patreon.com/$user",
+    "render": [{
+      "match": "^patreon\\.com/api/posts",
+      "acceptJson": [
+        {"op": "$.data.*", "var": "out:posts", "acceptJson": [
+          {"var": "out:title", "op": "$.attributes.title"},
+          {"var": "out:url", "op": "$.attributes.url"},
+          {"var": "out:description", "op": "$.attributes.teaser_text"},
+          {"var": "out:publishedAt", "op": "$.attributes.published_at",
+            "mod": ["date"]}
+        ]}
+      ]
+    }],
+    "acceptHtml": [
+      {"op": "//script[contains(text(), 'window.patreon.bootstrap')]",
+       "match": "window.patreon.bootstrap,\\s+({[\\s\\S]+?})\\);",
+       "acceptJson": [
+        {"var": "out:photos:avatar", "op": "$.campaign.data.attributes.avatar_photo_url"},
+        {"var": "campaignId", "op": "$.campaign.data.id"}
+       ]},
+      {"var": "out:title", "op": "//meta[@name='title']/@content"},
+      {"var": "out:description", "op": "//meta[@property='og:description']/@content"}
+    ]
+  },
+
   "pinboard.in:rss": {
     "match": "^pinboard\\.in\\/([^?]+)",
     "arguments": [0, {"var": "path"}],
