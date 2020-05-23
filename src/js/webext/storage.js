@@ -10,6 +10,8 @@ const frago = require('../frago')
 const path = require('path')
 const homepage = 'https://fraidyc.at/s/'
 
+const FIREFOX_QUOTA_BYTES_PER_ITEM = 8192;
+
 class WebextStorage {
   constructor(id) {
     this.id = id 
@@ -128,8 +130,13 @@ class WebextStorage {
     // console.log(["OUTGOING", items, ids])
     let id = this.encode([this.id, new Date()])
     if (subkey && subkey in items) {
-      await frago.separate(items, subkey, ids, (k, v) =>
-        browser.storage.sync.set({[k]: this.encode(v), id}))
+      await frago.separate(items, subkey, ids, (k, v) => {
+        let kv = {[k]: this.encode(v)}
+        if (k.length + kv[k].length > FIREFOX_QUOTA_BYTES_PER_ITEM) {
+          throw "QUOTA_BYTES_PER_ITEM quota exceeded."
+        }
+        return browser.storage.sync.set({...kv, id})
+      })
       delete items[subkey]
       delete items.index
     }
