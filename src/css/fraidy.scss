@@ -299,6 +299,8 @@ div.intro {
     ul {
       white-space: nowrap;
       margin-top: 4px;
+      overflow-y: scroll;
+      scrollbar-width: none;
 
       @include themed() {
         border-bottom: solid 8px t('border');
