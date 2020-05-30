@@ -87,6 +87,13 @@ $theme-map: null;
   @return map-get($theme-map, $key);
 }
 
+@supports (scrollbar-width: none){
+  #follows #tags > ul{
+    overflow-y: scroll;
+    scrollbar-width: none;
+  } 
+}
+
 html {
   overflow-y: scroll;
 }
@@ -299,8 +306,6 @@ div.intro {
     ul {
       white-space: nowrap;
       margin-top: 4px;
-      overflow-y: scroll;
-      scrollbar-width: none;
 
       @include themed() {
         border-bottom: solid 8px t('border');
