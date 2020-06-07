@@ -2,8 +2,11 @@
   "domains": {
     "api.twitch.tv": {"headers:Client-Id": "vnvcshh0aehfkq0bvu6rzpbtaf25et",
       "headers:Authorization": "Bearer wzj7gzgrae4ha1n5rl12jqrofm0vvo"},
+    "api.twitter.com": {"headers:Authorization": "Bearer AAAAAAAAAAAAAAAAAAAAANRILgAAAAAAnNwIzUejRCOuH5E6I8xnZz4puTs=1Zv7ttfk8LF81IUq16cHjhLTvJu4FA33AGWWjCpTnA",
+      "headers:DNT": "1", "headers:Content-Type": "application/json",
+      "headers:X-Twitter-Active-User": "yes", "headers:Authority": "api.twitter.com",
+      "headers:Accept-Language": "en-US,en;q=0.9", "headers:Accept": "*/*"},
     "m.facebook.com": {"headers:User-Agent": "curl/7.58.0"},
-    "twitter.com": {"headers:User-Agent": "curl/7.58.0"},
     "www.instagram.com": {"headers:User-Agent": "curl/7.58.0"},
     "www.youtube.com": {"headers:User-Agent": "curl/7.58.0"}
   },
@@ -493,37 +496,64 @@
     ]
   },
 
+  "twitter.com:token": {
+    "url": "https://twitter.com/",
+    "acceptHtml": [
+      {"var": "out:author", "op": "=$username"},
+      {"var": "token", "op": "//script", "match": "gt=(\\d+)"}
+    ]
+  },
+
   "twitter.com:user": {
+    "request": {"query:screen_name": "$username", "headers:X-Guest-Token": "$token"},
+    "url": "https://api.twitter.com/1.1/users/show.json?screen_name=$username",
+    "acceptJson": [
+      {"var": "userId",            "op": "$.id_str"},
+      {"var": "out:title",         "op": "$.name"},
+      {"var": "out:photos:avatar", "op": "$.profile_image_url"},
+      {"var": "out:description",   "op": "$.description"},
+      {"op": "$.entities.*.urls.*", "var": "out:rels", "acceptJson": [
+        {"var": "out:url", "op": "$.expanded_url"}
+      ]}
+    ]
+  },
+
+  "twitter.com:timeline": {
     "match": "^twitter\\.com/(.+)",
     "arguments": [0, {"var": "username"}],
-    "url": "https://twitter.com/$username",
-    "acceptHtml": [
-      {"var": "out:title", "op": "//h1/a/text()"},
-      {"var": "out:photos:avatar", "op": "//img[contains(@class, 'ProfileAvatar-image')]/@src"},
-      {"var": "out:description", "op": "//p[contains(@class, 'ProfileHeaderCard-bio')]/text()"},
-      {"op": "//div[@class='ProfileHeaderCard']//a[not(starts-with(@href, '/')) and @title]",
-        "var": "out:rels", "acceptHtml": [
-        {"var": "out:url", "op": "@title", "mod": ["url"]}
+    "depends": ["twitter.com:token", "twitter.com:user"],
+    "request": {"headers:X-Guest-Token": "$token"},
+    "url": "https://api.twitter.com/2/timeline/profile/$userId.json?include_profile_interstitial_type=0&include_blocking=0&include_blocked_by=0&include_followed_by=1&include_want_retweets=0&include_mute_edge=0&include_can_dm=0&include_can_media_tag=1&skip_status=1&cards_platform=Web-12&include_cards=1&include_ext_alt_text=true&include_reply_count=1&tweet_mode=extended&include_entities=true&include_user_entities=true&include_ext_media_color=false&include_ext_media_availability=true&send_error_codes=true&simple_quoted_tweet=true&include_tweet_replies=false&userId=$userId&count=40&ext=mediaStats%2ChighlightedLabel%2CcameraMoment&include_quote_count=true",
+    "rules": {
+      "entry": [
+        {"var": "id", "op": ["$.conversation_id_str", "$.id_str"]},
+        {"var": "aid", "op": "$.user_id_str"},
+        {"var": "rtid", "op": "$.id_str"},
+        {"var": "author", "op": "=${authors:$aid}"},
+        {"var": "out:author", "op": "=$author"},
+        {"var": "out:url", "op": "=http://twitter.com/$author/status/$id", "mod": ["url"]},
+        {"var": "out:publishedAt", "op": ["=${rt:$rtid}", "$.created_at"], "mod": ["date"]},
+        {"var": "out:text", "op": "$.full_text", "match": "^(?:RT @[^:]+: |)([\\s\\S]+)"}
+      ]
+    },
+    "acceptJson": [
+      {"op": "$.timeline.instructions.*.pinEntry", "var": "*", "acceptJson": [
+        {"var": "pinnedId", "op": "$.entry.content.item.content.tweet.id"}
       ]},
-      {"op": "//div[@data-tweet-id and contains(@class, 'pinned')]",
-       "var": "out:status", "acceptHtml": [
+      {"op": "$.globalObjects.users.*", "var": "*", "acceptJson": [
+        {"var": "id", "op": "$.id_str"},
+        {"var": "authors:$id", "op": "$.screen_name"}
+      ]},
+      {"op": "$.globalObjects.tweets[?(@.retweeted_status_id_str)]", "var": "*", "acceptJson": [
+        {"var": "id", "op": "$.retweeted_status_id_str"},
+        {"var": "rt:$id", "op": "$.created_at"}
+      ]},
+      {"op": "$.globalObjects.tweets[?(@.id_str === '$pinnedId')]", "var": "out:status", "acceptJson": [
         {"var": "out:type", "op": "=pinned"},
-        {"op": "@data-supports-broadcast-player", "acceptHtml": [
-          {"var": "out:type", "op": "=live"}
-        ]},
-        {"var": "out:url", "op": "@data-permalink-path", "mod": ["url"]},
-        {"var": "out:publishedAt", "op": ".//span[@data-time]/@data-time",
-          "mod": ["int", "*1000", "date"]},
-        {"var": "out:html", "op": ".//p[contains(@class, 'tweet-text')]"}
+        {"rule": "entry"}
       ]},
-      {"op": "//div[@data-tweet-id and not(contains(@class, 'pinned'))]",
-       "var": "out:posts", "acceptHtml": [
-        {"var": "out:author", "op": "@data-retweet-id/../@data-screen-name"},
-        {"var": "url", "op": "@data-permalink-path", "mod": ["url"]},
-        {"var": "out:url", "op": ["@data-has-parent-tweet/../@data-conversation-id", "@data-tweet-id"], "mod": ["url"]},
-        {"var": "out:publishedAt", "op": ".//span[@data-time]/@data-time",
-          "mod": ["int", "*1000", "date"]},
-        {"var": "out:html", "op": ".//p[contains(@class, 'tweet-text')]"}
+      {"op": "$.globalObjects.tweets[?(@.id_str !== '$pinnedId' && !@.retweeted_status_id_str)]", "var": "out:posts", "acceptJson": [
+        {"rule": "entry"}
       ]}
     ]
   },

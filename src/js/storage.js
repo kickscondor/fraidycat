@@ -230,15 +230,16 @@ module.exports = {
           }
 
           feed = obj.out
-          if (!feed) {
-            throw new Error("This follow is temporarily down.")
-          }
         } catch (e) {
           err = e.message
           if (err === "Failed to fetch")
             err = "Couldn't connect - check your spelling, be sure this URL really exists."
           break
         }
+      }
+
+      if (!err && !feed) {
+        err = "This follow is temporarily down."
       }
     }
 

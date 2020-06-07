@@ -432,8 +432,8 @@ const ListFollow = ({ location, match }) => ({follows}, actions) => {
                       </span>
                       <span class="close">
                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2">
-                          <line x1="3" y1="2" x2="9" y2="10"></line>
-                          <line x1="13" y1="3" x2="7" y2="10"></line>
+                          <line x1="0" y1="5" x2="6" y2="13"></line>
+                          <line x1="10" y1="5" x2="4" y2="13"></line>
                         </svg>
                       </span>
                       </a>}
