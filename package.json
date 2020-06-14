@@ -2,7 +2,9 @@
   "name": "fraidycat",
   "description": "Follow blogs, wikis, YouTube, Twitter, Reddit, Instagram and the like... from a distance.",
   "homepage": "https://fraidyc.at/",
-  "main": "build/electron/js/electron/main.js",
+  "bin": {
+    "fraidycat-server": "src/js/server/main.js"
+  },
   "productName": "Fraidycat",
   "author": {
     "name": "Kicks Condor",
@@ -13,94 +15,52 @@
   },
   "version": "1.1.5",
   "scripts": {
-    "start": "npm run electron:setup && electron .",
+    "build": "pkg .",
+    "start": "node ./src/js/server/main.js",
     "start:firefox": "web-ext run --source-dir ./build/webext/",
     "test": "ava",
-    "electron": "npm run electron:setup && electron-builder -wml",
-    "electron:linux": "npm run electron:setup && electron-builder -l",
-    "electron:mac": "npm run electron:setup && electron-builder -m",
-    "electron:windows": "npm run electron:setup && electron-builder -w",
-    "electron:setup": "fsbin emptyDir build/electron && cross-env parcel build src/js/electron/main.js src/js/electron/content-script.js src/index.html src/background.html --target=electron --public-url ./ -d build/electron",
-    "dat": "fsbin emptyDir build/dat && fsbin copy src/root/dat build/dat && cross-env STORAGE=dat parcel build src/index.html --no-cache -d build/dat",
     "webext": "fsbin emptyDir build/webext && cross-env STORAGE=webext parcel build src/manifest.json --no-cache --no-source-maps -d build/webext",
     "webext:lint": "web-ext lint --source-dir ./build/webext/",
     "webext:safe": "find build/webext -type f -name '*.js' | xargs sed -i='' -e 's/Function(\"return this\")/function(){return this}/g' -e 's/\\([=: {]\\)Function(/\\1(function(){return function(){}})(/g'",
     "publish": "npm run electron:setup && electron-builder -wml -p always",
     "publish:windows": "npm run electron:setup && electron-builder -w -p always"
   },
-  "build": {
-    "appId": "at.fraidyc",
-    "copyright": "by Kicks Condor",
-    "files": [
-      "build/electron/**/*"
-    ],
-    "mac": {
-      "category": "public.app-category.news",
-      "target": "dmg",
-      "entitlements": "src/entitlements.mac.plist",
-      "entitlementsInherit": "src/entitlements.mac.plist",
-      "hardenedRuntime": true,
-      "icon": "src/images/flatcat-512.png"
-    },
-    "win": {
-      "target": "nsis",
-      "icon": "src/images/flatcat-512.png"
-    },
-    "linux": {
-      "target": [
-        "appImage",
-        "deb"
-      ],
-      "icon": "src/images/flatcat-512.png",
-      "category": "News"
-    },
-    "dmg": {
-      "sign": false
-    },
-    "nsis": {
-      "deleteAppDataOnUninstall": true
-    },
-    "afterSign": "src/notarize.js",
-    "publish": [
-      {
-        "provider": "github"
-      }
+  "pkg": {
+    "assets": [
+      "src/images/flatcat-32.*",
+      "node_modules/systray/traybin/tray_*_release*"
     ]
   },
   "browserslist": "firefox >= 57, chrome >= 49",
   "dependencies": {
     "@kickscondor/elasticlunr": "^0.9.8",
-    "@kickscondor/emoji-button": "^2.1.4",
-    "@kickscondor/router": "^0.7.3",
-    "@kickscondor/umbrellajs": "^3.1.2",
-    "@shelacek/ubjson": "^1.0.1",
-    "about-window": "^1.13.2",
-    "cross-env": "^7.0.2",
-    "electron-log": "^4.1.2",
-    "electron-process": "^0.2.0",
-    "electron-updater": "^4.3.1",
-    "ent": "^2.2.0",
-    "fast-json-patch": "^3.0.0-1",
     "fraidyscrape": "^1.0.9",
-    "fsbin": "^1.0.9",
-    "hyperapp": "^1.2.9",
     "json-date-parser": "^1.0.1",
+    "ngrok": "^3.2.7",
     "node-fetch": "^2.6.0",
     "normalize-url": "^4.5.0",
+    "open": "^7.0.4",
     "opml-generator": "^1.1.1",
-    "parcel-bundler": "^1.12.4",
     "regenerator-runtime": "^0.13.5",
-    "yarn": "^1.22.4"
+    "systray": "^1.0.5",
+    "uWebSockets.js": "github:uNetworking/uWebSockets.js#binaries"
   },
   "devDependencies": {
     "@babel/core": "^7.9.6",
     "@babel/preset-env": "^7.9.6",
+    "@kickscondor/emoji-button": "^2.1.4",
+    "@kickscondor/router": "^0.7.3",
+    "@kickscondor/umbrellajs": "^3.1.2",
     "ava": "^3.8.2",
-    "electron": "^8.3.0",
-    "electron-builder": "^22.6.0",
-    "electron-notarize": "^0.3.0",
+    "cross-env": "^7.0.2",
+    "ent": "^2.2.0",
+    "fast-json-patch": "^3.0.0-1",
+    "fsbin": "^1.0.9",
+    "hyperapp": "^1.2.9",
     "node-sass": "^4.14.1",
+    "parcel-bundler": "^1.12.4",
     "parcel-plugin-web-extension": "^1.6.1",
+    "pkg": "geekuillaume/pkg",
     "sass": "^1.26.5",
     "web-ext": "^4.2.0",
     "webextension-polyfill": "^0.6.0"
