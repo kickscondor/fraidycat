@@ -87,6 +87,13 @@ $theme-map: null;
   @return map-get($theme-map, $key);
 }
 
+@supports (scrollbar-width: none){
+  #follows #tags > ul{
+    overflow-y: scroll;
+    scrollbar-width: none;
+  } 
+}
+
 html {
   overflow-y: scroll;
 }
