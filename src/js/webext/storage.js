@@ -46,7 +46,10 @@ class WebextStorage {
     iframe.src = req.url
     return new Promise((resolve, reject) => {
       this.scraper.addWatch(req.url, {tasks, resolve, reject, iframe, render: req.render,
-        remove: () => document.body.removeChild(iframe)})
+        remove: () => {
+          iframe.src = "about:blank"
+          setTimeout(() => iframe.remove(), 1000)
+        }})
       iframe.addEventListener('load', e => {
         iframe.contentWindow.postMessage(this.encode({url: req.url, tasks, site}), '*')
       })

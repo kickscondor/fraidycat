@@ -661,5 +661,12 @@
     "arguments": [0, {"var": "user"}],
     "url": "https://hnrss.org/user?id=$user",
     "accept": ["rss"]
+  },
+
+  "news.ycombinator.com:threads": {
+    "match": "^news.ycombinator.com/threads\\?id=(.+)$",
+    "arguments": [0, {"var": "user"}],
+    "url": "https://hnrss.org/threads?id=$user",
+    "accept": ["rss"]
   }
 }

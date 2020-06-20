@@ -514,7 +514,15 @@ if (process.env.STORAGE === 'electron') {
 export default (state, actions) => {
   let settings = window.location.pathname === "/settings.html"
   if (!state.follows.started)
-    return ''
+    return <div id="scanner">
+      <div id="logo">
+        <img src={state.follows.baseHref + images['fc']} />
+      </div>
+      <div id="loading">
+        <img src={state.follows.baseHref + webp['catspace']} alt="..." />
+        <p>LOADING</p>
+      </div>
+    </div>
 
   //	
   // Report progress on follows that are currently updating.	
