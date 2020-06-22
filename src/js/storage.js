@@ -184,7 +184,7 @@ module.exports = {
     if (clearAll) {
       this.updating = {}
     }
-    // this.update({op: 'replace', path: '/updating', value: this.updating})
+    this.update({op: 'replace', path: '/updating', value: this.updating})
   },
 
   //
