@@ -11,7 +11,7 @@
   "repository": {
     "url": "https://github.com/kickscondor/fraidycat"
   },
-  "version": "1.1.5",
+  "version": "1.1.6",
   "scripts": {
     "start": "npm run electron:setup && electron .",
     "start:firefox": "web-ext run --source-dir ./build/webext/",

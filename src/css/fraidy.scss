@@ -302,6 +302,10 @@ div.intro {
       overflow-y: scroll;
       scrollbar-width: none;
 
+      &::-webkit-scrollbar {
+        display: none;
+      }
+
       @include themed() {
         border-bottom: solid 8px t('border');
       }
@@ -769,12 +773,16 @@ div.intro {
 }
 
 #feed-select {
-  li {
-    list-style: none;
+  ul {
+    margin: 1em;
 
-    em {
-      font-size: 0.9rem;
-      padding-left: 20px;
+    li {
+      list-style: none;
+
+      em {
+        font-size: 0.9rem;
+        padding-left: 20px;
+      }
     }
   }
 }

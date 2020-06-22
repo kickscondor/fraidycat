@@ -191,9 +191,11 @@ const AddFollow = ({ match, setup }) => ({follows}) => {
 
 const AddFeed = () => ({follows, settings}, actions) => {
   let {list, site} = follows.feeds
+  let actual = list.some(feed => feed.type)
   return <div id="feed-select">
     <h2>Select a Feed</h2>
-    <p>{site.url} has several feeds:</p>
+    <p>{actual ? `${site.url} has several feeds:` :
+      `${site.url} has no official feeds, but a few possible feeds were found:`}</p>
     <form class="feeds" onsubmit={FormFreeze}>
     <ul>
     {list.map(feed =>
