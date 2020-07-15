@@ -639,35 +639,59 @@
   },
 
   "news.ycombinator.com:front": {
-    "match": "^news.ycombinator.com(|/rss|/news)$",
+    "match": "^news\\.ycombinator\\.com(|/rss|/news)$",
     "url": "https://hnrss.org/frontpage",
     "accept": ["rss"]
   },
 
   "news.ycombinator.com:best": {
-    "match": "^news.ycombinator.com/best$",
+    "match": "^news\\.ycombinator\\.com/best$",
     "url": "https://hnrss.org/newest?points=300",
     "accept": ["rss"]
   },
 
   "news.ycombinator.com:special": {
-    "match": "^news.ycombinator.com/(ask|newest|show|jobs)$",
+    "match": "^news\\.ycombinator\\.com/(ask|newest|show|jobs)$",
     "arguments": [0, {"var": "name"}],
     "url": "https://hnrss.org/$name",
     "accept": ["rss"]
   },
 
   "news.ycombinator.com:user": {
-    "match": "^news.ycombinator.com/user\\?id=(.+)$",
+    "match": "^news\\.ycombinator\\.com/user\\?id=(.+)$",
     "arguments": [0, {"var": "user"}],
     "url": "https://hnrss.org/user?id=$user",
     "accept": ["rss"]
   },
 
   "news.ycombinator.com:threads": {
-    "match": "^news.ycombinator.com/threads\\?id=(.+)$",
+    "match": "^news\\.ycombinator\\.com/threads\\?id=(.+)$",
     "arguments": [0, {"var": "user"}],
     "url": "https://hnrss.org/threads?id=$user",
     "accept": ["rss"]
+  },
+
+  "store.steampowered.com:app": {
+    "url": "https://store.steampowered.com/api/appdetails?appids=$app",
+    "acceptJson": [
+      {"var": "out:title", "op": "$.$app.data.name"},
+      {"var": "out:description", "op": "$.$app.data.short_description"}
+    ]
+  },
+
+  "store.steampowered.com:news": {
+    "match": "^(?:store\\.steampowered\\.com|steamcommunity\\.com)/app/(\\d+)",
+    "arguments": [0, {"var": "app"}],
+    "depends": ["store.steampowered.com:app"],
+    "url": "http://api.steampowered.com/ISteamNews/GetNewsForApp/v0002/?appid=$app&count=20&maxlength=1&format=json",
+    "acceptJson": [
+      {"op": "$.appnews.newsitems[?(@.feedname === 'steam_community_announcements')]",
+       "var": "out:posts", "acceptJson": [
+        {"var": "out:url", "op": "$.url", "mod": ["url"]},
+        {"var": "out:publishedAt", "op": "$.date",
+         "mod": ["int", "*1000", "date"]},
+        {"var": "out:title", "op": "$.title"}
+      ]}
+    ]
   }
 }
