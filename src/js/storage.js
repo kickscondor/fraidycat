@@ -531,7 +531,7 @@ module.exports = {
         try {
           let current = this.all[id], incoming = inc.follows[id], notify = false
           if (incoming.url) {
-            if (!(id.match && id.match(/-\w{8}$/))) {
+            if (!(id.match && id.match(/-[0-9a-f]{1,8}$/))) {
               id = urlToID(urlToNormal(incoming.url))
             }
             if (!(id in this.follows))
