@@ -29,7 +29,7 @@ shown an overview of who is active and a brief summary of their activity.
 
 Here is my Fraidycat home page from October 25th, 2019:
 
-![My Fraidycat home page](https://www.kickscondor.com/images/blog/fraidycat-oct26.png)
+![My Fraidycat home page](https://fraidyc.at/images/fraidycat-oct2019.png)
 
 Fraidycat attempts to dissolve the barriers between networks - each with their
 own seeming 'network effects' - and forms a personal network for you, a personal
