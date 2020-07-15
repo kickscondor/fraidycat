@@ -66,7 +66,7 @@ export function urlToNormal (link) {
 
 export function urlToID (normLink) {
   let hashInt = normLink.split("").reduce(function(a,b){a=((a<<5)-a)+b.charCodeAt(0);return a&a},0)
-  return `${normLink.split('/')[0]}-${(hashInt >>> 0).toString(16)}`
+  return `${normLink.split('/')[0]}-${(hashInt >>> 0).toString(16).padStart(8, '0')}`
 }
 
 export function followTitle(follow) {

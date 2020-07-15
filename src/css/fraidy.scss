@@ -975,7 +975,7 @@ button.delete {
   }
 }
 
-#keyframes slide {
+@keyframes slide {
   50% {
     transform: skew(-20deg);
   }

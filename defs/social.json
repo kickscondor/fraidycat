@@ -497,10 +497,11 @@
   },
 
   "twitter.com:token": {
-    "url": "https://twitter.com/",
-    "acceptHtml": [
+    "url": "https://api.twitter.com/1.1/guest/activate.json",
+    "request": {"method": "POST"},
+    "acceptJson": [
       {"var": "out:author", "op": "=$username"},
-      {"var": "token", "op": "//script", "match": "gt=(\\d+)"}
+      {"var": "token", "op": "$.guest_token"}
     ]
   },
 

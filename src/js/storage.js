@@ -454,7 +454,16 @@ module.exports = {
   // we don't need to recompute all the hashes necessarily.
   //
   async fetchfeed(follow, force) {
-    let id = follow.id || urlToID(urlToNormal(follow.url))
+    let id = urlToID(urlToNormal(follow.url))
+    if (follow.id !== id) {
+      if (follow.id) {
+        this.deleteFollow(follow)
+      }
+
+      follow.id = id
+      force = true
+    }
+
     this.noteUpdate([id], false)
     // console.log(`Updating ${followTitle(follow)}`)
     let feed
@@ -869,10 +878,14 @@ module.exports = {
   //
   // Remove a follow.
   //
-  async remove(follow, sender) {
+  async deleteFollow(follow) {
     delete this.all[follow.id]
     this.follows[follow.id] = {deleted: true, editedAt: new Date()}
     this.update({op: 'remove', path: `/all/${follow.id}`})
+  },
+
+  async remove(follow, sender) {
+    this.deleteFollow(follow)
     this.write({update: true, follows: [follow.id]})
     this.update({op: 'subscription', follow}, sender)
     this.deleteFile(`/feeds/${follow.id}.json`)
