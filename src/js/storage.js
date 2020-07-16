@@ -374,7 +374,7 @@ module.exports = {
   // not just the main URL, but the feed URL being used here.
   //
   async refetch(id, follow, force) {
-    let meta = {createdAt: new Date(), originalUrl: follow.url,
+    let meta = {createdAt: new Date(),
       url: follow.url, feed: follow.feed || follow.url, posts: []}
     if (follow.id) {
       try {
@@ -404,6 +404,8 @@ module.exports = {
     // Index a portion of the metadata. Don't need all the 'rels' and
     // 'photos' and other metadata that may come in useful later.
     //
+    if (!follow.originalUrl)
+      follow.originalUrl = meta.originalUrl || follow.url
     follow.id = id
     follow.feed = meta.feed
     follow.url = meta.url
@@ -454,16 +456,7 @@ module.exports = {
   // we don't need to recompute all the hashes necessarily.
   //
   async fetchfeed(follow, force) {
-    let id = urlToID(urlToNormal(follow.url))
-    if (follow.id !== id) {
-      if (follow.id) {
-        this.deleteFollow(follow)
-      }
-
-      follow.id = id
-      force = true
-    }
-
+    let id = follow.id || urlToID(urlToNormal(follow.url))
     this.noteUpdate([id], false)
     // console.log(`Updating ${followTitle(follow)}`)
     let feed
@@ -546,9 +539,8 @@ module.exports = {
                   follows.push(id)
                 }
               } else {
-                if (current)
-                  incoming.id = id
                 try {
+                  incoming.id = id
                   await this.refresh(incoming)
                   if (syncType === SYNC_EXTERNAL) {
                     current = this.all[id]
@@ -602,7 +594,7 @@ module.exports = {
       this.all[follow.id] = follow
       this.update({op: 'replace', path: `/all/${follow.id}`, value: follow})
     }
-    this.follows[follow.id] = {url: follow.feed,
+    this.follows[follow.id] = {url: follow.originalUrl || follow.feed,
       importance: follow.importance, title: follow.title, tags: follow.tags,
       fetchesContent: follow.fetchesContent, editedAt: follow.editedAt}
   },
@@ -867,7 +859,7 @@ module.exports = {
     let val = this.settings[s.name]
     if (s.name.startsWith('mode-')) {
       val = val ? null : s.value
-    } else if (s.name.startsWith('sort-')) {
+    } else {
       val = s.value
     }
     this.settings[s.name] = val
@@ -878,14 +870,10 @@ module.exports = {
   //
   // Remove a follow.
   //
-  async deleteFollow(follow) {
+  async remove(follow, sender) {
     delete this.all[follow.id]
     this.follows[follow.id] = {deleted: true, editedAt: new Date()}
     this.update({op: 'remove', path: `/all/${follow.id}`})
-  },
-
-  async remove(follow, sender) {
-    this.deleteFollow(follow)
     this.write({update: true, follows: [follow.id]})
     this.update({op: 'subscription', follow}, sender)
     this.deleteFile(`/feeds/${follow.id}.json`)

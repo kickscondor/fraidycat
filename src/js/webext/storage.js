@@ -278,7 +278,15 @@ class WebextStorage {
   }
 }
 
+async function clearAll() {
+  browser.storage.sync.get().
+    then(o => browser.storage.sync.remove(Object.keys(o)))
+  browser.storage.local.get().
+    then(o => browser.storage.local.remove(Object.keys(o)))
+}
+
 module.exports = async function () {
+  // clearAll()
   let session = Math.random().toString(36)
   return new WebextStorage(session)
 }

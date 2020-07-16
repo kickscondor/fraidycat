@@ -7,7 +7,7 @@
 // in a web extension, it's done in the background page.)
 //
 const storage = require('./storage-platform')
-const { alert, confirm } = require('./dialogs')
+const { alert, confirm, urgent } = require('./dialogs')
 
 import { applyOperation } from 'fast-json-patch'
 import { followTitle } from './util'
