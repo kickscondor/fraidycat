@@ -577,13 +577,20 @@
     "url": "https://www.youtube.com/playlist?list=$id",
     "arguments": [0, {"var": "id"}],
     "acceptHtml": [
-      {"var": "out:title", "op": "//h1[@class='pl-header-title']"},
+      {"var": "out:sortBy", "op": "=index"},
+      {"var": "out:title", "op": "//meta[@name='title']/@content"},
       {"var": "out:photos:avatar", "op": "//meta[@property='og:image']/@content"},
       {"var": "out:description", "op": "//meta[@property='og:description']/@content"},
-      {"op": "//tr", "var": "out:posts", "acceptHtml": [
-        {"var": "videoId",         "op": "@data-video-id"},
-        {"var": "out:title",       "op": "@data-title"},
-        {"var": "out:url",         "op": "=https://www.youtube.com/watch?v=$videoId&list=$id"}
+      {"op": "//script[contains(text(), 'ytInitialData')]", "match": "({.+});",
+        "acceptJson": [
+        {"op": "$.contents.twoColumnBrowseResultsRenderer.tabs[0].tabRenderer.content.sectionListRenderer.contents[0].itemSectionRenderer.contents[0].playlistVideoListRenderer.contents.*",
+         "var": "out:posts", "acceptJson": [
+          {"var": "videoId",          "op": "$.playlistVideoRenderer.videoId"},
+          {"var": "out:index",        "op": "$.playlistVideoRenderer.index.simpleText", "mod": ["int"]},
+          {"var": "out:graphic:full", "op": "$.playlistVideoRenderer.thumbnail.thumbnails[-1:].url"},
+          {"var": "out:title",        "op": "$.playlistVideoRenderer.title.simpleText"},
+          {"var": "out:url",          "op": "=https://www.youtube.com/watch?v=$videoId&list=$id"}
+        ]}
       ]}
     ]
   },

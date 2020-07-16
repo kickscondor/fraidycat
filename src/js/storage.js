@@ -326,6 +326,8 @@ module.exports = {
           index.title = item.title
         if (!index.title)
           index.title = "..."
+        if (feed.sortBy && item[feed.sortBy])
+          index[feed.sortBy] = item[feed.sortBy]
         index.author = item.author
         index.title = index.title.toString().trim()
         index.publishedAt = item.publishedAt || index.publishedAt || index.createdAt
@@ -352,8 +354,9 @@ module.exports = {
       //
       // Sort posts based on the settings.
       //
+      delete meta.sortBy
       Object.assign(meta, feed)
-      frago.sort(meta, this.settings['mode-updates'] || 'publishedAt',
+      frago.sort(meta, feed.sortBy || this.settings['mode-updates'] || 'publishedAt',
         this.settings['mode-reposts'] !== 'hide', true)
     }
 
@@ -419,7 +422,9 @@ module.exports = {
     // Select the top posts for every possible sort method, to give us a limited
     // index of the posts that each filter method would select.
     //
-    follow.posts = frago.master(meta, ['publishedAt', 'updatedAt'], POSTS_IN_MAIN_INDEX)
+    follow.posts = frago.master(meta,
+      meta.sortBy ? [meta.sortBy] : ['publishedAt', 'updatedAt'],
+      POSTS_IN_MAIN_INDEX)
     follow.sortedBy = meta.sortedBy
     follow.limit = POSTS_IN_MAIN_INDEX
 
