@@ -166,19 +166,19 @@
     "acceptHtml": [
       {"var": "out:title", "op": "//head/title/text()"},
       {"op": "//meta[@name='generator' and @content='TiddlyWiki']", "use": "tiddlywiki"},
-      {"op": ["//link[(@rel='alternate' or @rel='feed') and (@type='application/atom+xml' or @type='application/rss+xml' or @type='application/json')]",
-              "//a[contains(concat(@href, ' ', text()), 'rss') or contains(concat(@href, ' ', text()), 'feed')]"],
+      {"op": ["//link[(@rel='alternate' or @rel='feed') and (@type='application/atom+xml' or @type='application/rss+xml' or @type='application/json') and string-length(@href) > 0]",
+              "//a[contains(concat(@href, ' ', text()), 'rss') or contains(concat(@href, ' ', text()), 'feed') and string-length(@href) > 0]"],
        "var": "out:sources", "acceptHtml": [
         {"var": "out:url",   "op": "@href", "mod": ["url"]},
         {"var": "out:title", "op": ["@title", "=Possible feed"]},
         {"var": "out:type",  "op": "@type"}
       ]},
-      {"op": "//*[@rel and contains(concat(' ', normalize-space(@rel), ' '), ' me ')]",
+      {"op": "//*[@rel and contains(concat(' ', normalize-space(@rel), ' '), ' me ') and string-length(@href) > 0]",
        "var": "out:rels", "acceptHtml": [
         {"var": "out:url", "op": "@href", "mod": ["url"]},
         {"var": "out:title", "op": "text()"}
       ]},
-      {"op": "//link[contains(@rel, 'icon') and not(contains(@rel, 'mask'))]",
+      {"op": "//link[contains(@rel, 'icon') and not(contains(@rel, 'mask')) and string-length(@href) > 0]",
        "acceptHtml": [
          {"var": "sizes", "op": ["@sizes", "=avatar"]},
          {"var": "out:photos:$sizes",   "op": "@href", "mod": ["url"]}
