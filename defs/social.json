@@ -1,7 +1,7 @@
 {
   "domains": {
     "api.twitch.tv": {"headers:Client-Id": "vnvcshh0aehfkq0bvu6rzpbtaf25et",
-      "headers:Authorization": "Bearer wzj7gzgrae4ha1n5rl12jqrofm0vvo"},
+      "headers:Authorization": "Bearer 6lbx67okojy3fmubdtv9cwsz1zda2v"},
     "api.twitter.com": {"headers:Authorization": "Bearer AAAAAAAAAAAAAAAAAAAAANRILgAAAAAAnNwIzUejRCOuH5E6I8xnZz4puTs=1Zv7ttfk8LF81IUq16cHjhLTvJu4FA33AGWWjCpTnA",
       "headers:DNT": "1", "headers:Content-Type": "application/json",
       "headers:X-Twitter-Active-User": "yes", "headers:Authority": "api.twitter.com",
