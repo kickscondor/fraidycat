@@ -500,7 +500,6 @@
     "url": "https://api.twitter.com/1.1/guest/activate.json",
     "request": {"method": "POST"},
     "acceptJson": [
-      {"var": "out:author", "op": "=$username"},
       {"var": "token", "op": "$.guest_token"}
     ]
   },
@@ -510,6 +509,7 @@
     "url": "https://api.twitter.com/1.1/users/show.json?screen_name=$username",
     "acceptJson": [
       {"var": "userId",            "op": "$.id_str"},
+      {"var": "out:author",        "op": "$.screen_name"},
       {"var": "out:title",         "op": "$.name"},
       {"var": "out:photos:avatar", "op": "$.profile_image_url"},
       {"var": "out:description",   "op": "$.description"},
