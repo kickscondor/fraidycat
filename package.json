@@ -28,30 +28,31 @@
   "pkg": {
     "assets": [
       "src/images/flatcat-32.*",
+      "node_modules/uWebSockets.js/uws_win32_x64_72.node",
       "node_modules/systray/traybin/tray_*_release*"
     ]
   },
   "browserslist": "firefox >= 57, chrome >= 49",
   "dependencies": {
     "@kickscondor/elasticlunr": "^0.9.8",
-    "fraidyscrape": "^1.0.9",
+    "fraidyscrape": "^1.0.10",
     "json-date-parser": "^1.0.1",
     "ngrok": "^3.2.7",
     "node-fetch": "^2.6.0",
     "normalize-url": "^4.5.0",
-    "open": "^7.0.4",
+    "open": "^7.1.0",
     "opml-generator": "^1.1.1",
-    "regenerator-runtime": "^0.13.5",
+    "regenerator-runtime": "^0.13.6",
     "systray": "^1.0.5",
     "uWebSockets.js": "github:uNetworking/uWebSockets.js#binaries"
   },
   "devDependencies": {
-    "@babel/core": "^7.9.6",
-    "@babel/preset-env": "^7.9.6",
+    "@babel/core": "^7.10.5",
+    "@babel/preset-env": "^7.10.4",
     "@kickscondor/emoji-button": "^2.1.4",
     "@kickscondor/router": "^0.7.3",
     "@kickscondor/umbrellajs": "^3.1.2",
-    "ava": "^3.8.2",
+    "ava": "^3.10.1",
     "cross-env": "^7.0.2",
     "ent": "^2.2.0",
     "fast-json-patch": "^3.0.0-1",
@@ -60,9 +61,9 @@
     "node-sass": "^4.14.1",
     "parcel-bundler": "^1.12.4",
     "parcel-plugin-web-extension": "^1.6.1",
-    "pkg": "geekuillaume/pkg",
-    "sass": "^1.26.5",
-    "web-ext": "^4.2.0",
+    "pkg": "github:geekuillaume/pkg",
+    "sass": "^1.26.10",
+    "web-ext": "^4.3.0",
     "webextension-polyfill": "^0.6.0"
   }
 }

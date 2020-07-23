@@ -15,49 +15,51 @@ const ngrok = require('ngrok')
 const path = require('path')
 const uws = require('uWebSockets.js')
 
-const SysTray = require('systray').default
-const open = require('open')
+if (__dirname.startsWith('/snapshot')) {
+  const SysTray = require('systray').default
+  const open = require('open')
 
-async function openHomePage() {
-  await open("https://fraidyc.at/s/")
-}
-
-const icon = fs.readFileSync(path.join(__dirname, `../../images/flatcat-32.${process.platform === 'win32' ? 'ico' : 'png'}`)).toString('base64')
-const tray = new SysTray({
-  menu: {
-    icon,
-    title: 'Fraidycat',
-    tooltip: 'Fraidycat',
-    items: [{
-      title: "Your Fraidycat Page",
-      tooltip: "Launch",
-      checked: false,
-      enabled: true
-    }, {
-      title: "Exit Fraidycat",
-      tooltip: "Exit",
-      checked: false,
-      enabled: true
-    }]
-  },
-  debug: false,
-  copyDir: true
-})
-
-tray.onClick(action => {
-  console.log(action)
-  switch (action.item.tooltip) {
-    case 'Launch':
-      openHomePage()
-      break
-    case 'Exit':
-      tray.kill()
+  async function openHomePage() {
+    await open("https://fraidyc.at/s/")
   }
-})
 
-tray.onExit(() => {
-  setTimeout(() => process.exit(0), 1000)
-})
+  const icon = fs.readFileSync(path.join(__dirname, `../../images/flatcat-32.${process.platform === 'win32' ? 'ico' : 'png'}`)).toString('base64')
+  const tray = new SysTray({
+    menu: {
+      icon,
+      title: 'Fraidycat',
+      tooltip: 'Fraidycat',
+      items: [{
+        title: "Your Fraidycat Page",
+        tooltip: "Launch",
+        checked: false,
+        enabled: true
+      }, {
+        title: "Exit Fraidycat",
+        tooltip: "Exit",
+        checked: false,
+        enabled: true
+      }]
+    },
+    debug: false,
+    copyDir: true
+  })
+
+  tray.onClick(action => {
+    console.log(action)
+    switch (action.item.tooltip) {
+      case 'Launch':
+        openHomePage()
+        break
+      case 'Exit':
+        tray.kill()
+    }
+  })
+
+  tray.onExit(() => {
+    setTimeout(() => process.exit(0), 1000)
+  })
+}
 
 const app = uws.App()
 
