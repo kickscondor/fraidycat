@@ -48,9 +48,13 @@ const ToggleHover = (el, parentSel, childSel) => {
   })
 }
 
+const ToggleShowByEle = (ele, parentSel, cls) => {
+  u(ele).closest(parentSel).toggleClass(cls || "show")
+}
+
 const ToggleShow = (e, parentSel, cls) => {
   e.preventDefault()
-  u(e.target).closest(parentSel).toggleClass(cls || "show")
+  ToggleShowByEle(e.target, parentSel, cls)
 }
 
 const Nudge = (x) => a => {
@@ -339,6 +343,7 @@ const ListFollow = ({ location, match }) => ({follows}, actions) => {
     }
     return (a.importance - b.importance) || sortBy
   })
+  let focus = match.params.meta
   let impa = Object.keys(imps)
   let imp = match.params.importance || (impa.length > 0 ? Math.min(...impa) : 0)
   viewable = viewable.filter(follow => (follow.importance == imp))
@@ -350,10 +355,11 @@ const ListFollow = ({ location, match }) => ({follows}, actions) => {
   return <div id="follows">
     <div id="tags">
       <ul>
-      {tagTabs.map(t => <li class={timeDarkness(tags[t], now)}><Link to={`/tag/${encodeURIComponent(t)}`} class={t === tag && 'active'}>{t}</Link></li>)}
+      {tagTabs.map(t => <li class={timeDarkness(tags[t], now)}><Link to={`/tag/${encodeURIComponent(t)}`}
+        class={t === tag && 'active'} onclick={e => ToggleShowByEle(e.target, "div")}>{t}</Link></li>)}
       </ul>
-      <a href="#" class="left" oncreate={Nudge(30)}>&lsaquo;</a>
-      <a href="#" class="right" oncreate={Nudge(-30)}>&rsaquo;</a>
+      <h2><button class={timeDarkness(tags[tag], now)} onclick={e => ToggleShow(e, "div")}
+         >{tag}</button></h2>
     </div>
     <div class="sort">
       <a href="#" onclick={e => ToggleShow(e, "div")}>
@@ -389,16 +395,16 @@ const ListFollow = ({ location, match }) => ({follows}, actions) => {
           let lastPostAt = lastPostTime(follow, sortPosts), tags = []
           let ago = timeAgo(lastPostAt, now)
           let dk = timeDarkness(lastPostAt, now)
-          let linkUrl = follow.fetchesContent ? `/view/${follow.id}` : follow.url
           let id = `follow-${follow.id}`
           return <li key={id} class={dk || 'age-X'}>
             <a name={id}></a>
             <h3>
-              <Link to={linkUrl}>
+              <Link to={`/view/${follow.id}?tag=${encodeURIComponent(tag)}`}>
                 <img class="favicon" src={Favicon(follows.baseHref, follow)}
                   onerror={e => e.target.src=follows.baseHref + svg['globe']} width="20" height="20" />
               </Link>
-              <Link class="url" to={linkUrl}>{followTitle(follow)}</Link>
+              <Link to={`/view/${follow.id}?tag=${encodeURIComponent(tag)}`} class="url">{followTitle(follow)}</Link>
+              <Link class="ext" to={follow.url}><img src={follows.baseHref + svg['link']} width="16" /></Link>
               {follow.status instanceof Array && follow.status.map(st =>
                 <a class={`status status-${st.type}`} oncreate={ToggleHover} href={st.url || follow.url}
                   >{st.type === 'live' ? <span><img src={follows.baseHref + svg['rec']} width="12" /> LIVE</span> : <span><img src={follows.baseHref + svg['notepad']} width="16" /></span>}
@@ -424,21 +430,6 @@ const ListFollow = ({ location, match }) => ({follows}, actions) => {
                       <span class="ago">{timeAgo(f[sortPosts], now)}</span>
                     </li>
                   })}</ol>
-                  {!follow.fetchesContent && <a class="collapse" href="#"
-                    onclick={e => ToggleShow(e, ".extra", "trunc")}>
-                      <span class="enter">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2">
-                          <line x1="3" y1="3" x2="10" y2="9"></line>
-                          <line x1="3" y1="13" x2="10" y2="7"></line>
-                        </svg>
-                      </span>
-                      <span class="close">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2">
-                          <line x1="0" y1="5" x2="6" y2="13"></line>
-                          <line x1="10" y1="5" x2="4" y2="13"></line>
-                        </svg>
-                      </span>
-                      </a>}
                 </div>}
             </div>
           </li>
@@ -456,7 +447,23 @@ const ListFollow = ({ location, match }) => ({follows}, actions) => {
           <p>Or, click the <Link to="/settings" title="Settings"><img src={follows.baseHref + svg['gear']} width="16" /></Link> to import a bunch.</p>
           <p><em>Hey! Follows added to this <strong>Real-time</strong> page will highlight the tab when there are new posts!</em></p>
         </div>}
+    {focus && <div id="pane">
+      {focus.posts.map(post => <div id={`post-${post.id}`}>
+        {post.title && <h3>{post.title}</h3>}
+        <span class="ago">{timeAgo(f[sortPosts], now)}</span>
+      </div>)}
+    </div>}
   </div>
+}
+
+const ViewFollowById = ({ location, match, setup }) => ({follows}) => {
+  if (setup) {
+    let meta = follows.all[match.params.id]
+    follows.focus = {tag: (match.params.tag || (meta.tags || [house])[0]), meta,
+      importance: meta.importance}
+  }
+
+  return ListFollow({ location, match: { params: follows.focus } })
 }
 
 const ImportFrom = (format) => {
@@ -567,6 +574,7 @@ export default (state, actions) => {
           <Route path="/add" render={AddFollow} />
           <Route path="/add-feed" render={AddFeed} />
           <Route path="/edit/:id" render={EditFollowById} />
+          <Route path="/view/:id" render={ViewFollowById} />
           <Route path="/tag/:tag" render={ListFollow} />
           <Route render={settings ? ChangeSettings : ListFollow} />
         </Switch>
