@@ -354,7 +354,6 @@ div.intro {
         padding: 6px 8px 6px 12px;
 
         &:after {
-          content: "\25cf";
           position: absolute;
           padding-top: 8px;
           margin-left: -12px;
@@ -365,12 +364,14 @@ div.intro {
         @include themed() {
           &.age-m:after,
           &.age-h:after {
+            content: "\2726";
             color: t('latestfresh');
             text-shadow: -1px -1px 0 t('paper'), 1px -1px 0 t('paper'), -1px 1px 0 t('paper'), 1px 1px 0 t('paper');
           }
 
           &.age-d:after,
           &.age-w:after {
+            content: "\25cf";
             color: t('latestold');
             text-shadow: -1px -1px 0 t('paper'), 1px -1px 0 t('paper'), -1px 1px 0 t('paper'), 1px 1px 0 t('paper');
           }
@@ -782,19 +783,45 @@ div.intro {
   }
 }
 
-#reader {
-  & > ol {
-    list-style: none;
-    margin: 0;
-    padding: 0;
-    
-    & > li {
-      border-bottom: dotted 1px #C77;
-      padding-bottom: 8px;
+#pane {
+  position: fixed;
+  top: 0px;
+  right: 0px;
+  max-width: 50%;
+  height: 100%;
+  padding: 24px;
+  margin-left: -24px;
+  overflow-y: scroll;
+  z-index: 10;
 
-      .meta {
-        color: #975;
-      }
+  div.post {
+    margin-bottom: 16px;
+
+    & > img {
+      width: 100%;
+    }
+
+    img {
+      max-width: 100%;
+    }
+
+    a.share {
+      margin-left: 6px;
+    }
+  }
+
+  @include themed() {
+    box-shadow: -6px 0 6px 0 t('rule');
+    background-color: t('paper');
+
+    h3 a {
+      color: t('plain');
+      text-decoration: none;
+    }
+
+    .ago {
+      color: t('title');
+      font-size: 0.8rem;
     }
   }
 }

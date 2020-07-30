@@ -150,13 +150,6 @@ const FollowForm = (match, setup, isNew) => ({follows}, actions) => {
       <p class="note">(Leave empty to use <em>{follow.actualTitle || "the title loaded from the site"}</em>.)</p>
     </div>
 
-    {CAN_ARCHIVE &&
-      <div>
-        <input type="checkbox" id="fetchesContent" onclick={e => follow.fetchesContent = e.target.checked} checked={follow.fetchesContent} />
-        <label for="fetchesContent">Read here?</label>
-        <p class="note">(Check this to save a copy of complete posts and read them from Fraidycat.)</p>
-      </div>}
-
     <button onclick={e => {u('#working').attr('style', 'display: block'); return actions.follows.save(follow)}}>Save</button>
     {!isNew && <button type="button" class="delete" onclick={_ => actions.follows.confirmRemove(follow)}>Delete This</button>}
 
@@ -396,14 +389,15 @@ const ListFollow = ({ location, match }) => ({follows}, actions) => {
           let ago = timeAgo(lastPostAt, now)
           let dk = timeDarkness(lastPostAt, now)
           let id = `follow-${follow.id}`
+          let viewUrl = `/view/${follow.id}?tag=${encodeURIComponent(tag)}&importance=${encodeURIComponent(imp)}`
           return <li key={id} class={dk || 'age-X'}>
             <a name={id}></a>
             <h3>
-              <Link to={`/view/${follow.id}?tag=${encodeURIComponent(tag)}`}>
+              <Link to={viewUrl}>
                 <img class="favicon" src={Favicon(follows.baseHref, follow)}
                   onerror={e => e.target.src=follows.baseHref + svg['globe']} width="20" height="20" />
               </Link>
-              <Link to={`/view/${follow.id}?tag=${encodeURIComponent(tag)}`} class="url">{followTitle(follow)}</Link>
+              <Link to={viewUrl} class="url">{followTitle(follow)}</Link>
               <Link class="ext" to={follow.url}><img src={follows.baseHref + svg['link']} width="16" /></Link>
               {follow.status instanceof Array && follow.status.map(st =>
                 <a class={`status status-${st.type}`} oncreate={ToggleHover} href={st.url || follow.url}
@@ -447,23 +441,41 @@ const ListFollow = ({ location, match }) => ({follows}, actions) => {
           <p>Or, click the <Link to="/settings" title="Settings"><img src={follows.baseHref + svg['gear']} width="16" /></Link> to import a bunch.</p>
           <p><em>Hey! Follows added to this <strong>Real-time</strong> page will highlight the tab when there are new posts!</em></p>
         </div>}
-    {focus && <div id="pane">
-      {focus.posts.map(post => <div id={`post-${post.id}`}>
-        {post.title && <h3>{post.title}</h3>}
-        <span class="ago">{timeAgo(f[sortPosts], now)}</span>
-      </div>)}
+    {follows.focus && <div id="pane">
+      {follows.focus.posts.map(post => {
+        let detail = follows.focus.details[post.id]
+        if (detail) {
+          let graphic = null
+          if (detail.graphic) {
+            for (let size of ['full', 'thumb']) {
+              if (size in detail.graphic) {
+                graphic = [size, detail.graphic[size]]
+                break
+              }
+            }
+          }
+
+          return <div id={`post-${post.id}`} class="post">
+              {detail.title && <h3><a href={post.url}>{detail.title}</a></h3>}
+              {graphic && <img class={graphic[0]} src={graphic[1]} />}
+              {detail.text ? <p>{detail.text}</p> : <div innerHTML={detail.html} />}
+              <span class="ago">{timeAgo(post[sortPosts], now)} ago</span>
+              <Link to={post.url} class="share">
+                <img src={follows.baseHref + svg['share']} width="12" />
+              </Link>
+            </div>
+        }
+      })}
     </div>}
   </div>
 }
 
-const ViewFollowById = ({ location, match, setup }) => ({follows}) => {
+const ViewFollowById = ({ location, match, setup }) => ({follows}, actions) => {
   if (setup) {
-    let meta = follows.all[match.params.id]
-    follows.focus = {tag: (match.params.tag || (meta.tags || [house])[0]), meta,
-      importance: meta.importance}
+    actions.follows.loadPosts(match.params.id)
   }
 
-  return ListFollow({ location, match: { params: follows.focus } })
+  return ListFollow({ location, match })
 }
 
 const ImportFrom = (format) => {

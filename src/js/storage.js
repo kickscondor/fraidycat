@@ -160,8 +160,8 @@ module.exports = {
     }
   },
 
-  pollfetch(follow) {
-    this.fetchfeed(follow, false).then(feed => {
+  async pollfetch(follow) {
+    return this.fetchfeed(follow, false).then(feed => {
       if (feed.fresh) {
         this.update({op: 'replace', path: `/all/${follow.id}`, value: follow})
         this.write({update: false})
@@ -245,6 +245,11 @@ module.exports = {
 
     if (err != null)
       throw err
+
+    if (typeof(meta.details) === 'undefined') {
+      force = true
+      meta.details = {}
+    }
 
     //
     // Merge the new posts into the feed's master post list.
@@ -332,11 +337,13 @@ module.exports = {
         index.title = index.title.toString().trim()
         index.publishedAt = item.publishedAt || index.publishedAt || index.createdAt
         index.updatedAt = (item.updatedAt && item.updatedAt < now ? item.updatedAt : index.publishedAt)
+        meta.details[index.id] = item
       }
       if (feed.flags === 'COMPLETE') {
         meta.posts = posts
       }
       delete feed.posts
+      delete feed.details
 
       //
       // Normalize the status entries.
@@ -356,6 +363,7 @@ module.exports = {
       //
       delete meta.sortBy
       Object.assign(meta, feed)
+      feed.details = meta.details
       frago.sort(meta, feed.sortBy || this.settings['mode-updates'] || 'publishedAt',
         this.settings['mode-reposts'] !== 'hide', true)
     }
@@ -601,7 +609,7 @@ module.exports = {
     }
     this.follows[follow.id] = {url: follow.originalUrl || follow.feed,
       importance: follow.importance, title: follow.title, tags: follow.tags,
-      fetchesContent: follow.fetchesContent, editedAt: follow.editedAt}
+      editedAt: follow.editedAt}
   },
 
   //
@@ -791,6 +799,14 @@ module.exports = {
     }
 
     this.notifyFollow(follow, true)
+  },
+
+  async loadPosts(id, sender) {
+    let meta = await this.readFile(`/feeds/${id}.json`)
+    if (typeof(meta.details) === 'undefined') {
+      meta = await this.pollfetch(follow)
+    }
+    this.update({op: 'load', id, meta}, sender)
   },
 
   async save(follow, sender) {

@@ -276,6 +276,8 @@
               {"var": "out:url", "op": "=https://www.instagram.com/p/$shortcode"},
               {"var": "out:publishedAt", "op": "$.node.taken_at_timestamp",
                 "mod": ["int", "*1000", "date"]},
+              {"var": "out:graphic:full", "op": "$.node.display_url"},
+              {"var": "out:graphic:thumb", "op": "$.node.thumbnail_src"},
               {"var": "out:text", "op": ["$.node.edge_media_to_caption.edges[0].node.text",
                 "$.node.accessibility_caption"]}
             ]}
@@ -475,6 +477,7 @@
       {"op": "$.data[?(@.user_id === '$userId')]", "var": "out:status", "acceptJson": [
         {"var": "out:type", "op": "$.type"},
         {"var": "out:title", "op": "$.title"},
+        {"var": "out:graphic:thumb", "op": "$.thumbnail_url"},
         {"var": "out:publishedAt", "op": "$.started_at", "mod": ["date"]}
       ]}
     ]
@@ -488,10 +491,11 @@
     "url": "https://api.twitch.tv/helix/videos?type=archive&user_id=$userId",
     "acceptJson": [
       {"op": "$.data.*", "var": "out:posts", "acceptJson": [
-        {"var": "out:title",       "op": "$.title"},
-        {"var": "out:text",        "op": "$.description"},
-        {"var": "out:url",         "op": "$.url"},
-        {"var": "out:publishedAt", "op": "$.published_at", "mod": ["date"]}
+        {"var": "out:title",         "op": "$.title"},
+        {"var": "out:text",          "op": "$.description"},
+        {"var": "out:url",           "op": "$.url"},
+        {"var": "out:graphic:thumb", "op": "$.thumbnail_url"},
+        {"var": "out:publishedAt",   "op": "$.published_at", "mod": ["date"]}
       ]}
     ]
   },
@@ -566,6 +570,8 @@
     "patch": [
       {"var": "out:posts", "op": "$.posts.*", "patch": [
         {"var": "out", "op": "$"},
+        {"var": "id", "op": "$.url", "match": "v=(.+)"},
+        {"var": "out:graphic:full", "op": "=http://i.ytimg.com/vi/$id/maxresdefault.jpg"},
         {"var": "out:updatedAt"}
       ]}
     ],
@@ -690,14 +696,15 @@
     "match": "^(?:store\\.steampowered\\.com|steamcommunity\\.com)/app/(\\d+)",
     "arguments": [0, {"var": "app"}],
     "depends": ["store.steampowered.com:app"],
-    "url": "http://api.steampowered.com/ISteamNews/GetNewsForApp/v0002/?appid=$app&count=20&maxlength=1&format=json",
+    "url": "http://api.steampowered.com/ISteamNews/GetNewsForApp/v0002/?appid=$app&count=20&format=json",
     "acceptJson": [
       {"op": "$.appnews.newsitems[?(@.feedname === 'steam_community_announcements')]",
        "var": "out:posts", "acceptJson": [
         {"var": "out:url", "op": "$.url", "mod": ["url"]},
         {"var": "out:publishedAt", "op": "$.date",
          "mod": ["int", "*1000", "date"]},
-        {"var": "out:title", "op": "$.title"}
+        {"var": "out:title", "op": "$.title"},
+        {"var": "out:html", "op": "$.contents"}
       ]}
     ]
   }
