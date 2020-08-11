@@ -16,7 +16,7 @@
   },
 
   "feed": {
-    "accept": ["rss", "atom", "rdf", "jsonfeed"]
+    "accept": ["rss", "atom", "rdf", "twtxt", "jsonfeed"]
   },
 
   "rdf": {
@@ -74,7 +74,10 @@
           "./link[@type='text/html' and @rel='alternate']/@href",
           "./link[@rel='alternate' or @type='text/html']/@href",
           "./link[not(@rel)]/@href", "./enclosure/@url"]},
-        {"var": "out:publishedAt", "op": "./pubDate/text()", "mod": ["date"]}
+        {"var": "out:publishedAt", "op": "./pubDate/text()", "mod": ["date"]},
+        {"op": ["./enclosure[starts-with(@type, 'audio/')]"], "var": "out:embeds", "acceptXml": [
+          {"var": "out:audio:full", "op": "@url"}
+        ]}
       ]
     },
     "acceptXml": [
@@ -101,15 +104,17 @@
   "atom": {
     "namespaces": {
       "atom": "http://www.w3.org/2005/Atom",
-      "fc": "http://fraidyc.at/ext/1.0"
+      "fc": "http://fraidyc.at/ext/1.0",
+      "media": "http://search.yahoo.com/mrss/"
     },
     "rules": {
       "entry": [
         {"var": "out:title", "op": "./atom:title/text()"},
-        {"var": "out:html", "op": "./atom:content[@type='html']"},
+        {"var": "out:html", "op": ["./atom:content[@type='html']", "./atom:content[@type='xhtml']"]},
         {"var": "out:url", "op": ["./atom:link[@type='text/html' and @rel='alternate'][1]/@href",
           "./atom:link[@rel='alternate' or @type='text/html'][1]/@href",
           "./atom:link[not(@rel)][1]/@href", "./atom:id/text()"], "mod": ["url"]},
+        {"var": "out:graphic:thumb", "op": "./media:group/media:thumbnail[1]/@url"},
         {"var": "out:publishedAt", "op": ["./atom:published/text()", "./atom:updated/text()"], "mod": ["date"]},
         {"var": "out:updatedAt", "op": "./atom:updated/text()", "mod": ["date"]}
       ]
@@ -202,6 +207,21 @@
     ]
   },
 
+  "twtxt": {
+    "acceptText": [
+      {"var": "out:title", "op": "^#\\s*nick\\s*=\\s*(.+)$"},
+      {"var": "out:url",   "op": ["^#\\s*source\\s*=\\s*(.+)$", "^#\\s*url\\s*=\\s*(.+)$", "^#\\s*twturl\\s*=\\s*(.+)$"]},
+      {"var": "out:flags", "op": "=COMPLETE"},
+      {"var": "mime",      "op": "=application/json"},
+      {"var": "out:posts", "op": "^(?<timestamp>\\d{4}-\\d{2}-\\d{2}[tT]\\d{2}:\\d{2}\\S+)\\t(?<text>.+)$",
+       "acceptJson": [
+         {"var": "out:publishedAt", "op": "$.timestamp", "mod": ["date"]},
+         {"var": "out:text", "op": "$.text"}
+       ]
+      }
+    ]
+  },
+
   "bandcamp.com:artist-meta": {
     "url": "https://$artist.bandcamp.com/music",
     "acceptHtml": [
@@ -233,9 +253,21 @@
         {"var": "itemType", "op": "$.item_type"},
         {"var": "out:url", "op": ["=${items:$itemType-$itemId}", "=/releases"], "mod": ["url"]},
         {"var": "out:title", "op": "$.title"},
+        {"var": "type", "op": "$.item_type"},
+        {"var": "out:html", "op": "=<iframe style='border: 0; width: 100%; height: 42px;' src='https://bandcamp.com/EmbeddedPlayer/$type=$itemId/size=small/bgcol=ffffff/linkcol=0687f5/transparent=true/' seamless></iframe>"},
+        {"var": "art", "op": "$.art_id"},
+        {"var": "out:graphic:thumb", "op": "=https://f4.bcbits.com/img/a${art}_2.jpg"},
+        {"var": "out:graphic:full", "op": "=https://f4.bcbits.com/img/a${art}_10.jpg"},
         {"var": "out:publishedAt", "op": "$.release_date", "mod": ["date"]}
       ]}
     ]
+  },
+
+  "deviantart.com:artist": {
+    "match": "^deviantart\\.com\\/([-\\w]+)",
+    "arguments": [0, {"var": "username"}],
+    "url": "https://backend.deviantart.com/rss.xml?q=gallery%3A$username",
+    "accept": ["rss"]
   },
 
   "facebook.com:user": {
@@ -276,6 +308,7 @@
               {"var": "out:url", "op": "=https://www.instagram.com/p/$shortcode"},
               {"var": "out:publishedAt", "op": "$.node.taken_at_timestamp",
                 "mod": ["int", "*1000", "date"]},
+              {"var": "out:video:full", "op": "$.node.video_url"},
               {"var": "out:graphic:full", "op": "$.node.display_url"},
               {"var": "out:graphic:thumb", "op": "$.node.thumbnail_src"},
               {"var": "out:text", "op": ["$.node.edge_media_to_caption.edges[0].node.text",
@@ -332,7 +365,12 @@
           {"var": "out:url", "op": "$.attributes.url"},
           {"var": "out:description", "op": "$.attributes.teaser_text"},
           {"var": "out:publishedAt", "op": "$.attributes.published_at",
-            "mod": ["date"]}
+            "mod": ["date"]},
+          {"var": "out:text", "op": "$.attributes.teaser_text"},
+          {"var": "out:html", "op": "$.attributes.content"},
+          {"op": "$.attributes.post_file", "var": "out:embeds", "acceptJson": [
+            {"var": "out:audio:full", "op": "$.url"}
+          ]}
         ]}
       ]
     }],
@@ -395,16 +433,27 @@
   },
 
   "soundcloud.com:user": {
-    "match": "^soundcloud\\.com/",
-    "acceptHtml": [
-      {"var": "out:title", "op": "//title/text()"},
-      {"var": "out:photos:avatar", "op": "//meta[@property='twitter:image']/@content"},
-      {"var": "out:description", "op": "//meta[@property='twitter:description']/@content"},
-      {"op": "//noscript//article[@class='audible']", "var": "out:posts", "acceptHtml": [
-        {"var": "out:url", "op": ".//a[@itemprop='url']/@href", "mod": ["url"]},
-        {"var": "out:publishedAt", "op": ".//time[@pubdate]/text()",
-          "mod": ["date"]},
-        {"var": "out:title", "op": ".//a[@itemprop='url']/text()"}
+    "url": "https://api-widget.soundcloud.com/resolve?url=https%3A//soundcloud.com/$user&format=json&client_id=Iy5e1Ri4GTNgrafaXe4mLpmJLXbXEfBR",
+    "acceptJson": [
+      {"var": "id", "op": "$.id"},
+      {"var": "out:title", "op": "$.username"},
+      {"var": "out:photos:avatar", "op": "$.avatar_url"},
+      {"var": "out:description", "op": "$.description"}
+    ]
+  },
+
+  "soundcloud.com:tracks": {
+    "match": "^soundcloud\\.com/([^\\/]+)",
+    "arguments": [0, {"var": "user"}],
+    "depends": ["soundcloud.com:user"],
+    "url": "https://api-widget.soundcloud.com/users/$id/tracks?limit=20&offset=0&linked_partitioning=1&format=json&client_id=Iy5e1Ri4GTNgrafaXe4mLpmJLXbXEfBR",
+    "acceptJson": [
+      {"op": "$.collection.*", "var": "out:posts", "acceptJson": [
+        {"var": "out:url", "op": "$.permalink_url"},
+        {"var": "out:publishedAt", "op": "$.created_at", "mod": ["date"]},
+        {"var": "out:title", "op": "$.title"},
+        {"var": "uri", "op": "$.uri", "mod": ["encode"]},
+        {"var": "out:html", "op": "=<iframe width='100%' height='166' scrolling='no' frameborder='no' src='https://w.soundcloud.com/player/?url=$uri&color=%23ff5500&auto_play=false&hide_related=false&show_comments=false&show_user=false&show_reposts=false&show_teaser=false'></iframe>"}
       ]}
     ]
   },
@@ -531,33 +580,60 @@
     "url": "https://api.twitter.com/2/timeline/profile/$userId.json?include_profile_interstitial_type=0&include_blocking=0&include_blocked_by=0&include_followed_by=1&include_want_retweets=0&include_mute_edge=0&include_can_dm=0&include_can_media_tag=1&skip_status=1&cards_platform=Web-12&include_cards=1&include_ext_alt_text=true&include_reply_count=1&tweet_mode=extended&include_entities=true&include_user_entities=true&include_ext_media_color=false&include_ext_media_availability=true&send_error_codes=true&simple_quoted_tweet=true&include_tweet_replies=false&userId=$userId&count=40&ext=mediaStats%2ChighlightedLabel%2CcameraMoment&include_quote_count=true",
     "rules": {
       "entry": [
-        {"var": "id", "op": ["$.conversation_id_str", "$.id_str"]},
-        {"var": "aid", "op": "$.user_id_str"},
-        {"var": "rtid", "op": "$.id_str"},
-        {"var": "author", "op": "=${authors:$aid}"},
-        {"var": "out:author", "op": "=$author"},
-        {"var": "out:url", "op": "=http://twitter.com/$author/status/$id", "mod": ["url"]},
-        {"var": "out:publishedAt", "op": ["=${rt:$rtid}", "$.created_at"], "mod": ["date"]},
-        {"var": "out:text", "op": "$.full_text", "match": "^(?:RT @[^:]+: |)([\\s\\S]+)"}
+        {"var": "id", "op": "&.tw['$id'].id"},
+        {"var": "id", "op": "=tweet-$id"},
+        {"var": "out", "op": "&.tw['$id']"},
+        {"op": ["&.tw['tweet-$out:quoted']", "&.out.embeds.*"], "var": "out:embeds",
+         "acceptJson": [
+          {"var": "out", "op": "$"}
+        ]},
+        {"var": "out:quoted"}
       ]
     },
     "acceptJson": [
-      {"op": "$.timeline.instructions.*.pinEntry", "var": "*", "acceptJson": [
-        {"var": "pinnedId", "op": "$.entry.content.item.content.tweet.id"}
-      ]},
+      {"var": "tw:tweet-", "op": "="},
       {"op": "$.globalObjects.users.*", "var": "*", "acceptJson": [
         {"var": "id", "op": "$.id_str"},
         {"var": "authors:$id", "op": "$.screen_name"}
       ]},
-      {"op": "$.globalObjects.tweets[?(@.retweeted_status_id_str)]", "var": "*", "acceptJson": [
-        {"var": "id", "op": "$.retweeted_status_id_str"},
-        {"var": "rt:$id", "op": "$.created_at"}
+      {"op": "$.globalObjects.tweets.*", "var": "*", "acceptJson": [
+        {"var": "id", "op": "$.id_str"},
+        {"var": "aid", "op": "$.user_id_str"},
+        {"var": "author", "op": "&.authors.$aid"},
+        {"var": "key", "op": "=tw:tweet-$id"},
+        {"op": "$.entities.urls.*", "var": "*", "acceptJson": [
+          {"var": "tid", "op": "$.url", "match": "https://t\\.co/(\\w+)"},
+          {"var": "view", "op": "$.display_url"},
+          {"var": "turl", "op": "$.expanded_url"},
+          {"var": "tco:${tid}", "op": "=<a href=\"$turl\">$view</a>"}
+        ]},
+        {"var": "${key}:author", "op": "=$author"},
+        {"var": "${key}:id", "op": ["$.conversation_id_str", "$.id_str"]},
+        {"var": "${key}:url", "op": "=http://twitter.com/$author/status/$id", "mod": ["url"]},
+        {"var": "${key}:publishedAt", "op": ["$.created_at"], "mod": ["date"]},
+        {"var": "d0", "op": ["$.display_text_range.0"]},
+        {"var": "d1", "op": ["$.display_text_range.1"]},
+        {"var": "thread", "op": "$.self_thread.id_str", "mod": ["s/.+/<p><a href=\"https:\\/\\/twitter.com\\/$author\\/status\\/$&\">Show thread<\\/a><\\/p>/"]},
+        {"var": "${key}:html", "op": "$.full_text", "mod": ["[$d0,$d1]", "s/https:\\/\\/t\\.co\\/(\\w+)/$tco:$1/g", "s/\\n/<br>/g", "s/.+/<p>$&<\\/p>$thread"]},
+        {"op": "$.retweeted_status_id_str", "var": "*", "acceptJson": [
+          {"var": "${key}:html"}
+        ]},
+        {"var": "${key}:quoted", "op": ["$.retweeted_status_id_str", "$.quoted_status_id_str"]},
+        {"op": ["$.extended_entities.media.*", "$.entities.media.*"],
+         "var": "${key}:embeds", "acceptJson": [
+          {"var": "out:url", "op": "$.expanded_url"},
+          {"var": "out:graphic:full", "op": "$.media_url_https"},
+          {"var": "out:video:preview", "op": "$.video_info.variants[?(@.bitrate === 832000)].url"},
+          {"var": "out:video:full", "op": "$.video_info.variants[?(@.bitrate === 1280000 || @.content_type === 'video/mp4')].url"}
+        ]}
       ]},
-      {"op": "$.globalObjects.tweets[?(@.id_str === '$pinnedId')]", "var": "out:status", "acceptJson": [
-        {"var": "out:type", "op": "=pinned"},
+      {"op": "$.timeline.instructions.*.pinEntry", "var": "out:status", "acceptJson": [
+        {"var": "id", "op": "$.entry.entryId"},
         {"rule": "entry"}
       ]},
-      {"op": "$.globalObjects.tweets[?(@.id_str !== '$pinnedId' && !@.retweeted_status_id_str)]", "var": "out:posts", "acceptJson": [
+      {"op": "$.timeline.instructions.*.addEntries.entries.*",
+       "var": "out:posts", "acceptJson": [
+        {"var": "id", "op": "$.entryId"},
         {"rule": "entry"}
       ]}
     ]
@@ -571,7 +647,6 @@
       {"var": "out:posts", "op": "$.posts.*", "patch": [
         {"var": "out", "op": "$"},
         {"var": "id", "op": "$.url", "match": "v=(.+)"},
-        {"var": "out:graphic:full", "op": "=http://i.ytimg.com/vi/$id/maxresdefault.jpg"},
         {"var": "out:updatedAt"}
       ]}
     ],
@@ -597,15 +672,6 @@
           {"var": "out:title",        "op": "$.playlistVideoRenderer.title.simpleText"},
           {"var": "out:url",          "op": "=https://www.youtube.com/watch?v=$videoId&list=$id"}
         ]}
-      ]}
-    ]
-  },
-
-  "youtube.com:user": {
-    "match": "^youtube\\.com\\/user\\/",
-    "acceptHtml": [
-      {"op": "//link[@rel='canonical']", "var": "out:sources", "acceptHtml": [
-        {"var": "out:url", "op": "@href", "mod": ["url"]}
       ]}
     ]
   },

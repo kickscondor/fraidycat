@@ -1,5 +1,7 @@
+const domify = require('domify')
 const ent = require('ent/decode')
 const normalizeUrl = require('normalize-url')
+const sanitizeHtml = require('./sanitize')
 import u from '@kickscondor/umbrellajs'
 
 export const house = "\u{1f3e0}"
@@ -44,6 +46,103 @@ export function getMaxIndex (index) {
   if (vals.length == 0)
     return 0
   return Math.max(...vals)
+}
+
+function sanitize0(html, url) {
+  let dirty = domify(html)
+  if (dirty.nodeType >= 2 && dirty.nodeType <= 4) {
+    return html
+  } else if (dirty.nodeType >= 5 && dirty.nodeType <= 10) {
+    return ''
+  }
+
+  return sanitizeHtml(dirty, ele => {
+    let attr = null
+    if ((ele.nodeType >= 2 && ele.nodeType <= 4) || ele.nodeType === 11) {
+      return true
+    } else if (ele.nodeType >= 5 && ele.nodeType <= 10) {
+      return false
+    }
+
+    switch (ele.tagName) {
+      case 'STYLE': case 'SCRIPT':
+        ele.parentNode.removeChild(ele)
+        return false
+      //
+      // TODO: allow height and width, within the frame.
+      //
+      case 'IFRAME':
+      case 'IMG':
+        if (ele.src) {
+          let m = ele.src.match(/^((https?|hyper):)?\/\/|(\w+:\/\/)/)
+          if (m) {
+            if (!m[3]) {
+              attr = {src: ele.src}
+            }
+          } else {
+            attr = {src: new URL(ele.src, url).toString()}
+          }
+        } else {
+          return false
+        }
+        break
+      case 'A':
+        if (ele.href) {
+          let m = ele.href.match(/^((https?|ftp|mailto|hyper):)?\/\/|(\w+:\/\/)/)
+          if (m) {
+            if (!m[3]) {
+              attr = {href: ele.href, target: '_blank'}
+            }
+          } else {
+            attr = {href: new URL(ele.href, url).toString(), target: '_blank'}
+          }
+        }
+      //
+      // With text markup, eliminate tags that are basically empty.
+      //
+      case 'BLOCKQUOTE': case 'P': case 'NL': case 'LABEL':
+      case 'ABBR': case 'CODE': case 'CAPTION':
+      case 'TH': case 'TD': case 'PRE': case 'DT': case 'DD':
+      case 'H1': case 'H2': case 'H3': case 'H4': case 'H5': case 'H6':
+        if (!ele.textContent.trim() && !ele.children.length) {
+          return false
+        }
+        break
+
+      //
+      // With container elements, remove them if they have no children
+      //
+      case 'DL': case 'DI': case 'UL': case 'OL': case 'LI':
+      case 'B': case 'I': case 'STRONG': case 'EM': case 'STRIKE':
+      case 'TABLE': case 'THEAD': case 'TBODY': case 'TR':
+        if (ele.childNodes.length === 0) {
+          return false
+        }
+
+      case 'HR': case 'BR': case 'DIV':
+        break
+      default:
+        return false
+    }
+
+    while (ele.attributes.length > 0) {
+      ele.removeAttribute(ele.attributes[0].name)
+    }
+
+    if (attr) {
+      for (let k in attr) {
+        ele.setAttribute(k, attr[k])
+      }
+    }
+
+    return true
+  })
+}
+
+export function sanitize (post) {
+  if (post.html) {
+    post.html = sanitize0(post.html, post.url)
+  }
 }
 
 export function html2text (html) {

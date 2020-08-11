@@ -17,7 +17,7 @@
 // instance to run alone, with no syncing, should the user want it that way.
 //
 import { followTitle, house, html2text, getIndexById, Importances,
-  urlToFeed, urlToID, urlToNormal, isValidFollow } from './util'
+  sanitize, urlToFeed, urlToID, urlToNormal, isValidFollow } from './util'
 import u from '@kickscondor/umbrellajs'
 
 const fraidyscrape = require('fraidyscrape')
@@ -80,7 +80,7 @@ module.exports = {
         pollDate = now
 
         try {
-          let soc = await this.fetch("https://fraidyc.at/defs/social.json")
+          let soc = await this.fetch("https://huh.fraidyc.at/defs/social.json")
           mod = soc.headers.get('last-modified')
           if (pollMod !== mod) {
             let txt = await soc.text()
@@ -322,6 +322,7 @@ module.exports = {
           }
         }
 
+        sanitize(item)
         index.title = (ident === 0 && item.title) || item.text
         if (!index.title && item.html)
           index.title = html2text(item.html)
@@ -554,13 +555,17 @@ module.exports = {
               } else {
                 try {
                   incoming.id = id
-                  await this.refresh(incoming)
-                  if (syncType === SYNC_EXTERNAL) {
-                    current = this.all[id]
-                    notify = true
+                  let feeds = await this.refresh(incoming)
+                  if (feeds) {
+                    throw "This follow needs to be manually updated."
                   }
-                } catch {}
-                // catch(msg => console.log(`${incoming.url} is ${msg}`))
+                } catch (e) {
+                  this.all[id] = Object.assign({error: e.message}, incoming)
+                }
+                if (syncType === SYNC_EXTERNAL) {
+                  current = this.all[id]
+                  notify = true
+                }
               }
               updated = true
             } else if (current.editedAt > incoming.editedAt) {
@@ -607,9 +612,13 @@ module.exports = {
       this.all[follow.id] = follow
       this.update({op: 'replace', path: `/all/${follow.id}`, value: follow})
     }
-    this.follows[follow.id] = {url: follow.originalUrl || follow.feed,
-      importance: follow.importance, title: follow.title, tags: follow.tags,
-      editedAt: follow.editedAt}
+
+    let obj = {url: follow.feed, title: follow.title, tags: follow.tags,
+      importance: follow.importance, editedAt: follow.editedAt}
+    if (follow.originalUrl !== follow.feed) {
+      obj.ori = follow.originalUrl
+    }
+    this.follows[follow.id] = obj
   },
 
   //
@@ -804,7 +813,10 @@ module.exports = {
   async loadPosts(id, sender) {
     let meta = await this.readFile(`/feeds/${id}.json`)
     if (typeof(meta.details) === 'undefined') {
-      meta = await this.pollfetch(follow)
+      let follow = this.all[id]
+      if (follow) {
+        meta = await this.pollfetch(follow)
+      }
     }
     this.update({op: 'load', id, meta}, sender)
   },

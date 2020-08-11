@@ -57,6 +57,31 @@ const ToggleShow = (e, parentSel, cls) => {
   ToggleShowByEle(e.target, parentSel, cls)
 }
 
+const DragEdge = actions => e => {
+  e.preventDefault()
+  let c = u(e.target.parentElement), actualWidth = 0
+  let move = e => {
+    if (c) {
+      e.preventDefault()
+      let width = Math.round(document.body.clientWidth - e.clientX)
+      if (width > 64 && width < document.body.clientWidth - 64) {
+        actualWidth = width
+        c.attr('style', 'width: ' + width + 'px')
+      }
+    }
+  }
+  let up = e => {
+    if (actualWidth > 0) {
+      let value = ((actualWidth / document.body.clientWidth) * 100).toFixed(2) + '%';
+      actions.follows.changeSetting({name: 'pane-width', value})
+    }
+    document.removeEventListener('mousemove', move)
+    document.removeEventListener('mouseup', up)
+  }
+  document.addEventListener('mousemove', move)
+  document.addEventListener('mouseup', up)
+}
+
 const Nudge = (x) => a => {
   let div = u(a.parentNode)
   let ul = div.children('ul').first()
@@ -298,6 +323,39 @@ const TitleTrunc = function(title) {
   return <span>{title.slice(0, index)}<s>{title.slice(index)}</s></span>
 }
 
+const PostView = (detail, focus, cls) => {
+  if (detail) {
+    let graphic = null, vid = null
+    if (detail.video) {
+      for (let size of ['preview', 'full', 'thumb']) {
+        if (size in detail.video) {
+          vid = [size, detail.video[size]]
+          break
+        }
+      }
+    }
+    if (vid === null && detail.graphic) {
+      for (let size of ['preview', 'full', 'thumb']) {
+        if (size in detail.graphic) {
+          graphic = [size, detail.graphic[size]]
+          break
+        }
+      }
+    }
+    let aud = (vid === null && detail.audio && detail.audio.full)
+
+    let author = detail.author && detail.author !== focus.author && <span class="author">{detail.author}</span>
+    cls += (detail.text || detail.html) ? ' text' : ''
+    return <div class={cls}>
+        {vid && <video class={vid[0]} controls><source src={vid[1]} /></video>}
+        {graphic && <img class={graphic[0]} src={graphic[1]} />}
+        {aud && <audio controls="true" preload="none" src={aud} />}
+        {detail.text ? <p>{author}{detail.text}</p> : <div>{author}<div class="inner" innerHTML={detail.html} /></div>}
+        {detail.embeds && detail.embeds.map(post => PostView(post, focus, "embed"))}
+      </div>
+  }
+}
+
 const ListFollow = ({ location, match }) => ({follows}, actions) => {
   let now = new Date()
   let tag = match.params.tag ? match.params.tag : house
@@ -390,15 +448,15 @@ const ListFollow = ({ location, match }) => ({follows}, actions) => {
           let dk = timeDarkness(lastPostAt, now)
           let id = `follow-${follow.id}`
           let viewUrl = `/view/${follow.id}?tag=${encodeURIComponent(tag)}&importance=${encodeURIComponent(imp)}`
-          return <li key={id} class={dk || 'age-X'}>
+          return <li key={id} class={`${dk || 'age-X'} ${match.params.id === follow.id ? 'focus' : ''}`} onclick={e => e.target.name === id && actions.location.go(viewUrl)}>
             <a name={id}></a>
+            <Link to={viewUrl} class="favicon">
+              <img src={Favicon(follows.baseHref, follow)}
+                onerror={e => e.target.src=follows.baseHref + svg['globe']} width="48" height="48" />
+            </Link>
             <h3>
-              <Link to={viewUrl}>
-                <img class="favicon" src={Favicon(follows.baseHref, follow)}
-                  onerror={e => e.target.src=follows.baseHref + svg['globe']} width="20" height="20" />
-              </Link>
               <Link to={viewUrl} class="url">{followTitle(follow)}</Link>
-              <Link class="ext" to={follow.url}><img src={follows.baseHref + svg['link']} width="16" /></Link>
+              <Link class="ext" to={follow.url}><img src={follows.baseHref + svg['link']} width="16" target="_blank" /></Link>
               {follow.status instanceof Array && follow.status.map(st =>
                 <a class={`status status-${st.type}`} oncreate={ToggleHover} href={st.url || follow.url}
                   >{st.type === 'live' ? <span><img src={follows.baseHref + svg['rec']} width="12" /> LIVE</span> : <span><img src={follows.baseHref + svg['notepad']} width="16" /></span>}
@@ -441,31 +499,29 @@ const ListFollow = ({ location, match }) => ({follows}, actions) => {
           <p>Or, click the <Link to="/settings" title="Settings"><img src={follows.baseHref + svg['gear']} width="16" /></Link> to import a bunch.</p>
           <p><em>Hey! Follows added to this <strong>Real-time</strong> page will highlight the tab when there are new posts!</em></p>
         </div>}
-    {follows.focus && <div id="pane">
-      {follows.focus.posts.map(post => {
-        let detail = follows.focus.details[post.id]
+    {focus && <div id="pane" oncreate={el => el.style = `width: ${follows.settings['pane-width'] || "50%"}`}>
+      <div class="hide"><Link to={`/tag/${encodeURIComponent(tag)}?importance=${imp}`}>
+        <img src={follows.baseHref + svg['hide']} width="24" /></Link></div>
+      <div class="edge" onmousedown={DragEdge(actions)} />
+      <div class="contents">
+      {focus.posts.map(post => {
+        let detail = focus.details[post.id]
         if (detail) {
-          let graphic = null
-          if (detail.graphic) {
-            for (let size of ['full', 'thumb']) {
-              if (size in detail.graphic) {
-                graphic = [size, detail.graphic[size]]
-                break
-              }
-            }
-          }
-
           return <div id={`post-${post.id}`} class="post">
-              {detail.title && <h3><a href={post.url}>{detail.title}</a></h3>}
-              {graphic && <img class={graphic[0]} src={graphic[1]} />}
-              {detail.text ? <p>{detail.text}</p> : <div innerHTML={detail.html} />}
-              <span class="ago">{timeAgo(post[sortPosts], now)} ago</span>
-              <Link to={post.url} class="share">
+            {detail.title && <h4><a href={detail.url} target="_blank">{detail.title}</a>
+              <a class="ext" href={detail.url}><img src={follows.baseHref + svg['link']} width="16" target="_blank" /></a>
+              </h4>}
+            {PostView(detail, focus, "main")}
+            <div class="meta">
+              <span class="ago">{timeAgo(detail.publishedAt, now)} ago</span>
+              <Link to={detail.url} class="share" target="_blank">
                 <img src={follows.baseHref + svg['share']} width="12" />
               </Link>
             </div>
+          </div>
         }
       })}
+      </div>
     </div>}
   </div>
 }
@@ -473,6 +529,16 @@ const ListFollow = ({ location, match }) => ({follows}, actions) => {
 const ViewFollowById = ({ location, match, setup }) => ({follows}, actions) => {
   if (setup) {
     actions.follows.loadPosts(match.params.id)
+    let div = u('#pane .contents > div')
+    if (div.length > 0) {
+      div.scroll()
+    }
+  }
+
+  if (follows.focus) {
+    let tag = follows.focus.tags && follows.focus.tags[0]
+    match.params = Object.assign({meta: follows.focus, tag,
+      importance: follows.focus.importance}, match.params)
   }
 
   return ListFollow({ location, match })

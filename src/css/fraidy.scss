@@ -1,6 +1,7 @@
 $themes: (
   light: (
     background: #F7F7E7,
+    backmute: #FCFCF3,
     plain: #000000,
     link: #0000EE,
     visited: #AA8844,
@@ -28,9 +29,11 @@ $themes: (
     sparkoldfill: #ACC0CB,
     notice: #997755,
     progress: #DDDDCC,
+    edge: #99999999
   ),
   dark: (
     background: #080818,
+    backmute: #181818,
     plain: #FFEEEE,
     link: #DDFFFF,
     visited: #AAAAAA,
@@ -58,6 +61,7 @@ $themes: (
     sparkoldfill: #2B2C10,
     notice: #7799AA,
     progress: #997755,
+    edge: #000000
   ),
 );
 
@@ -132,6 +136,10 @@ article {
       color: t('link');
     }
   }
+}
+
+header {
+  margin-left: 22px;
 }
 
 footer {
@@ -240,14 +248,36 @@ div.intro {
 
   & > ol > li {
     position: relative;
+    margin: 12px 0;
     padding: 2px 12px;
     cursor: pointer;
 
     @include themed() {
+      background: t('backmute');
       border-bottom: dotted 1px t('rule');
 
+      &:hover,
+      &.focus {
+        margin: -4px 4px 13px -4px;
+      }
+
+      &.focus {
+        border: solid 2px t('spanold');
+        box-shadow: 4px 4px t('spanold');
+      }
+
+      div.trunc ol.title:after {
+        background-image: linear-gradient(to right, rgba(t('backmute'), 0), t('backmute') 90%);
+      }
+
       &:hover {
-        background-color: t('latest');
+        background-color: t('paper') !important;
+        border: solid 2px t('plain') !important;
+        box-shadow: 4px 4px t('plain') !important;
+
+        div.trunc ol.title:after {
+          background-image: linear-gradient(to right, rgba(t('paper'), 0), t('paper') 90%);
+        }
       }
 
       a.show > div {
@@ -304,9 +334,8 @@ div.intro {
     h2 {
       position: relative;
       font-size: 2rem;
-      margin: 0;
+      margin: 0 18px 0 22px;
       float: left;
-      margin-right: 18px;
     }
 
     @include themed() {
@@ -341,6 +370,7 @@ div.intro {
       display: none;
       top: 100%;
       margin-top: 2.6rem;
+      margin-left: 22px;
       font-size: 1.5rem;
 
       @include themed() {
@@ -466,8 +496,6 @@ div.intro {
   }
 
   #imps {
-    padding-top: 8px;
-
     li {
       font-size: 1.2rem;
       font-variant: small-caps;
@@ -485,7 +513,7 @@ div.intro {
         font-size: 1.4rem;
         background: #F09;
         color: white;
-        padding: 2px 6px;
+        padding: 7px 12px;
       }
     }
   }
@@ -502,7 +530,7 @@ div.intro {
 
   h3 {
     font-size: 1.1rem;
-    margin: 8px 0 4px 0;
+    margin: 8px 0 4px 64px;
 
     a.url {
       display: inline-block;
@@ -580,19 +608,24 @@ div.intro {
     }
   }
 
-  h3 img.favicon {
-    margin-bottom: -6px;
-    margin-top: 6px;
-    border-radius: 4px;
-    @include themed() {
-      background-color: t('button');
-      border: solid 2px t('button');
+  a.favicon {
+    display: block;
+    float: left;
+    margin: 6px 20px;
+
+    & > img {
+      margin: 6px 6px -6px 0px;
+
+      @include themed() {
+        background-color: t('button');
+        border: solid 2px t('button');
+      }
     }
   }
 
   div.extra {
     font-size: 1.1rem;
-    margin: 6px 0;
+    margin: 6px 0 6px 41px;
     padding-left: 30px;
 
     .enter {
@@ -621,20 +654,6 @@ div.intro {
 
         a:visited {
           color: t('visited');
-        }
-
-        span.author {
-          @include themed() {
-            color: t('title');
-          }
-        }
-
-        span.author::before {
-          content: "@";
-        }
-
-        span.author::after {
-          content: ":\0000a0";
         }
 
         a:visited {
@@ -730,10 +749,6 @@ div.intro {
         pointer-events: none;
         width: 40px;
         height: 100%;
-
-        @include themed() {
-          background-image: linear-gradient(to right, rgba(t('background'), 0), t('background') 90%);
-        }
       }
 
       li {
@@ -787,22 +802,79 @@ div.intro {
   position: fixed;
   top: 0px;
   right: 0px;
-  max-width: 50%;
   height: 100%;
-  padding: 24px;
-  margin-left: -24px;
-  overflow-y: scroll;
   z-index: 10;
 
-  div.post {
-    margin-bottom: 16px;
+  div.hide {
+    position: absolute;
+    left: -36px;
+    top: 18px;
+  }
 
-    & > img {
-      width: 100%;
+  div.edge {
+    position: absolute;
+    width: 12px;
+    height: 100%;
+    cursor: col-resize;
+
+    @include themed() {
+      &:hover {
+        background-color: t('background');
+      }
+    }
+  }
+
+  div.contents {
+    height: 100%;
+    overflow-y: scroll;
+    padding-bottom: 32px;
+  }
+
+  div.post, div.embed {
+    & > img, & > video, & > audio {
+      margin-top: 1em;
     }
 
-    img {
-      max-width: 100%;
+    div.inner img,
+    div.inner video,
+    div.inner iframe,
+    & > img, & > video {
+      margin-left: -24px;
+      max-width: calc(100% + 48px);
+    }
+  }
+
+  div.post {
+    padding: 12px 24px 0 24px;
+    max-width: 800px;
+
+    & > h4 {
+      margin: 1em 0;
+    }
+
+    div.embed {
+      border-radius: 12px;
+
+      &.text {
+        padding: 8px 16px;
+        @include themed() {
+          background: t('tab');
+          border: solid 4px t('tab');
+        }
+      }
+    }
+
+    div.inner > p:last-of-type,
+    & > p:last-of-type {
+      margin-bottom: 0;
+    }
+
+    li {
+      margin-left: 20px;
+    }
+
+    a.ext {
+      margin: 0 8px;
     }
 
     a.share {
@@ -811,10 +883,10 @@ div.intro {
   }
 
   @include themed() {
-    box-shadow: -6px 0 6px 0 t('rule');
+    box-shadow: -6px 0 6px 0 t('edge');
     background-color: t('paper');
 
-    h3 a {
+    h4 a {
       color: t('plain');
       text-decoration: none;
     }
@@ -889,6 +961,20 @@ form > div {
 div.err {
   color: red;
   margin-bottom: 8px;
+}
+
+span.author {
+  @include themed() {
+    color: t('title');
+  }
+}
+
+span.author::before {
+  content: "@";
+}
+
+span.author::after {
+  content: ":\0000a0";
 }
 
 label {
