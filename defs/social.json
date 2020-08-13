@@ -143,7 +143,7 @@
   "jsonfeed": {
     "rules": {
       "entry": [
-        {"var": "out:title", "op": "$.title"},
+        {"var": "out:title", "op": "$.title", "mod": ["html-to-text"]},
         {"var": "out:html", "op": "$.content_html"},
         {"var": "out:url", "op": "$.url", "mod": ["url"]},
         {"var": "out:publishedAt", "op": "$.date_published", "mod": ["date"]},
@@ -151,7 +151,7 @@
       ]
     },
     "acceptJson": [
-      {"var": "out:title", "op": "$.title"},
+      {"var": "out:title", "op": "$.title", "mod": ["html-to-text"]},
       {"var": "out:photos:avatar", "op": "$.icon", "mod": ["url"]},
       {"var": "out:photos:favicon", "op": "$.favicon"},
       {"var": "out:description", "op": "$.description"},
@@ -254,7 +254,7 @@
         {"var": "out:url", "op": ["=${items:$itemType-$itemId}", "=/releases"], "mod": ["url"]},
         {"var": "out:title", "op": "$.title"},
         {"var": "type", "op": "$.item_type"},
-        {"var": "out:html", "op": "=<iframe style='border: 0; width: 100%; height: 42px;' src='https://bandcamp.com/EmbeddedPlayer/$type=$itemId/size=small/bgcol=ffffff/linkcol=0687f5/transparent=true/' seamless></iframe>"},
+        {"var": "out:html", "op": "=<iframe width='100%' height='42' src='https://bandcamp.com/EmbeddedPlayer/$type=$itemId/size=small/bgcol=ffffff/linkcol=0687f5/transparent=true/' seamless></iframe>"},
         {"var": "art", "op": "$.art_id"},
         {"var": "out:graphic:thumb", "op": "=https://f4.bcbits.com/img/a${art}_2.jpg"},
         {"var": "out:graphic:full", "op": "=https://f4.bcbits.com/img/a${art}_10.jpg"},
@@ -489,6 +489,7 @@
           {"var": "out:publishedAt", "op": "$.createTime",
             "mod": ["int", "*1000", "date"]},
           {"var": "out:graphic:full", "op": ["$.video.dynamicCover", "$.video.cover"]},
+          {"var": "out:video:full", "op": ["$.video.playAddr", "$.video.downloadAddr"]},
           {"var": "out:url", "op": "=https://www.tiktok.com/@$username/video/$itemId"}
         ]}
       ]
@@ -526,7 +527,7 @@
       {"op": "$.data[?(@.user_id === '$userId')]", "var": "out:status", "acceptJson": [
         {"var": "out:type", "op": "$.type"},
         {"var": "out:title", "op": "$.title"},
-        {"var": "out:graphic:thumb", "op": "$.thumbnail_url"},
+        {"var": "out:graphic:full", "op": "$.thumbnail_url", "mod": ["s/\\{width\\}/600/", "s/\\{height\\}/338/"]},
         {"var": "out:publishedAt", "op": "$.started_at", "mod": ["date"]}
       ]}
     ]
@@ -543,7 +544,7 @@
         {"var": "out:title",         "op": "$.title"},
         {"var": "out:text",          "op": "$.description"},
         {"var": "out:url",           "op": "$.url"},
-        {"var": "out:graphic:thumb", "op": "$.thumbnail_url"},
+        {"var": "out:graphic:full",  "op": "$.thumbnail_url", "mod": ["s/%\\{width\\}/600/", "s/%\\{height\\}/338/"]},
         {"var": "out:publishedAt",   "op": "$.published_at", "mod": ["date"]}
       ]}
     ]
@@ -640,17 +641,24 @@
   },
 
   "youtube.com:feed": {
-    "match": "^youtube\\.com\\/channel\\/([-\\w]+)",
+    "match": "^youtube\\.com\\/feeds\\/videos\\.xml\\?channel_id=([-\\w]+)",
     "arguments": [0, {"var": "id"}],
-    "url": "https://www.youtube.com/feeds/videos.xml?channel_id=$id",
     "patch": [
       {"var": "out:posts", "op": "$.posts.*", "patch": [
         {"var": "out", "op": "$"},
         {"var": "id", "op": "$.url", "match": "v=(.+)"},
+        {"var": "out:html", "op": "=<iframe width='560' height='315' src='https://www.youtube.com/embed/$id'></iframe>"},
         {"var": "out:updatedAt"}
       ]}
     ],
     "accept": ["atom"]
+  },
+
+  "youtube.com:channel": {
+    "match": "^youtube\\.com\\/channel\\/([-\\w]+)",
+    "arguments": [0, {"var": "id"}],
+    "url": "https://www.youtube.com/feeds/videos.xml?channel_id=$id",
+    "accept": ["youtube.com:feed"]
   },
 
   "youtube.com:playlist": {

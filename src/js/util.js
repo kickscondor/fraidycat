@@ -48,6 +48,58 @@ export function getMaxIndex (index) {
   return Math.max(...vals)
 }
 
+const ATTR_DIM = 1
+const ATTR_SRC = 2
+const ATTR_HREF = 3
+
+function sanitizeAttr(ele, name, type, attr, url) {
+  let a = ele.attributes[name], m
+  if (a && a.value) {
+    let val = a.value
+    switch (type) {
+      case ATTR_DIM:
+        m = val.match(/^(\d+)$|^(\d+)%$/)
+        if (!m) {
+          return false
+        }
+        if (m[2]) {
+          let n = Number(m[2])
+          if (n < 10 && n > 100) {
+            return false
+          }
+        }
+      break
+      case ATTR_SRC:
+        m = a.value.match(/^((https?|hyper):)?\/\/|(\w+:\/\/)/)
+        if (m) {
+          if (m[3]) {
+            return false
+          }
+        } else {
+          val = new URL(val, url).toString()
+        }
+      break
+      case ATTR_HREF:
+        m = a.value.match(/^((https?|ftp|mailto|hyper):)?\/\/|(\w+:\/\/)/)
+        if (m) {
+          if (!m[3]) {
+            attr.target = '_blank'
+          } else {
+            return false
+          }
+        } else {
+          attr.target = '_blank'
+          val = new URL(val, url).toString()
+        }
+      break
+    }
+
+    attr[name] = val
+    return true
+  }
+  return false
+}
+
 function sanitize0(html, url) {
   let dirty = domify(html)
   if (dirty.nodeType >= 2 && dirty.nodeType <= 4) {
@@ -57,7 +109,7 @@ function sanitize0(html, url) {
   }
 
   return sanitizeHtml(dirty, ele => {
-    let attr = null
+    let attr = {}
     if ((ele.nodeType >= 2 && ele.nodeType <= 4) || ele.nodeType === 11) {
       return true
     } else if (ele.nodeType >= 5 && ele.nodeType <= 10) {
@@ -68,42 +120,50 @@ function sanitize0(html, url) {
       case 'STYLE': case 'SCRIPT':
         ele.parentNode.removeChild(ele)
         return false
-      //
-      // TODO: allow height and width, within the frame.
-      //
+      case 'AUDIO':
+      case 'VIDEO':
+        sanitizeAttr(ele, 'width', ATTR_DIM, attr)
+        sanitizeAttr(ele, 'height', ATTR_DIM, attr)
+        attr.controls = 'true'
+        break
+      case 'SOURCE':
+        sanitizeAttr(ele, 'type', 0, attr)
+        if (!sanitizeAttr(ele, 'src', ATTR_SRC, attr, url)) {
+          return false
+        }
+        break
+      case 'TRACK':
+        sanitizeAttr(ele, 'kind', 0, attr)
+        sanitizeAttr(ele, 'srclang', 0, attr)
+        sanitizeAttr(ele, 'label', 0, attr)
+        if (!sanitizeAttr(ele, 'src', ATTR_SRC, attr, url)) {
+          return false
+        }
+        break
       case 'IFRAME':
       case 'IMG':
-        if (ele.src) {
-          let m = ele.src.match(/^((https?|hyper):)?\/\/|(\w+:\/\/)/)
-          if (m) {
-            if (!m[3]) {
-              attr = {src: ele.src}
-            }
-          } else {
-            attr = {src: new URL(ele.src, url).toString()}
-          }
-        } else {
+        sanitizeAttr(ele, 'width', ATTR_DIM, attr)
+        sanitizeAttr(ele, 'height', ATTR_DIM, attr)
+        if (!sanitizeAttr(ele, 'src', ATTR_SRC, attr, url)) {
           return false
         }
         break
       case 'A':
-        if (ele.href) {
-          let m = ele.href.match(/^((https?|ftp|mailto|hyper):)?\/\/|(\w+:\/\/)/)
-          if (m) {
-            if (!m[3]) {
-              attr = {href: ele.href, target: '_blank'}
-            }
-          } else {
-            attr = {href: new URL(ele.href, url).toString(), target: '_blank'}
-          }
+        sanitizeAttr(ele, 'alt', 0, attr)
+        if (!sanitizeAttr(ele, 'href', ATTR_HREF, attr, url)) {
+          return false
         }
+      case 'DFN': case 'ABBR':
+        sanitizeAttr(ele, 'title', 0, attr)
+
       //
       // With text markup, eliminate tags that are basically empty.
       //
       case 'BLOCKQUOTE': case 'P': case 'NL': case 'LABEL':
-      case 'ABBR': case 'CODE': case 'CAPTION':
+      case 'CODE': case 'CAPTION': case 'CITE': case 'LI': case 'ADDRESS':
       case 'TH': case 'TD': case 'PRE': case 'DT': case 'DD':
       case 'H1': case 'H2': case 'H3': case 'H4': case 'H5': case 'H6':
+      case 'FIGCAPTION': case 'SUMMARY':
         if (!ele.textContent.trim() && !ele.children.length) {
           return false
         }
@@ -112,14 +172,20 @@ function sanitize0(html, url) {
       //
       // With container elements, remove them if they have no children
       //
-      case 'DL': case 'DI': case 'UL': case 'OL': case 'LI':
+      case 'DL': case 'DI': case 'UL': case 'OL': case 'DEL': case 'INS':
       case 'B': case 'I': case 'STRONG': case 'EM': case 'STRIKE':
-      case 'TABLE': case 'THEAD': case 'TBODY': case 'TR':
+      case 'S': case 'SMALL': case 'SUB': case 'SUP': case 'U':
+      case 'TABLE': case 'THEAD': case 'TBODY': case 'TFOOT': case 'TR':
+      case 'DETAILS': case 'FIGURE': case 'ARTICLE': case 'ASIDE':
         if (ele.childNodes.length === 0) {
           return false
         }
 
-      case 'HR': case 'BR': case 'DIV':
+      case 'HR':
+        break
+      case 'BR': case 'WBR':
+        if (ele.parentNode.firstChild == ele || ele.parentNode.lastChild == ele)
+          return false
         break
       default:
         return false
@@ -129,10 +195,8 @@ function sanitize0(html, url) {
       ele.removeAttribute(ele.attributes[0].name)
     }
 
-    if (attr) {
-      for (let k in attr) {
-        ele.setAttribute(k, attr[k])
-      }
+    for (let k in attr) {
+      ele.setAttribute(k, attr[k])
     }
 
     return true
@@ -155,9 +219,9 @@ export function urlToFeed(abs, href) {
   return normalizeUrl(url.resolve(abs, href), {stripWWW: false, stripHash: true, removeTrailingSlash: false})
 }
 
-export function urlToNormal (link) {
+export function urlToNormal (link, stripHash) {
   try {
-    return normalizeUrl(link, {stripProtocol: true, removeDirectoryIndex: true, stripHash: true})
+    return normalizeUrl(link, {stripProtocol: true, removeDirectoryIndex: true, stripHash})
   } catch {
     return link
   }

@@ -1,5 +1,6 @@
 $themes: (
   light: (
+    pattern: url('../images/fc-light.png'),
     background: #F7F7E7,
     backmute: #FCFCF3,
     plain: #000000,
@@ -32,6 +33,7 @@ $themes: (
     edge: #99999999
   ),
   dark: (
+    pattern: url('../images/fc-dark.png'),
     background: #080818,
     backmute: #181818,
     plain: #FFEEEE,
@@ -109,7 +111,7 @@ body {
 }
 
 h1 {
-  margin: 0;
+  margin: 20px 0;
 
   a {
     text-decoration: none;
@@ -129,6 +131,7 @@ article {
   min-height: 100%;
 
   @include themed() {
+    background: t('pattern') no-repeat;
     color: t('plain');
     background-color: t('background');
 
@@ -392,6 +395,20 @@ div.intro {
         }
 
         @include themed() {
+          &:hover {
+            background-color: t('tab');
+          }
+
+          &.age-m:hover,
+          &.age-h:hover {
+            background-color: t('tabfresh');
+          }
+
+          &.age-d:hover,
+          &.age-w:hover {
+            background-color: t('tabold');
+          }
+
           &.age-m:after,
           &.age-h:after {
             content: "\2726";
@@ -518,7 +535,7 @@ div.intro {
     }
   }
 
-  h3, div.extra {
+  .follow > h3, div.extra {
     position: relative;
     z-index: 2;
     pointer-events: none;
@@ -528,7 +545,7 @@ div.intro {
     }
   }
 
-  h3 {
+  .follow > h3 {
     font-size: 1.1rem;
     margin: 8px 0 4px 64px;
 
@@ -793,7 +810,7 @@ div.intro {
 }
 
 @media only screen and (min-width: 600px) {
-  #follows h3 a {
+  #follows .follow > h3 a {
     max-width: calc(100% - 230px);
   }
 }
@@ -818,6 +835,7 @@ div.intro {
     cursor: col-resize;
 
     @include themed() {
+      &.resizing,
       &:hover {
         background-color: t('background');
       }
@@ -827,7 +845,6 @@ div.intro {
   div.contents {
     height: 100%;
     overflow-y: scroll;
-    padding-bottom: 32px;
   }
 
   div.post, div.embed {
@@ -835,37 +852,62 @@ div.intro {
       margin-top: 1em;
     }
 
-    div.inner img,
-    div.inner video,
-    div.inner iframe,
+    div.main img,
+    div.main video,
     & > img, & > video {
+      max-width: 100%;
+    }
+
+    div.main iframe, & > iframe {
+      width: 100%;
+      border: none;
+    }
+
+    .wide {
       margin-left: -24px;
-      max-width: calc(100% + 48px);
+      max-width: unset !important;
+      width: calc(100% + 48px);
+      height: auto;
     }
   }
 
   div.post {
-    padding: 12px 24px 0 24px;
+    padding: 12px 24px;
     max-width: 800px;
 
     & > h4 {
-      margin: 1em 0;
+      margin: 0.2rem 0;
     }
 
-    div.embed {
-      border-radius: 12px;
+    h1, h2, h3 {
+      font-size: 1.1rem;
+      margin-left: 0;
+      margin-right: 0;
+    }
 
-      &.text {
-        padding: 8px 16px;
-        @include themed() {
-          background: t('tab');
-          border: solid 4px t('tab');
-        }
+    pre {
+      font-size: 0.9rem;
+      overflow-x: auto;
+    }
+
+    pre,
+    blockquote,
+    div.embed.text {
+      @include themed() {
+        border: solid 2px t('rule');
+        box-shadow: 4px 4px 0 0 t('rule');
+        margin: 0 0 2px 0;
+        padding: 18px 24px;
       }
     }
 
-    div.inner > p:last-of-type,
-    & > p:last-of-type {
+    div.inner > *:first-child,
+    & > *:first-child {
+      margin-top: 0;
+    }
+
+    div.inner > *:last-child,
+    & > *:last-child {
       margin-bottom: 0;
     }
 
@@ -891,9 +933,25 @@ div.intro {
       text-decoration: none;
     }
 
-    .ago {
-      color: t('title');
+    span.ago {
       font-size: 0.8rem;
+      color: t('span');
+    }
+
+    div.age-d,
+    div.age-w {
+      span.ago {
+        color: t('spanold');
+        font-weight: bold;
+      }
+    }
+
+    div.age-m,
+    div.age-h {
+      span.ago {
+        color: t('spanfresh');
+        font-weight: bold;
+      }
     }
   }
 }
@@ -953,7 +1011,7 @@ div.intro {
   }
 }
 
-/* general form styles */
+/* general html styles */
 form > div {
   margin-bottom: 22px;
 }
@@ -964,8 +1022,11 @@ div.err {
 }
 
 span.author {
+  float: left;
+  font-weight: bold;
+
   @include themed() {
-    color: t('title');
+    color: t('titlefresh');
   }
 }
 
@@ -1015,6 +1076,10 @@ input, textarea {
 input[type="checkbox"] {
   float: left;
   padding-right: 10px;
+}
+
+blockquote {
+  margin-right: 0;
 }
 
 a.emoji {

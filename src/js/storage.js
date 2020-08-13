@@ -17,7 +17,7 @@
 // instance to run alone, with no syncing, should the user want it that way.
 //
 import { followTitle, house, html2text, getIndexById, Importances,
-  sanitize, urlToFeed, urlToID, urlToNormal, isValidFollow } from './util'
+  sanitize, urlToID, urlToNormal, isValidFollow } from './util'
 import u from '@kickscondor/umbrellajs'
 
 const fraidyscrape = require('fraidyscrape')
@@ -250,6 +250,9 @@ module.exports = {
       force = true
       meta.details = {}
     }
+    if (feed.flags === 'COMPLETE') {
+      meta.details = {}
+    }
 
     //
     // Merge the new posts into the feed's master post list.
@@ -296,7 +299,7 @@ module.exports = {
           continue
         let i = getIndexById(meta.posts, item.url, 'url'), index = null
         if (i < 0) {
-          index = {id: urlToID(urlToNormal(item.url)), url: item.url, createdAt: now}
+          index = {id: urlToID(urlToNormal(item.url, false)), url: item.url, createdAt: now}
           if (feed.flags !== 'COMPLETE') {
             meta.posts.unshift(index)
           }
@@ -470,7 +473,7 @@ module.exports = {
   // we don't need to recompute all the hashes necessarily.
   //
   async fetchfeed(follow, force) {
-    let id = follow.id || urlToID(urlToNormal(follow.url))
+    let id = follow.id || urlToID(urlToNormal(follow.url, true))
     this.noteUpdate([id], false)
     // console.log(`Updating ${followTitle(follow)}`)
     let feed
@@ -539,7 +542,7 @@ module.exports = {
           let current = this.all[id], incoming = inc.follows[id], notify = false
           if (incoming.url) {
             if (!(id.match && id.match(/-[0-9a-f]{1,8}$/))) {
-              id = urlToID(urlToNormal(incoming.url))
+              id = urlToID(urlToNormal(incoming.url, true))
             }
             if (!(id in this.follows))
               this.follows[id] = incoming
@@ -694,7 +697,7 @@ module.exports = {
       if (url) {
         if (tags.length == 0)
           tags = null
-        follows[urlToID(urlToNormal(url))] =
+        follows[urlToID(urlToNormal(url, true))] =
           {url, tags, importance,
             title: title && title.value,
             editedAt: node.attributes.created ? new Date(node.attributes.created.value) : new Date()}

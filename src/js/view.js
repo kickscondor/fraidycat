@@ -59,10 +59,11 @@ const ToggleShow = (e, parentSel, cls) => {
 
 const DragEdge = actions => e => {
   e.preventDefault()
+  let t = u(e.target).addClass('resizing')
   let c = u(e.target.parentElement), actualWidth = 0
   let move = e => {
     if (c) {
-      e.preventDefault()
+      e.stopPropagation()
       let width = Math.round(document.body.clientWidth - e.clientX)
       if (width > 64 && width < document.body.clientWidth - 64) {
         actualWidth = width
@@ -75,11 +76,42 @@ const DragEdge = actions => e => {
       let value = ((actualWidth / document.body.clientWidth) * 100).toFixed(2) + '%';
       actions.follows.changeSetting({name: 'pane-width', value})
     }
+    t.removeClass('resizing')
     document.removeEventListener('mousemove', move)
     document.removeEventListener('mouseup', up)
   }
   document.addEventListener('mousemove', move)
   document.addEventListener('mouseup', up)
+}
+
+const WidenImages = el => {
+  u('img', el).each(img => {
+    if (img.naturalWidth == 0) {
+      img.addEventListener('load', _ => {
+        if (img.naturalWidth > 350) {
+          u(img).addClass('wide')
+        }
+      })
+    } else {
+      if (img.naturalWidth > 350) {
+        u(img).addClass('wide')
+      }
+    }
+  })
+
+  u('video', el).each(vid => {
+    if (vid.videoWidth == 0) {
+      vid.addEventListener('load', _ => {
+        if (vid.videoWidth > 350) {
+          u(vid).addClass('wide')
+        }
+      })
+    } else {
+      if (vid.videoWidth > 350) {
+        u(vid).addClass('wide')
+      }
+    }
+  })
 }
 
 const Nudge = (x) => a => {
@@ -232,9 +264,9 @@ function timeAgo(from_time, to_time) {
   if (Number(from_time) == 0)
     return ''
 
-  from_time = Math.floor(from_time / 1000)
-  to_time = Math.floor(to_time / 1000)
-  let mins = Math.round(Math.abs(to_time - from_time)/60)
+  let from_i = Math.floor(from_time / 1000)
+  let to_i = Math.floor(to_time / 1000)
+  let mins = Math.round(Math.abs(to_i - from_i)/60)
 
   if (mins == 0)
     return '1m'
@@ -246,15 +278,13 @@ function timeAgo(from_time, to_time) {
     return Math.round(mins / 60) + 'h'
   if (mins >= 1441 && mins <= 2880)
     return '1d'
-  if (mins >= 2881 && mins <= 43220)
-    return Math.round(mins / 1440) + 'd'
-  if (mins >= 43221 && mins <= 86400)
-    return '1M'
-  if (mins >= 86401 && mins <= 525960)
-    return Math.round(mins / 43200) + 'M'
-  if (mins >= 525961 && mins <= 1051920)
-    return '1Y'
-  return Math.round(mins / 525600) + 'Y'
+  if (mins >= 2881 && mins <= 4320)
+    return '2d'
+  if (mins >= 4321 && mins <= 525600)
+    return from_time.toLocaleString('default',
+      {month: 'short', day: 'numeric'})
+  return from_time.toLocaleString('default',
+    {month: 'short', day: 'numeric', year: 'numeric'})
 }
 
 function timeDarkness(from_time, to_time) {
@@ -262,9 +292,9 @@ function timeDarkness(from_time, to_time) {
   to_time = Math.floor(to_time / 1000)
   let mins = Math.round(Math.abs(to_time - from_time)/60)
 
-  if (mins >= 0 && mins < 3600)
+  if (mins >= 0 && mins <= 4320)
     return 'age-h'
-  if (mins >= 3600 && mins <= 43220)
+  if (mins >= 4321 && mins <= 43220)
     return 'age-d'
   return 'age-M'
 }
@@ -325,32 +355,35 @@ const TitleTrunc = function(title) {
 
 const PostView = (detail, focus, cls) => {
   if (detail) {
-    let graphic = null, vid = null
-    if (detail.video) {
-      for (let size of ['preview', 'full', 'thumb']) {
-        if (size in detail.video) {
-          vid = [size, detail.video[size]]
-          break
+    let graphic = null, vid = null, aud = null
+    if (!detail.html) {
+      if (detail.video) {
+        for (let size of ['preview', 'full', 'thumb']) {
+          if (size in detail.video) {
+            vid = [size, detail.video[size]]
+            break
+          }
         }
       }
-    }
-    if (vid === null && detail.graphic) {
-      for (let size of ['preview', 'full', 'thumb']) {
-        if (size in detail.graphic) {
-          graphic = [size, detail.graphic[size]]
-          break
+      if (vid === null && detail.graphic) {
+        for (let size of ['preview', 'full', 'thumb']) {
+          if (size in detail.graphic) {
+            graphic = [size, detail.graphic[size]]
+            break
+          }
         }
       }
+      aud = (vid === null && detail.audio && detail.audio.full)
     }
-    let aud = (vid === null && detail.audio && detail.audio.full)
 
     let author = detail.author && detail.author !== focus.author && <span class="author">{detail.author}</span>
     cls += (detail.text || detail.html) ? ' text' : ''
-    return <div class={cls}>
+    return <div class={cls} oncreate={WidenImages} onupdate={WidenImages}>
         {vid && <video class={vid[0]} controls><source src={vid[1]} /></video>}
         {graphic && <img class={graphic[0]} src={graphic[1]} />}
         {aud && <audio controls="true" preload="none" src={aud} />}
-        {detail.text ? <p>{author}{detail.text}</p> : <div>{author}<div class="inner" innerHTML={detail.html} /></div>}
+        {detail.text ? <p>{author}{detail.text}</p> : 
+          (detail.html && <div>{author}<div class="inner" innerHTML={detail.html} /></div>)}
         {detail.embeds && detail.embeds.map(post => PostView(post, focus, "embed"))}
       </div>
   }
@@ -448,7 +481,7 @@ const ListFollow = ({ location, match }) => ({follows}, actions) => {
           let dk = timeDarkness(lastPostAt, now)
           let id = `follow-${follow.id}`
           let viewUrl = `/view/${follow.id}?tag=${encodeURIComponent(tag)}&importance=${encodeURIComponent(imp)}`
-          return <li key={id} class={`${dk || 'age-X'} ${match.params.id === follow.id ? 'focus' : ''}`} onclick={e => e.target.name === id && actions.location.go(viewUrl)}>
+          return <li key={id} class={`follow ${dk || 'age-X'} ${match.params.id === follow.id ? 'focus' : ''}`} onclick={e => e.target.name === id && actions.location.go(viewUrl)}>
             <a name={id}></a>
             <Link to={viewUrl} class="favicon">
               <img src={Favicon(follows.baseHref, follow)}
@@ -456,9 +489,9 @@ const ListFollow = ({ location, match }) => ({follows}, actions) => {
             </Link>
             <h3>
               <Link to={viewUrl} class="url">{followTitle(follow)}</Link>
-              <Link class="ext" to={follow.url}><img src={follows.baseHref + svg['link']} width="16" target="_blank" /></Link>
+              <Link class="ext" to={follow.url} target="_blank"><img src={follows.baseHref + svg['link']} width="16" target="_blank" /></Link>
               {follow.status instanceof Array && follow.status.map(st =>
-                <a class={`status status-${st.type}`} oncreate={ToggleHover} href={st.url || follow.url}
+                <a class={`status status-${st.type}`} oncreate={ToggleHover} href={st.url || follow.url} target="_blank"
                   >{st.type === 'live' ? <span><img src={follows.baseHref + svg['rec']} width="12" /> LIVE</span> : <span><img src={follows.baseHref + svg['notepad']} width="16" /></span>}
                   <div>{st.title || st.text || html2text(st.html)}
                     {st[sortPosts] && <span class="ago">{timeAgo(st[sortPosts], now)}</span>}</div>
@@ -504,16 +537,16 @@ const ListFollow = ({ location, match }) => ({follows}, actions) => {
         <img src={follows.baseHref + svg['hide']} width="24" /></Link></div>
       <div class="edge" onmousedown={DragEdge(actions)} />
       <div class="contents">
-      {focus.posts.map(post => {
+      {focus.posts.slice(0, 20).map(post => {
         let detail = focus.details[post.id]
         if (detail) {
           return <div id={`post-${post.id}`} class="post">
             {detail.title && <h4><a href={detail.url} target="_blank">{detail.title}</a>
-              <a class="ext" href={detail.url}><img src={follows.baseHref + svg['link']} width="16" target="_blank" /></a>
+              <a class="ext" href={detail.url} target="_blank"><img src={follows.baseHref + svg['link']} width="16" target="_blank" /></a>
               </h4>}
             {PostView(detail, focus, "main")}
-            <div class="meta">
-              <span class="ago">{timeAgo(detail.publishedAt, now)} ago</span>
+            <div class={timeDarkness(detail.publishedAt, now)}>
+              {detail.publishedAt && <span class="ago">{timeAgo(detail.publishedAt, now)}</span>}
               <Link to={detail.url} class="share" target="_blank">
                 <img src={follows.baseHref + svg['share']} width="12" />
               </Link>
@@ -529,9 +562,9 @@ const ListFollow = ({ location, match }) => ({follows}, actions) => {
 const ViewFollowById = ({ location, match, setup }) => ({follows}, actions) => {
   if (setup) {
     actions.follows.loadPosts(match.params.id)
-    let div = u('#pane .contents > div')
-    if (div.length > 0) {
-      div.scroll()
+    let contents = u('#pane .contents').first()
+    if (contents) {
+      contents.scrollTop = 0
     }
   }
 
@@ -628,6 +661,11 @@ export default (state, actions) => {
   }
 
   // console.log(state.follows.all)
+  let logo = images['fc-txt']
+  if (state.follows.settings['mode-theme'] === 'dark') {
+    logo = images['fc-cy']
+  }
+
   return <div class={`theme--${state.follows.settings['mode-theme'] || "auto"}`}>
     <article>
       <header>
@@ -644,7 +682,7 @@ export default (state, actions) => {
             <li><Link to="/settings" title="Settings"><img src={state.follows.baseHref + svg['gear']} width="16" /></Link></li>
           </ul>}
         </div>
-        <h1><Link to="/"><img src={state.follows.baseHref + images['fc']} alt="Fraidycat" title="Fraidycat" /></Link></h1>
+        <h1><Link to="/"><img src={state.follows.baseHref + logo} alt="Fraidycat" title="Fraidycat" /></Link></h1>
       </header>
       <section>
         <Switch>
