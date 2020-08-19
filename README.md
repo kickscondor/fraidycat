@@ -74,21 +74,15 @@ Here is a current list of what is fully supported:
 * **Pinboard, YouTube and Reddit.** These sites offer RSS feeds, but they are
   not discoverable (in the meta tags), so there is some logic to figure out
   these feeds for you.
-* **Twitter.** Be aware that, if you follow too many Twitter users, you might
-  get flagged as a bot. I am looking into just using your credentials to load
-  from a 'list' - but I am unsure if this would be seen as overreaching on my
-  part.
-* **Instagram.** Public accounts only, currently.
-* **SoundCloud.** Would also like to support Bandcamp at some point.
-
-Working on support for:
-
+* **Tiktok.** Believe it!
 * **Facebook.** Public pages only.
-* **Twitch.** Including whether a streamer is 'live'. (Also need to offer this
-  for YouTube channels, of course.)
-* **Songkick.** I personally need this. Already seems possible, by way of
-  [acousti.co](http://acousti.co/songkick), but I don't like relying on
-  secondary services.
+* **Twitch.** Including whether a streamer is 'live'!
+* **Twitter.** On older versions of Firefox, the Strict Tracking Protection
+  may block this.
+* **Instagram.** Public accounts only, currently.
+* **SoundCloud and Bandcamp.** Spotify and Apple Music are not presently
+  supported.
+* **Kickstarter, Patreon, Pinterest, Tumblr, Steam, Are.na** and more!
 
 Feel free to file an issue for any site you want added - I will try to help
 you!
