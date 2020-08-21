@@ -427,7 +427,7 @@ const ListFollow = ({ location, match }) => ({follows}, actions) => {
     }
     return (a.importance - b.importance) || sortBy
   })
-  let focus = match.params.meta
+  let focus = match.params.meta, focusLimit = Number(match.params.limit || 0)
   let impa = Object.keys(imps)
   let imp = match.params.importance || (impa.length > 0 ? Math.min(...impa) : 0)
   viewable = viewable.filter(follow => (follow.importance == imp))
@@ -493,7 +493,7 @@ const ListFollow = ({ location, match }) => ({follows}, actions) => {
               {follow.status instanceof Array && follow.status.map(st =>
                 <a class={`status status-${st.type}`} oncreate={ToggleHover} href={st.url || follow.url} target="_blank"
                   >{st.type === 'live' ? <span><img src={follows.baseHref + svg['rec']} width="12" /> LIVE</span> : <span><img src={follows.baseHref + svg['notepad']} width="16" /></span>}
-                  <div>{st.title || st.text || html2text(st.html)}
+                  <div>{st.title || st.text || html2text(st.html || '')}
                     {st[sortPosts] && <span class="ago">{timeAgo(st[sortPosts], now)}</span>}</div>
                 </a>)}
               {ago && <span class="latest">{ago}</span>}
@@ -537,12 +537,14 @@ const ListFollow = ({ location, match }) => ({follows}, actions) => {
         <img src={follows.baseHref + svg['hide']} width="24" /></Link></div>
       <div class="edge" onmousedown={DragEdge(actions)} />
       <div class="contents">
-      {focus.posts.slice(0, 20).map(post => {
+      {focus.posts.slice(focusLimit, focusLimit + 20).map(post => {
         let detail = focus.details[post.id]
         if (detail) {
           return <div id={`post-${post.id}`} class="post">
             {detail.title && <h4><a href={detail.url} target="_blank">{detail.title}</a>
-              <a class="ext" href={detail.url} target="_blank"><img src={follows.baseHref + svg['link']} width="16" target="_blank" /></a>
+              <nobr><a class="ext" href={detail.url} target="_blank">
+                <img src={follows.baseHref + svg['link']} width="16" target="_blank" />
+              </a></nobr>
               </h4>}
             {PostView(detail, focus, "main")}
             <div class={timeDarkness(detail.publishedAt, now)}>
@@ -554,6 +556,9 @@ const ListFollow = ({ location, match }) => ({follows}, actions) => {
           </div>
         }
       })}
+      {(focus.posts.length > focusLimit + 20) && <div id="nextPage"><p><Link
+        to={`/view/${focus.id}?tag=${encodeURIComponent(tag)}&importance=${encodeURIComponent(imp)}&limit=${focusLimit + 20}`}>View older posts</Link></p>
+        </div>}
       </div>
     </div>}
   </div>
@@ -661,7 +666,7 @@ export default (state, actions) => {
   }
 
   // console.log(state.follows.all)
-  let logo = images['fc-txt']
+  let logo = images['fc']
   if (state.follows.settings['mode-theme'] === 'dark') {
     logo = images['fc-cy']
   }

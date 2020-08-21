@@ -922,6 +922,14 @@ div.intro {
     a.share {
       margin-left: 6px;
     }
+
+    &:after {
+      display: block;
+      content: "\1f65e";
+      text-align: center;
+      color: #877;
+      font-size: 1.4rem;
+    }
   }
 
   @include themed() {
@@ -953,6 +961,11 @@ div.intro {
         font-weight: bold;
       }
     }
+  }
+
+  #nextPage {
+    text-align: center;
+    padding-bottom: 40px;
   }
 }
 
@@ -1076,6 +1089,10 @@ input, textarea {
 input[type="checkbox"] {
   float: left;
   padding-right: 10px;
+}
+
+figure {
+  margin: 0;
 }
 
 blockquote {

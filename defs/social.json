@@ -581,8 +581,6 @@
     "url": "https://api.twitter.com/2/timeline/profile/$userId.json?include_profile_interstitial_type=0&include_blocking=0&include_blocked_by=0&include_followed_by=1&include_want_retweets=0&include_mute_edge=0&include_can_dm=0&include_can_media_tag=1&skip_status=1&cards_platform=Web-12&include_cards=1&include_ext_alt_text=true&include_reply_count=1&tweet_mode=extended&include_entities=true&include_user_entities=true&include_ext_media_color=false&include_ext_media_availability=true&send_error_codes=true&simple_quoted_tweet=true&include_tweet_replies=false&userId=$userId&count=40&ext=mediaStats%2ChighlightedLabel%2CcameraMoment&include_quote_count=true",
     "rules": {
       "entry": [
-        {"var": "id", "op": "&.tw['$id'].id"},
-        {"var": "id", "op": "=tweet-$id"},
         {"var": "out", "op": "&.tw['$id']"},
         {"op": ["&.tw['tweet-$out:quoted']", "&.out.embeds.*"], "var": "out:embeds",
          "acceptJson": [
@@ -592,7 +590,6 @@
       ]
     },
     "acceptJson": [
-      {"var": "tw:tweet-", "op": "="},
       {"op": "$.globalObjects.users.*", "var": "*", "acceptJson": [
         {"var": "id", "op": "$.id_str"},
         {"var": "authors:$id", "op": "$.screen_name"}
@@ -600,22 +597,21 @@
       {"op": "$.globalObjects.tweets.*", "var": "*", "acceptJson": [
         {"var": "id", "op": "$.id_str"},
         {"var": "aid", "op": "$.user_id_str"},
-        {"var": "author", "op": "&.authors.$aid"},
+        {"var": "author", "op": "=${authors:$aid}"},
         {"var": "key", "op": "=tw:tweet-$id"},
         {"op": "$.entities.urls.*", "var": "*", "acceptJson": [
           {"var": "tid", "op": "$.url", "match": "https://t\\.co/(\\w+)"},
           {"var": "view", "op": "$.display_url"},
-          {"var": "turl", "op": "$.expanded_url"},
+          {"var": "turl", "op": "$.expanded_url", "mod": ["encode-uri"]},
           {"var": "tco:${tid}", "op": "=<a href=\"$turl\">$view</a>"}
         ]},
         {"var": "${key}:author", "op": "=$author"},
-        {"var": "${key}:id", "op": ["$.conversation_id_str", "$.id_str"]},
-        {"var": "${key}:url", "op": "=http://twitter.com/$author/status/$id", "mod": ["url"]},
-        {"var": "${key}:publishedAt", "op": ["$.created_at"], "mod": ["date"]},
-        {"var": "d0", "op": ["$.display_text_range.0"]},
-        {"var": "d1", "op": ["$.display_text_range.1"]},
-        {"var": "thread", "op": "$.self_thread.id_str", "mod": ["s/.+/<p><a href=\"https:\\/\\/twitter.com\\/$author\\/status\\/$&\">Show thread<\\/a><\\/p>/"]},
-        {"var": "${key}:html", "op": "$.full_text", "mod": ["[$d0,$d1]", "s/https:\\/\\/t\\.co\\/(\\w+)/$tco:$1/g", "s/\\n/<br>/g", "s/.+/<p>$&<\\/p>$thread"]},
+        {"var": "${key}:url", "op": "=http://twitter.com/$author/status/$id", "mod": ["encode-uri"]},
+        {"var": "${key}:publishedAt", "op": "$.created_at", "mod": ["date"]},
+        {"var": "d0", "op": "$.display_text_range.0"},
+        {"var": "d1", "op": "$.display_text_range.1"},
+        {"var": "${key}:threadUrl", "op": "$.self_thread.id_str", "mod": ["s/.+/https:\\/\\/twitter.com\\/$author\\/status\\/$&/"]},
+        {"var": "${key}:html", "op": "$.full_text", "mod": ["[$d0,$d1]", "s/https:\\/\\/t\\.co\\/(\\w+)/$tco:$1/g", "s/\\n/<br>/g"]},
         {"op": "$.retweeted_status_id_str", "var": "*", "acceptJson": [
           {"var": "${key}:html"}
         ]},
