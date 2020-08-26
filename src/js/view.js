@@ -481,7 +481,7 @@ const ListFollow = ({ location, match }) => ({follows}, actions) => {
           let dk = timeDarkness(lastPostAt, now)
           let id = `follow-${follow.id}`
           let viewUrl = `/view/${follow.id}?tag=${encodeURIComponent(tag)}&importance=${encodeURIComponent(imp)}`
-          return <li key={id} class={`follow ${dk || 'age-X'} ${match.params.id === follow.id ? 'focus' : ''}`} onclick={e => e.target.name === id && actions.location.go(viewUrl)}>
+          return <li class={`follow ${dk || 'age-X'} ${match.params.id === follow.id ? 'focus' : ''}`} onclick={e => e.target.name === id && actions.location.go(viewUrl)}>
             <a name={id}></a>
             <Link to={viewUrl} class="favicon">
               <img src={Favicon(follows.baseHref, follow)}
