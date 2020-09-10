@@ -403,14 +403,14 @@
   },
 
   "reddit.com:sub": {
-    "match": "^(?:[\\.\\w]+\\.)?reddit\\.com\\/r\\/([^\\/]+)(?!.*\\/\\.rss)",
+    "match": "^(?:[\\.\\w]+\\.)?reddit\\.com\\/r\\/([^\\/]+)(?!.*\\.rss)",
     "arguments": [0, {"var": "sub"}],
     "url": "https://www.reddit.com/r/$sub/top/.rss?sort=top",
     "accept": ["atom"]
   },
 
   "reddit.com:user": {
-    "match": "^(?:[\\.\\w]+\\.)?reddit\\.com\\/user\\/([^\\/]+)(?!.*\\/\\.rss)",
+    "match": "^(?:[\\.\\w]+\\.)?reddit\\.com\\/user\\/([^\\/]+)(?!.*\\.rss)",
     "arguments": [0, {"var": "user"}],
     "url": "https://www.reddit.com/user/$user/.rss",
     "accept": ["atom"]
