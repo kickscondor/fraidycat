@@ -257,6 +257,9 @@
     "match": "^deviantart\\.com\\/([-\\w]+)",
     "arguments": [0, {"var": "username"}],
     "url": "https://backend.deviantart.com/rss.xml?q=gallery%3A$username",
+    "patch": [
+      {"var": "out:url", "op": "=https://www.deviantart.com/$username"}
+    ],
     "accept": ["rss"]
   },
 
