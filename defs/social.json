@@ -258,25 +258,27 @@
     "arguments": [0, {"var": "username"}],
     "url": "https://backend.deviantart.com/rss.xml?q=gallery%3A$username",
     "patch": [
-      {"var": "out:url", "op": "=https://www.deviantart.com/$username"}
+      {"var": "out:url", "op": "=https://www.deviantart.com/$username/gallery"}
     ],
     "accept": ["rss"]
   },
 
   "facebook.com:user": {
-    "match": "^(?:[\\.\\w]+\\.)?facebook\\.com\\/([^\\/?]+)",
+    "match": "^(?:[\\.\\w]+\\.)?facebook\\.com\\/((?:groups\\/)?[^\\/?]+)",
     "arguments": [0, {"var": "user"}],
     "url": "https://m.facebook.com/$user",
     "acceptHtml": [
       {"var": "out:title", "op": "//title/text()"},
+      {"var": "out:author", "op": "//title/text()"},
       {"var": "out:photos:avatar", "op": "//meta[@property='og:image']/@content"},
       {"var": "out:description", "op": "//meta[@property='og:description']/@content"},
-      {"op": "//div[./span/p]/..", "var": "out:posts", "acceptHtml": [
+      {"op": "//table[.//h3//a]/../..", "var": "out:posts", "acceptHtml": [
         {"var": "obj", "op": ".//a/@href"},
         {"var": "story", "op": "=$obj", "match": "story_fbid%22%3A%5B([0-9]+)"},
         {"var": "page", "op": "=$obj", "match": "page_id%22%3A([0-9]+)"},
         {"var": "out:url", "op": "=https://www.facebook.com/story.php?story_fbid=$story&id=$page"},
-        {"var": "out:title", "op": "./div/span//text()"},
+        {"var": "out:author", "op": ".//h3//strong[1]/a/text()"},
+        {"var": "out:html", "op": [".//div/span", "."]},
         {"var": "out:publishedAt", "op": "=$obj", "match": "publish_time%22%3A([0-9]+)%2C",
          "mod": ["int", "*1000", "date"]}
       ]}
