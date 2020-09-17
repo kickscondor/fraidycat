@@ -210,8 +210,10 @@
       {"var": "mime",      "op": "=application/json"},
       {"var": "out:posts", "op": "^(?<timestamp>\\d{4}-\\d{2}-\\d{2}[tT]\\d{2}:\\d{2}\\S+)\\t(?<text>.+)$",
        "acceptJson": [
+         {"var": "out:url", "op": "=id:$index"},
          {"var": "out:publishedAt", "op": "$.timestamp", "mod": ["date"]},
-         {"var": "out:text", "op": "$.text"}
+         {"var": "html", "op": "$.text", "mod": ["s/([@#])<(\\w+) ([^>]+)>|\\[(.+?)\\]\\((.+?)\\)|(https?:\\/(\\/\\S+))/<a href=\"$3$5$6\">$1$2$4$6<\\/a>/g"]},
+         {"var": "out:html", "op": "=<p>$html</p>"}
        ]
       }
     ]
@@ -610,7 +612,6 @@
     "url": "https://www.youtube.com/playlist?list=$id",
     "arguments": [0, {"var": "id"}],
     "acceptHtml": [
-      {"var": "out:sortBy", "op": "=index"},
       {"var": "out:title", "op": "//meta[@name='title']/@content"},
       {"var": "out:photos:avatar", "op": "//meta[@property='og:image']/@content"},
       {"var": "out:description", "op": "//meta[@property='og:description']/@content"},
@@ -619,9 +620,8 @@
         {"op": "$.contents.twoColumnBrowseResultsRenderer.tabs[0].tabRenderer.content.sectionListRenderer.contents[0].itemSectionRenderer.contents[0].playlistVideoListRenderer.contents.*",
          "var": "out:posts", "acceptJson": [
           {"var": "videoId",          "op": "$.playlistVideoRenderer.videoId"},
-          {"var": "out:index",        "op": "$.playlistVideoRenderer.index.simpleText", "mod": ["int"]},
           {"var": "out:graphic:full", "op": "$.playlistVideoRenderer.thumbnail.thumbnails[-1:].url"},
-          {"var": "out:title",        "op": "$.playlistVideoRenderer.title.simpleText"},
+          {"var": "out:title",        "op": ["$.playlistVideoRenderer.title.simpleText", "$.playlistVideoRenderer.title.runs[0].text"]},
           {"var": "out:url",          "op": "=https://www.youtube.com/watch?v=$videoId&list=$id"}
         ]}
       ]}

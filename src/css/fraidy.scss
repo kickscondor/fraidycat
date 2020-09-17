@@ -579,7 +579,7 @@ div.intro {
       li {
         margin-bottom: 6px;
 
-        a {
+        .txt, a {
           text-decoration: none;
 
           s {
@@ -591,28 +591,12 @@ div.intro {
           }
         }
 
-        a:visited {
-          color: t('visited');
-        }
-
-        span.author {
-          @include themed() {
-            color: t('title');
-          }
-        }
-
         span.author::before {
           content: "@";
         }
 
         span.author::after {
           content: ":\0000a0";
-        }
-
-        a:visited {
-          @include themed() {
-            color: t('visited');
-          }
         }
 
         a:hover {
@@ -623,6 +607,14 @@ div.intro {
         }
 
         @include themed() {
+          a:visited {
+            color: t('visited');
+          }
+
+          span.author {
+            color: t('title');
+          }
+
           span.ago {
             margin-left: 8px;
             font-size: 0.9rem;
@@ -723,7 +715,7 @@ div.intro {
           content: "";
         }
 
-        a {
+        .txt, a {
           span:after {
             content: "\2026";
           }

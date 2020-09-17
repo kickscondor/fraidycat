@@ -317,7 +317,9 @@ module.exports = {
           }
         }
 
-        index.title = (ident === 0 && item.title) || item.text
+        let title = (ident === 0 && item.title) || item.text
+        if (title)
+          index.title = title
         if (!index.title && item.html)
           index.title = html2text(item.html)
         if (!index.title && item.publishedAt)

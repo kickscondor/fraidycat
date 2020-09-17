@@ -316,7 +316,7 @@ const ListFollow = ({ location, match }) => ({follows}, actions) => {
     }
     if (follow.posts instanceof Array && follow.posts[0]) {
       if (isShown) {
-        frago.sort(follow, sortPosts, showReposts, false)
+        frago.sort(follow, follow.sortBy || sortPosts, showReposts, false)
       }
       lastPost = follow.posts[0]
     }
@@ -420,8 +420,8 @@ const ListFollow = ({ location, match }) => ({follows}, actions) => {
                     let postAge = timeAgo(f[sortPosts], now)
                     return <li class={timeDarkness(f[sortPosts], now)}>
                       {f.author && f.author !== follow.author && <span class="author">{f.author}</span>}
-                      <a href={f.url}>{TitleTrunc(f.title)}</a>
-                      <span class="ago">{timeAgo(f[sortPosts], now)}</span>
+                      {f.url.startsWith('id:') ? <span class="txt">{TitleTrunc(f.title)}</span> : <a href={f.url}>{TitleTrunc(f.title)}</a>}
+                      {!f.index && <span class="ago">{timeAgo(f[sortPosts], now)}</span>}
                     </li>
                   })}</ol>
                   {!follow.fetchesContent && <a class="collapse" href="#"
