@@ -409,17 +409,38 @@
     ]
   },
 
+  "reddit.com:post": {
+    "match": "^(?:[\\.\\w]+\\.)?reddit\\.com\\/r\\/([^\\/]+)/comments/(\\w+).*?(\\?.*)?$",
+    "arguments": [0, {"var": "sub"}, {"var": "id"}, {"var": "query"}],
+    "url": "https://www.reddit.com/r/$sub/comments/$id/.rss$query",
+    "accept": ["atom"]
+  },
+
+  "reddit.com:features": {
+    "match": "^(?:[\\.\\w]+\\.)?reddit\\.com\\/r\\/([^\\/]+)/(new|comments)/?$",
+    "arguments": [0, {"var": "sub"}, {"var": "feature"}],
+    "url": "https://www.reddit.com/r/$sub/$feature/.rss?sort=$feature",
+    "accept": ["atom"]
+  },
+
   "reddit.com:sub": {
-    "match": "^(?:[\\.\\w]+\\.)?reddit\\.com\\/r\\/([^\\/]+)(?!.*\\.rss)",
+    "match": "^(?:[\\.\\w]+\\.)?reddit\\.com\\/r\\/([^\\/]+)/?$",
     "arguments": [0, {"var": "sub"}],
     "url": "https://www.reddit.com/r/$sub/top/.rss?sort=top",
     "accept": ["atom"]
   },
 
   "reddit.com:user": {
-    "match": "^(?:[\\.\\w]+\\.)?reddit\\.com\\/user\\/([^\\/]+)(?!.*\\.rss)",
+    "match": "^(?:[\\.\\w]+\\.)?reddit\\.com\\/user\\/([^\\/]+)/?$",
     "arguments": [0, {"var": "user"}],
     "url": "https://www.reddit.com/user/$user/.rss",
+    "accept": ["atom"]
+  },
+
+  "reddit.com:search": {
+    "match": "^(?:[\\.\\w]+\\.)?reddit\\.com\\/(.*?)search\\?(.+)$",
+    "arguments": [0, {"var": "sub"}, {"var": "query"}],
+    "url": "https://www.reddit.com/${sub}search.rss?$query",
     "accept": ["atom"]
   },
 
