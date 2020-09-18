@@ -245,8 +245,16 @@ class WebextStorage {
       return {requestHeaders: e.requestHeaders}
     }
 
+    //
+    // Open Fraidycat if the extension icon or the "Follow" icon is clicked.
+    //
     browser.browserAction.onClicked.addListener(tab => {
       browser.tabs.create({url: homepage})
+    })
+
+    browser.pageAction.onClicked.addListener(tab => {
+      browser.tabs.create({url: homepage + "#!/add?url=" +
+        encodeURIComponent(tab.url)})
     })
 
     browser.webRequest.onBeforeSendHeaders.addListener(rewriteUserAgentHeader,
@@ -275,6 +283,19 @@ class WebextStorage {
 
     browser.tabs.query({url: homepage}).then(tabs => {
       tabs.map(x => browser.tabs.reload(x.id))})
+
+    browser.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
+      if (changeInfo.status === "loading" && changeInfo.url?.startsWith('http')) {
+        this.canFollowUrl(changeInfo.url).then(can => {
+          // console.log(`${changeInfo.url} => ${can}`)
+          if (can === 1) {
+            browser.pageAction.show(tabId)
+          } else if (can === -1) {
+            browser.pageAction.hide(tabId)
+          }
+        })
+      }
+    })
   }
 }
 

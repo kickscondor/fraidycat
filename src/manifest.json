@@ -16,6 +16,10 @@
   "options_ui": {
     "page": "settings.html"
   },
+  "page_action": {
+    "default_icon": "images/portrait.svg",
+    "default_title": "Follow with Fraidycat"
+  },
   "content_scripts": [{
     "matches": ["https://fraidyc.at/s/*"],
     "js": ["js/index.js"],

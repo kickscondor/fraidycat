@@ -204,57 +204,65 @@ module.exports = {
   // the feed object, updating the 'meta' object with the discovered posts and
   // metadata.
   //
-  async scrape(meta, force) {
-    let req, feed, err = null
-    if (!meta.feed) {
-      err = "This follow has no feed URL."
-    } else {
-      let tasks = this.scraper.detect(meta.feed)
-      while (req = this.scraper.nextRequest(tasks)) {
-        // console.log(req)
-        try {
-          let obj
-          if (req.render) {
-            obj = await this.render(req, tasks)
-          } else {
-            //
-            // 'no-cache' is used to ensure that, at minimum, a conditional request
-            // is sent to check for changed content. The 'etag' will then be used
-            // to determine if we need to update the item. (Don't use the 'age'
-            // header - it's possible that another request could have pulled a fresh
-            // request and we're now getting one out of the cache that is technically
-            // fresh to this operation.)
-            //
-            let res = await this.fetch(req.url,
-              Object.assign(req.options, {cache: 'no-cache'}))
-            if (!res.ok) {
-              // console.log(`${req.url} is giving a ${res.status} error.`)
-              err = `${req.url} is giving a ${res.status} error.`
-            }
+  async scrapeFeed(url, defaultOnly = false) {
+    if (!url) {
+      return {err: "This follow has no feed URL."}
+    }
 
-            obj = await this.scraper.scrape(tasks, req, res)
+    let req, feed, err, tasks = this.scraper.detect(url)
+    if (defaultOnly && tasks?.queue?.length > 0 && tasks.queue[0] !== "default") {
+      return {feed, err}
+    }
 
-            if (obj.out && res.headers) {
-              obj.out.etag = res.headers.get('etag')
-                || res.headers.get('last-modified')
-                || res.headers.get('date')
-            }
+    while (req = this.scraper.nextRequest(tasks)) {
+      // console.log(req)
+      try {
+        let obj
+        if (req.render) {
+          obj = await this.render(req, tasks)
+        } else {
+          //
+          // 'no-cache' is used to ensure that, at minimum, a conditional request
+          // is sent to check for changed content. The 'etag' will then be used
+          // to determine if we need to update the item. (Don't use the 'age'
+          // header - it's possible that another request could have pulled a fresh
+          // request and we're now getting one out of the cache that is technically
+          // fresh to this operation.)
+          //
+          let res = await this.fetch(req.url,
+            Object.assign(req.options, {cache: 'no-cache'}))
+          if (!res.ok) {
+            // console.log(`${req.url} is giving a ${res.status} error.`)
+            err = `${req.url} is giving a ${res.status} error.`
           }
 
-          feed = obj.out
-        } catch (e) {
-          err = e.message
-          if (err === "Failed to fetch")
-            err = "Couldn't connect - check your spelling, be sure this URL really exists."
-          break
-        }
-      }
+          obj = await this.scraper.scrape(tasks, req, res)
 
-      if (!err && !feed) {
-        err = "This follow is temporarily down."
+          if (obj.out && res.headers) {
+            obj.out.etag = res.headers.get('etag')
+              || res.headers.get('last-modified')
+              || res.headers.get('date')
+          }
+        }
+
+        feed = obj.out
+      } catch (e) {
+        err = e.message
+        if (err === "Failed to fetch")
+          err = "Couldn't connect - check your spelling, be sure this URL really exists."
+        break
       }
     }
 
+    if (!err && !feed) {
+      err = "This follow is temporarily down."
+    }
+
+    return {feed, err}
+  },
+
+  async scrape(meta, force) {
+    let {feed, err} = await this.scrapeFeed(meta.feed)
     if (err != null)
       throw err
 
@@ -507,6 +515,27 @@ module.exports = {
       let res = await fetch(url)
       try { await this.scraper.scrapeRule(tasks, res, r) } catch {}
     })
+  },
+
+  async canFollowUrl(url) {
+    let id = urlToID(urlToNormal(url))
+    if (id in this.all) {
+      return -1
+    }
+
+    try {
+      let {feed, err} = await this.scrapeFeed(url, true)
+      if (!err) {
+        if (feed?.sources) {
+          return feed.sources.some(feed => feed.type) ? 1 : 0
+        }
+        return 1
+      }
+    } catch (e) {
+      console.log(e)
+    }
+
+    return 0
   },
 
   //
