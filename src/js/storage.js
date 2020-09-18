@@ -120,7 +120,19 @@ module.exports = {
     // Load the follows and various application states.
     //
     let saved = null, inc = {}
-    try { obj.all = await this.readFile('/follows.json') } catch {}
+    try {
+      //
+      // Bit of backwards compatibility - some older files may have
+      // conflicting IDs (dict key vs. the object's property)
+      //
+      let all = {}, allf = await this.readFile('/follows.json')
+      for (let follow of allf) {
+        if (follow.id) {
+          all[follow.id] = follow
+        }
+      }
+      obj.all = all
+    } catch {}
     try { saved = await this.localGet('fraidycat') } catch {}
     try { inc = await this.readSynced('follows') } catch {}
     if (saved)
@@ -773,7 +785,9 @@ module.exports = {
     if (!savedId) {
       if (!follow.url.match(/^\w+:\/\//))
         follow.url = "http://" + follow.url
-      follow.createdAt = new Date()
+    }
+    if (!follow.createdAt) {
+      follow.createdAt = follow.editedAt || new Date()
     }
     follow.updatedAt = new Date()
 
