@@ -517,25 +517,26 @@ module.exports = {
     })
   },
 
-  async canFollowUrl(url) {
-    let id = urlToID(urlToNormal(url))
-    if (id in this.all) {
-      return -1
-    }
-
-    try {
-      let {feed, err} = await this.scrapeFeed(url, true)
-      if (!err) {
-        if (feed?.sources) {
-          return feed.sources.some(feed => feed.type) ? 1 : 0
+  async urlDetails(url) {
+    let found = -1, id = urlToID(urlToNormal(url))
+    if (!(id in this.all)) {
+      found = 0
+      try {
+        let {feed, err} = await this.scrapeFeed(url, true)
+        if (!err) {
+          if (feed?.sources) {
+            found = feed.sources.some(feed => feed.type) ? 1 : 0
+          } else {
+            found = 1
+          }
         }
-        return 1
+        return {found, feed}
+      } catch (e) {
+        console.log(e)
       }
-    } catch (e) {
-      console.log(e)
     }
 
-    return 0
+    return {found}
   },
 
   //

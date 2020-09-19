@@ -252,10 +252,10 @@ class WebextStorage {
       browser.tabs.create({url: homepage})
     })
 
-    browser.pageAction.onClicked.addListener(tab => {
-      browser.tabs.create({url: homepage + "#!/add?url=" +
-        encodeURIComponent(tab.url)})
-    })
+    // browser.pageAction.onClicked.addListener(tab => {
+    //   browser.tabs.create({url: homepage + "#!/add?url=" +
+    //     encodeURIComponent(tab.url)})
+    // })
 
     browser.webRequest.onBeforeSendHeaders.addListener(rewriteUserAgentHeader,
       {urls: ["<all_urls>"], types: ["xmlhttprequest"]}, ["blocking", "requestHeaders"])
@@ -286,12 +286,12 @@ class WebextStorage {
 
     browser.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
       if (changeInfo.status === "loading" && changeInfo.url?.startsWith('http')) {
-        this.canFollowUrl(changeInfo.url).then(can => {
+        this.urlDetails(changeInfo.url).then(({found, feed}) => {
           // console.log(`${changeInfo.url} => ${can}`)
-          if (can === 1) {
-            browser.pageAction.show(tabId)
-          } else if (can === -1) {
-            browser.pageAction.hide(tabId)
+          if (found === 1) {
+            browser.browserAction.setIcon({tabId, path: "images/portrait.svg"})
+            browser.browserAction.setTitle({tabId, title: "Follow with Fraidycat"})
+            browser.browserAction.setPopup({tabId, popup: "popup.html?feed=" + JSON.stringify(feed)})
           }
         })
       }
