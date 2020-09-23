@@ -291,7 +291,8 @@ class WebextStorage {
           if (found === 1) {
             browser.browserAction.setIcon({tabId, path: "images/portrait.svg"})
             browser.browserAction.setTitle({tabId, title: "Follow with Fraidycat"})
-            browser.browserAction.setPopup({tabId, popup: "popup.html?feed=" + JSON.stringify(feed)})
+            browser.browserAction.setPopup({tabId, popup: "popup.html?feed=" +
+              encodeURIComponent(JSON.stringify(feed))})
           }
         })
       }

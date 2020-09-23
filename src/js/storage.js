@@ -29,6 +29,9 @@ const SYNC_FULL = 1
 const SYNC_PARTIAL = 2
 const SYNC_EXTERNAL = 3
 
+const FETCH_FORCE = 1
+const FETCH_SILENT = 2
+
 const POSTS_IN_MAIN_INDEX = 10
 const ACTIVITY_IN_MAIN_INDEX = 180
 
@@ -173,7 +176,7 @@ module.exports = {
   },
 
   pollfetch(follow) {
-    this.fetchfeed(follow, false).then(feed => {
+    this.fetchfeed(follow, 0).then(feed => {
       if (feed.fresh) {
         this.update({op: 'replace', path: `/all/${follow.id}`, value: follow})
         this.write({update: false})
@@ -261,15 +264,15 @@ module.exports = {
     return {feed, err}
   },
 
-  async scrape(meta, force) {
+  async scrape(meta, flags) {
     let {feed, err} = await this.scrapeFeed(meta.feed)
-    if (err != null)
+    if (err != null && (flags & FETCH_SILENT) == 0)
       throw err
 
     //
     // Merge the new posts into the feed's master post list.
     //
-    let fresh = (force || !feed.etag || feed.etag !== meta.etag)
+    let fresh = ((flags & FETCH_FORCE) != 0 || !feed.etag || feed.etag !== meta.etag)
     // if (!fresh) {
     //   console.log(`${meta.feed} hasn't changed.`)
     // }
@@ -398,18 +401,18 @@ module.exports = {
   // is stored in the 'follow' object here because it's used to broadcast
   // not just the main URL, but the feed URL being used here.
   //
-  async refetch(id, follow, force) {
+  async refetch(id, follow, flags) {
     let meta = {createdAt: new Date(),
       url: follow.url, feed: follow.feed || follow.url, posts: []}
     if (follow.id) {
       try {
         meta = await this.readFile(`/feeds/${follow.id}.json`)
         if (follow.url !== meta.url)
-          force = true
+          flags |= FETCH_FORCE
       } catch (e) {}
     }
 
-    let feed = await this.scrape(meta, force)
+    let feed = await this.scrape(meta, flags)
     if (!feed.fresh)
       return feed
 
@@ -419,7 +422,7 @@ module.exports = {
     if (feed.sources && feed.sources.length > 0) {
       if (feed.sources.length == 1) {
         meta.feed = feed.sources[0].url
-        feed = await this.scrape(meta, force)
+        feed = await this.scrape(meta, flags)
       } else {
         return feed
       }
@@ -482,13 +485,13 @@ module.exports = {
   // the sync files with deleted old URLs. Also, if the hashing algorithm changes,
   // we don't need to recompute all the hashes necessarily.
   //
-  async fetchfeed(follow, force) {
+  async fetchfeed(follow, flags) {
     let id = follow.id || urlToID(urlToNormal(follow.url))
     this.noteUpdate([id], false)
     // console.log(`Updating ${followTitle(follow)}`)
     let feed
     try {
-      feed = await this.refetch(id, follow, force)
+      feed = await this.refetch(id, follow, flags)
     } finally {
       this.fetched[id] =
         {at: Number(new Date()), delay: Math.ceil(50 + (Math.random() * 50))}
@@ -590,7 +593,7 @@ module.exports = {
               } else {
                 try {
                   incoming.id = id
-                  await this.refresh(incoming)
+                  await this.refresh(incoming, FETCH_SILENT)
                   if (syncType === SYNC_EXTERNAL) {
                     current = this.all[id]
                     notify = true
@@ -810,7 +813,7 @@ module.exports = {
   //
   // Fetch a follow from a remote source, updating its local metadata.
   //
-  async refresh(follow) {
+  async refresh(follow, flags) {
     let savedId = !!follow.id
     if (!savedId) {
       if (!follow.url.match(/^\w+:\/\//))
@@ -821,12 +824,15 @@ module.exports = {
     }
     follow.updatedAt = new Date()
 
-    let feed = await this.fetchfeed(follow, true)
+    let feed = await this.fetchfeed(follow, flags | FETCH_FORCE)
     if (feed.sources) {
       if (feed.sources.length === 0) {
-        throw "Cannot find an RSS feed or social media account to follow at this URL."
+        if ((flags & FETCH_SILENT) == 0) {
+          throw "Cannot find an RSS feed or social media account to follow at this URL."
+        }
+      } else {
+        return feed.sources
       }
-      return feed.sources
     }
     
     if (!savedId) {
@@ -840,19 +846,25 @@ module.exports = {
   },
 
   async save(follow, sender) {
+    let feeds = null
     try {
-      let feeds = await this.refresh(follow)
-      if (feeds) {
-        this.update({op: 'discovery', feeds, follow}, sender)
-      } else {
-        this.write({update: true, follows: [follow.id]})
-        this.update({op: 'subscription', follow}, sender)
-      }
+      feeds = await this.refresh(follow, follow.force ? FETCH_SILENT : 0)
     } catch (e) {
       // console.log(e)
-      if (e.message)
-        e = e.message
-      this.update({op: 'error', message: e}, sender)
+      if (!follow.force) {
+        if (e.message)
+          e = e.message
+        this.update({op: 'error', follow, message: e}, sender)
+        return
+      }
+    }
+
+    console.log([follow, feeds])
+    if (feeds) {
+      this.update({op: 'discovery', feeds, follow}, sender)
+    } else {
+      this.write({update: true, follows: [follow.id]})
+      this.update({op: 'subscription', follow}, sender)
     }
   },
 
@@ -871,7 +883,7 @@ module.exports = {
       }
 
       try {
-        let feeds = await this.refresh(follow)
+        let feeds = await this.refresh(follow, 0)
         if (feeds) {
           errors.push(`${follow.url} is not a feed.`)
         } else {

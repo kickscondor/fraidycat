@@ -55,9 +55,18 @@ export default ({
           }
         }}
       } else if (patch.op === 'error') {
+        if (patch.follow) {
+          if (confirm(`${patch.message}\n\nAdd this follow anyway? (In case it might be down for the moment.)`)) {
+            patch.follow.force = true
+            state.local.command("save", patch.follow)
+            return
+          }
+        } else {
+          alert(patch.message)
+        }
+
         u('#working').attr('style', '')
         u('form button').each(ele => ele.disabled = false)
-        alert(patch.message)
       } else if (patch.op) {
         try {
           return applyOperation(state, patch)
