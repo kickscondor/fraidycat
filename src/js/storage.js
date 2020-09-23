@@ -37,6 +37,11 @@ const ACTIVITY_IN_MAIN_INDEX = 180
 
 import rules from '../../defs/social.json'
 
+function ConflictError(message) {
+  this.message = message
+  this.name = 'ConflictError'
+}
+
 function fetchedAt(fetched, id) {
   let fetch = fetched[id]
   return fetch ? fetch.at : 0
@@ -839,7 +844,7 @@ module.exports = {
       let found = false
       for (let id in this.all)
         if (id === follow.id || this.all[id].feed === follow.feed)
-          throw `${follow.feed} is already a subscription of yours.`
+          throw new ConflictError(`${follow.feed} is already a subscription of yours.`)
     }
 
     this.notifyFollow(follow, true)
@@ -851,7 +856,9 @@ module.exports = {
       feeds = await this.refresh(follow, follow.force ? FETCH_SILENT : 0)
     } catch (e) {
       // console.log(e)
-      if (!follow.force) {
+      if (e.name === 'ConflictError' || !follow.force) {
+        if (e.name === 'ConflictError')
+          follow = null
         if (e.message)
           e = e.message
         this.update({op: 'error', follow, message: e}, sender)
@@ -859,7 +866,6 @@ module.exports = {
       }
     }
 
-    console.log([follow, feeds])
     if (feeds) {
       this.update({op: 'discovery', feeds, follow}, sender)
     } else {

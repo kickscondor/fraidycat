@@ -166,7 +166,7 @@
     "acceptHtml": [
       {"var": "out:title", "op": "//head/title/text()"},
       {"op": "//meta[@name='generator' and @content='TiddlyWiki']", "use": "tiddlywiki"},
-      {"op": ["//link[(@rel='alternate' or @rel='feed') and (@type='application/atom+xml' or @type='application/rss+xml' or @type='application/json') and string-length(@href) > 0]",
+      {"op": ["//link[(@rel='alternate' or @rel='feed') and (@type='application/atom+xml' or @type='application/rss+xml' or @type='application/json' or @type='text/plain') and string-length(@href) > 0]",
               "//a[contains(concat(@href, ' ', text()), 'rss') or contains(concat(@href, ' ', text()), 'feed') and string-length(@href) > 0]"],
        "var": "out:sources", "acceptHtml": [
         {"var": "out:url",   "op": "@href", "mod": ["url"]},
