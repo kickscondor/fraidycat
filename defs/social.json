@@ -431,7 +431,7 @@
   },
 
   "reddit.com:user": {
-    "match": "^(?:[\\.\\w]+\\.)?reddit\\.com\\/user\\/([^\\/]+)/?$",
+    "match": "^(?:[\\.\\w]+\\.)?reddit\\.com\\/u(?:ser)?\\/([^\\/]+)/?$",
     "arguments": [0, {"var": "user"}],
     "url": "https://www.reddit.com/user/$user/.rss",
     "accept": ["atom"]

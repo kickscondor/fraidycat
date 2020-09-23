@@ -289,10 +289,16 @@ class WebextStorage {
         this.urlDetails(changeInfo.url).then(({found, feed}) => {
           // console.log(`${changeInfo.url} => ${can}`)
           if (found === 1) {
-            browser.browserAction.setIcon({tabId, path: "images/portrait.svg"})
-            browser.browserAction.setTitle({tabId, title: "Follow with Fraidycat"})
-            browser.browserAction.setPopup({tabId, popup: "popup.html?feed=" +
-              encodeURIComponent(JSON.stringify(feed))})
+            try {
+              feed = JSON.parse(JSON.stringify(feed))
+              if (feed.sources?.length > 5) {
+                feed.sources = feed.sources.slice(0, 5)
+              }
+              browser.browserAction.setIcon({tabId, path: "images/portrait.svg"})
+              browser.browserAction.setTitle({tabId, title: "Follow with Fraidycat"})
+              browser.browserAction.setPopup({tabId, popup: "popup.html?feed=" +
+                encodeURIComponent(JSON.stringify(feed))})
+            } catch {}
           }
         })
       }

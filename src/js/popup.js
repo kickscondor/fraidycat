@@ -12,7 +12,7 @@ let feed = params.get("feed")
 chrome.tabs.query({active: true, currentWindow: true}, tabs => {
   let u = tabs[0].url
   document.getElementById('add').firstChild.href += "?url=" + encodeURIComponent(u)
-  if (feed) {
+  try {
     feed = JSON.parse(feed)
     let avatar = "", title = "", link = "", desc = "", sel = ""
     if (feed.photos?.avatar) {
@@ -40,7 +40,7 @@ chrome.tabs.query({active: true, currentWindow: true}, tabs => {
 					let radios = document.getElementsByTagName('input')
 					for (let j = 0; j < radios.length; j++) {
 						if (radios[j].checked) {
-							e.target.href = "https://fraidyc.at/s/#!/add?url=" + radios[i].value
+							e.target.href = "https://fraidyc.at/s/#!/add?url=" + radios[j].value
 						}
 					}
 				}
@@ -49,5 +49,5 @@ chrome.tabs.query({active: true, currentWindow: true}, tabs => {
 		}
     document.getElementById('card').innerHTML = avatar + title +
       "<h2>" + escapeHtml((new URL(u)).hostname) + "</h2>" + desc + sel
-  }
+  } catch {}
 })
