@@ -452,10 +452,10 @@ module.exports = {
     // Select the top posts for every possible sort method, to give us a limited
     // index of the posts that each filter method would select.
     //
-    follow.limit = follow.limit || POSTS_IN_MAIN_INDEX
+    follow.actualLimit = follow.limit || POSTS_IN_MAIN_INDEX
     follow.posts = frago.master(meta,
       meta.sortBy ? [meta.sortBy] : ['publishedAt', 'updatedAt'],
-      follow.limit)
+      follow.actualLimit)
     follow.sortedBy = meta.sortedBy
 
     //
