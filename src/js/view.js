@@ -156,7 +156,7 @@ const FollowForm = (match, setup, isNew) => ({follows}, actions) => {
     <div>
       <label for="limit" class="optional">Limit</label>
       <input type="number" id="limit" value={follow.limit} min='0' step='1'
-        oninput={e => follow.limit = e.target.value} />
+        oninput={e => follow.limit = e.target.value ? parseInt(e.target.value) : undefined} />
       <p class="note">Number of recent feed entries to show. (If left blank, defaults to 10)</p>
     </div>
 
@@ -423,7 +423,7 @@ const ListFollow = ({ location, match }) => ({follows}, actions) => {
               {follow.posts instanceof Array && follow.posts.length > 0 &&
                 <div class="post">
                 <ol class="title">{(showReposts ? follow.posts : follow.posts.filter(x => !x.author || x.author === follow.author)).
-                  slice(0, follow.actualLimit || 10).map(f => {
+                  slice(0, follow.actualLimit ?? 10).map(f => {
                     let postAge = timeAgo(f[sortPosts], now)
                     return <li class={timeDarkness(f[sortPosts], now)}>
                       {f.author && f.author !== follow.author && <span class="author">{f.author}</span>}
