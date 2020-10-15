@@ -153,6 +153,13 @@ const FollowForm = (match, setup, isNew) => ({follows}, actions) => {
         <p class="note">(Check this to save a copy of complete posts and read them from Fraidycat.)</p>
       </div>}
 
+    <div>
+      <label for="limit" class="optional">Limit</label>
+      <input type="number" id="limit" value={follow.limit} min='0' step='1'
+        oninput={e => follow.limit = e.target.value} />
+      <p class="note">(Number of recent feed entries to show)</p>
+    </div>
+
     <button onclick={e => {u('#working').attr('style', 'display: block'); return actions.follows.save(follow)}}>Save</button>
     {!isNew && <button type="button" class="delete" onclick={_ => actions.follows.confirmRemove(follow)}>Delete This</button>}
 
