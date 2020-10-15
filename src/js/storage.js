@@ -653,7 +653,8 @@ module.exports = {
     }
     this.follows[follow.id] = {url: follow.originalUrl || follow.feed,
       importance: follow.importance, title: follow.title, tags: follow.tags,
-      fetchesContent: follow.fetchesContent, editedAt: follow.editedAt}
+      fetchesContent: follow.fetchesContent, editedAt: follow.editedAt,
+      limit: follow.limit}
   },
 
   //
