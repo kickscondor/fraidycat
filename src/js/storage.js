@@ -579,7 +579,7 @@ module.exports = {
       this.noteUpdate(ids, false)
       for (let id of ids) {
         try {
-          let current = this.all[id], incoming = inc.follows[id], notify = false
+          let current = this.findFeed(id, incoming.url), incoming = inc.follows[id], notify = false
           if (incoming.url) {
             if (!(id.match && id.match(/-[0-9a-f]{1,8}$/))) {
               id = urlToID(urlToNormal(incoming.url))
@@ -842,12 +842,24 @@ module.exports = {
     
     if (!savedId) {
       let found = false
-      for (let id in this.all)
-        if (id === follow.id || this.all[id].feed === follow.feed)
-          throw new ConflictError(`${follow.feed} is already a subscription of yours.`)
+      if (this.findFeed(follow))
+        throw new ConflictError(`${follow.feed} is already a subscription of yours.`)
     }
 
     this.notifyFollow(follow, true)
+  },
+
+  findFeed(findId, findUrl) {
+    let f = this.all[findId]
+    if (f) return f
+
+    if (findUrl) {
+      for (let id in this.all) {
+        let f = this.all[id]
+        if (f.id === findId || f.feed === findUrl || f.url === findUrl || f.originalUrl === findUrl)
+          return f
+      }
+    }
   },
 
   async save(follow, sender) {

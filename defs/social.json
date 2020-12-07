@@ -1,7 +1,7 @@
 {
   "domains": {
     "api.twitch.tv": {"headers:Client-Id": "vnvcshh0aehfkq0bvu6rzpbtaf25et",
-      "headers:Authorization": "Bearer fldge155ro0yry0fkil8s0nky5m1b5"},
+      "headers:Authorization": "Bearer 7b527rlibrh77pkt111abt0n818nfl"},
     "api.twitter.com": {"headers:Authorization": "Bearer AAAAAAAAAAAAAAAAAAAAANRILgAAAAAAnNwIzUejRCOuH5E6I8xnZz4puTs=1Zv7ttfk8LF81IUq16cHjhLTvJu4FA33AGWWjCpTnA",
       "headers:DNT": "1", "headers:Content-Type": "application/json",
       "headers:X-Twitter-Active-User": "yes", "headers:Authority": "api.twitter.com",
@@ -293,10 +293,10 @@
     "url": "https://www.instagram.com/$username",
     "acceptHtml": [
       {"op": "//link[@rel='canonical' and contains(@href, 'instagram.com/accounts/')]", "use": "down"},
-      {"var": "out:title", "op": "//title/text()"},
       {"op": "//script[contains(text(), 'profile_pic_url')]", "match": "({.+});",
         "acceptJson": [
           {"op": "$.entry_data.ProfilePage[0].graphql.user", "acceptJson": [
+            {"var": "out:title", "op": "$.full_name"},
             {"var": "out:description", "op": "$.biography"},
             {"var": "out:photos:avatar", "op": "$.profile_pic_url"},
             {"op": "$.edge_owner_to_timeline_media.edges.*", "var": "out:posts",
@@ -723,11 +723,42 @@
     "accept": ["rss"]
   },
 
+  "special.fish:logs": {
+    "match": "^special\\.fish(/logs)?$",
+    "url": "https://special.fish/logs",
+    "acceptHtml": [
+      {"var": "out:title", "op": "//title/text()"},
+      {"var": "out:photos:avatar", "op": "//meta[@property='twitter:image']/@content"},
+      {"var": "out:description", "op": "//meta[@property='twitter:description']/@content"},
+      {"op": ["//section[@class='log']"], "var": "out:posts", "acceptHtml": [
+        {"var": "out:author", "op": ".//a[@class='username']/text()"},
+        {"var": "out:url", "op": ".//a[@class='username']/@href", "mod": ["url"]},
+        {"var": "out:text", "op": ".//div[@class='log-body']/text()"}
+      ]}
+    ]
+  },
+
   "store.steampowered.com:app": {
     "url": "https://store.steampowered.com/api/appdetails?appids=$app",
     "acceptJson": [
       {"var": "out:title", "op": "$.$app.data.name"},
       {"var": "out:description", "op": "$.$app.data.short_description"}
+    ]
+  },
+
+  "store.steampowered.com:curator": {
+    "match": "^store\\.steampowered\\.com/curator/([^\\/?]+)",
+    "arguments": [0, 0, {"var": "curator"}],
+    "acceptHtml": [
+      {"var": "out:title", "op": "//a[@class='curator_url']/text()"},
+      {"var": "out:photos:avatar", "op": "//meta[@property='og:image']/@content"},
+      {"var": "out:description", "op": "//meta[@name='Description']/@content"},
+      {"op": ["//div[@class='recommendation']"], "var": "out:posts", "acceptHtml": [
+        {"var": "out:url", "op": ".//div[@class='recommendation_readmore']/a/@href", "mod": ["url"]},
+        {"var": "out:publishedAt", "op": ".//span[@class='curator_review_date']/text()",
+         "mod": ["date"]},
+        {"var": "out:html", "op": ".//div[@class='recommendation_desc']"}
+      ]}
     ]
   },
 
