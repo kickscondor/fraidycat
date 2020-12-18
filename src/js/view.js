@@ -555,7 +555,7 @@ export default (state, actions) => {
               </li> :	
               (urgent && <li id="urgent"><p><a href="#" onclick={e => {	
                 e.preventDefault(); urgent.approve()}}>{urgent.note}</a></p></li>)}
-            <li><Link to="/add" class="pink" title="Add a Follow"><img src={state.follows.baseHref + svg['add']} width="16" /></Link></li>
+            <li><Link to="/add" class="pink" title="Add a Follow" accesskey="n"><img src={state.follows.baseHref + svg['add']} width="16" /></Link></li>
             <li><Link to="/settings" title="Settings"><img src={state.follows.baseHref + svg['gear']} width="16" /></Link></li>
           </ul>}
         </div>
