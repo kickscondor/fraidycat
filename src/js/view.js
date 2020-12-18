@@ -114,7 +114,7 @@ const FollowForm = (match, setup, isNew) => ({follows}, actions) => {
       <div>
         <label for="url">URL <img src={follows.baseHref + images['supported']} /></label>
         <input type="text" id="url" name="url" value={follow.url} autocorrect="off" autocapitalize="none"
-          oninput={e => follow.url = e.target.value} />
+          oninput={e => follow.url = e.target.value} autofocus />
         <p class="note">(See <a href="https://rss.app/">RSS.app</a> and <a href="https://rssbox.herokuapp.com">RSS Box</a> for other services. Or <a href="https://notifier.in/integrations/email-to-rss">Notifier</a> for email newsletters.)</p>
       </div>}
 
