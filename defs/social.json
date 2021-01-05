@@ -613,6 +613,13 @@
     ]
   },
 
+  "vimeo.com:user": {
+    "match": "^vimeo\\.com\\/([-\\w]+)/?$",
+    "arguments": [0, {"var": "user"}],
+    "url": "https://vimeo.com/$user/videos/rss",
+    "accept": ["rss"]
+  },
+
   "youtube.com:feed": {
     "match": "^youtube\\.com\\/channel\\/([-\\w]+)",
     "arguments": [0, {"var": "id"}],
