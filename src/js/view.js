@@ -401,7 +401,7 @@ const ListFollow = ({ location, match }) => ({follows}, actions) => {
                 <img class="favicon" src={Favicon(follows.baseHref, follow)}
                   onerror={e => e.target.src=follows.baseHref + svg['globe']} width="20" height="20" />
               </Link>
-              <Link class="url" to={linkUrl} target={`${follows.settings['mode-tab'] || ""`}>{followTitle(follow)}</Link>
+              <Link class="url" to={linkUrl} target={`${follows.settings['mode-tab'] || "" }`}>{followTitle(follow)}</Link>
               {follow.status instanceof Array && follow.status.map(st =>
                 <a class={`status status-${st.type}`} oncreate={ToggleHover} href={st.url || follow.url}
                   >{st.type === 'live' ? <span><img src={follows.baseHref + svg['rec']} width="12" /> LIVE</span> : <span><img src={follows.baseHref + svg['notepad']} width="16" /></span>}
