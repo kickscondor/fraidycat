@@ -1,14 +1,13 @@
 {
   "domains": {
     "api.twitch.tv": {"headers:Client-Id": "vnvcshh0aehfkq0bvu6rzpbtaf25et",
-      "headers:Authorization": "Bearer 7b527rlibrh77pkt111abt0n818nfl"},
+      "headers:Authorization": "Bearer spwcqeqdptsj6aecuqpfdsscc8vi8x"},
     "api.twitter.com": {"headers:Authorization": "Bearer AAAAAAAAAAAAAAAAAAAAANRILgAAAAAAnNwIzUejRCOuH5E6I8xnZz4puTs=1Zv7ttfk8LF81IUq16cHjhLTvJu4FA33AGWWjCpTnA",
       "headers:DNT": "1", "headers:Content-Type": "application/json",
       "headers:X-Twitter-Active-User": "yes", "headers:Authority": "api.twitter.com",
       "headers:Accept-Language": "en-US,en;q=0.9", "headers:Accept": "*/*"},
-    "m.facebook.com": {"headers:User-Agent": "curl/7.58.0"},
-    "www.instagram.com": {"headers:User-Agent": "curl/7.58.0"},
-    "www.youtube.com": {"headers:User-Agent": "curl/7.58.0"}
+    "m.facebook.com": {"headers:User-Agent": "curl/7.68.0"},
+    "www.youtube.com": {"headers:User-Agent": "curl/7.68.0"}
   },
 
   "default": {
@@ -480,10 +479,10 @@
     "arguments": [0, 0, {"var": "user"}],
     "url": "https://www.tiktok.com/$user",
     "render": [{
-      "match": "^m\\.tiktok\\.com\\/api\\/item_list.+&id=(\\d+)",
-      "validate": ["userId"],
+      "match": "^m\\.tiktok\\.com\\/api\\/(?:post\\/)?item_list.+&secUid=(\\w+)",
+      "validate": ["secUid"],
       "acceptJson": [
-        {"op": "$.items.*", "var": "out:posts", "acceptJson": [
+        {"op": ["$.itemList.*", "$.items.*"], "var": "out:posts", "acceptJson": [
           {"var": "out:title", "op": "$.desc"},
           {"var": "itemId", "op": "$.id"},
           {"var": "username", "op": "$.author.uniqueId"},

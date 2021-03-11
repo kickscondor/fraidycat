@@ -58,6 +58,14 @@ class WebextStorage {
     })
   }
 
+  async scrapeLive(url, tabId) {
+    let tasks = this.scraper.detect(url)
+    let id = tasks.queue.shift()
+    let site = this.scraper.options[id]
+    return browser.tabs.sendMessage(tabId, {req: this.encode({url, tasks, site}), options: this.socialJson}).
+      then(resp => this.decode(resp))
+  }
+
   async mkdir(dest) {
     return null
   }
@@ -285,9 +293,9 @@ class WebextStorage {
       tabs.map(x => browser.tabs.reload(x.id))})
 
     browser.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
-      if (changeInfo.status === "loading" && changeInfo.url?.startsWith('http')) {
-        this.urlDetails(changeInfo.url).then(({found, feed}) => {
-          // console.log(`${changeInfo.url} => ${can}`)
+      if (changeInfo.status === "complete" && tab.url?.startsWith('http')) {
+        this.urlDetails(tab.url, tabId).then(({found, feed}) => {
+          // console.log(`${tab.url} => ${can}`)
           if (found === 1) {
             try {
               feed = JSON.parse(JSON.stringify(feed))

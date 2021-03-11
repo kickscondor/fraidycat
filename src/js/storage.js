@@ -109,6 +109,7 @@ module.exports = {
         }
 
         if (defs) {
+          this.socialJson = JSON.stringify(defs)
           if (pollMod !== mod) {
             this.scraper = new fraidyscrape(defs, this.dom, this.xpath)
             pollMod = mod
@@ -525,13 +526,14 @@ module.exports = {
     })
   },
 
-  async urlDetails(url) {
+  async urlDetails(url, tabId) {
     let found = -1, id = urlToID(urlToNormal(url))
     if (!(id in this.all)) {
       found = 0
       try {
-        let {feed, err} = await this.scrapeFeed(url, true)
-        if (!err) {
+        let {tasks, error} = await this.scrapeLive(url, tabId)
+        if (!error) {
+          let feed = tasks?.vars?.out
           if (feed?.sources) {
             found = feed.sources.some(feed => feed.type) ? 1 : 0
           } else {
