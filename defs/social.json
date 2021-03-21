@@ -466,7 +466,7 @@
     "rules": {
       "entry": [
         {"var": "id",                "op": ["$.trail[0].post.id", "$.id_string"]},
-        {"var": "author",            "op": ["$.trail[0].blog.name", "$.source_title"]},
+        {"var": "author",            "op": ["$.trail[0].blog.name", "$.blog_name"]},
         {"var": "out:title",         "op": ["$.title", "$.summary", "$.date"]},
         {"var": "out:author",        "op": "=$author"},
         {"var": "out:html",          "op": "$.body"},
