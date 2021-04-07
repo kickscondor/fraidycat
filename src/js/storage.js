@@ -531,13 +531,14 @@ module.exports = {
     if (!(id in this.all)) {
       found = 0
       try {
-        let {tasks, error} = await this.scrapeLive(url, tabId)
+        let {site, tasks, error} = await this.scrapeLive(url, tabId)
         if (!error) {
           let feed = tasks?.vars?.out
-          if (feed?.sources) {
-            found = feed.sources.some(feed => feed.type) ? 1 : 0
-          } else {
+          console.log([site, feed])
+          if ((site && site !== "default") || feed?.posts?.length > 0) {
             found = 1
+          } else if (feed?.sources) {
+            found = feed.sources.some(feed => feed.type) ? 1 : 0
           }
         }
         return {found, feed}

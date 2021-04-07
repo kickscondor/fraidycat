@@ -1,36 +1,30 @@
-function escapeHtml(unsafe) {
-    return unsafe
-         .replace(/&/g, "&amp;")
-         .replace(/</g, "&lt;")
-         .replace(/>/g, "&gt;")
-         .replace(/"/g, "&quot;")
-         .replace(/'/g, "&#039;");
-}
+import u from '@kickscondor/umbrellajs'
 
 let params = new URLSearchParams(location.search)
 let feed = params.get("feed")
 chrome.tabs.query({active: true, currentWindow: true}, tabs => {
-  let u = tabs[0].url
-  document.getElementById('add').firstChild.href += "?url=" + encodeURIComponent(u)
+  let turl = tabs[0].url
+  document.getElementById('add').firstChild.href += "?url=" + encodeURIComponent(turl)
   try {
     feed = JSON.parse(feed)
-    let avatar = "", title = "", link = "", desc = "", sel = ""
+    let card = u('#card').empty()
     if (feed.photos?.avatar) {
-      avatar = "<div id='avatar'><img src='" + encodeURI(feed.photos.avatar) + "'></div>"
+      card.append(u("<img>").attr({src: feed.photos.avatar}).wrap("<div id='avatar'>"))
     }
     if (feed.title) {
-      title = "<h1>" + escapeHtml(feed.title) + "</h1>"
+      card.append(u("<h1>").text(feed.title))
     }
+    card.append(u("<h2>").text((new URL(turl)).hostname))
     if (feed.description) {
-      desc = "<p>" + escapeHtml(feed.description) + "</p>"
+      card.append(u("<p>").text(feed.description))
     }
     if (feed.sources?.length > 1) {
       for (let i = 0; i < feed.sources.length; i++) {
         let src = feed.sources[i]
-        sel += "<div class='source'><input type='radio' value='" + encodeURIComponent(src.url) + "' " +
-          "name='sources' id='source" + i + "'> <label for='source" + i + "'>" +
-          escapeHtml(src.title) + "</label><br><span>" +
-          escapeHtml(src.url) + "</span></div>"
+        let radio = u("<input type='radio' name='sources'>").attr({value: src.url, id: `source${i}`})
+        let label = u("<label>").attr({for: `source${i}`}).text(src.title)
+        let span = u("<span>").text(src.url)
+        card.append(u("<div class='source'>").append(radio).append(" ").append(label).append("<br>").append(span))
       }
     }
 		let links = document.getElementsByTagName('a')
@@ -47,7 +41,5 @@ chrome.tabs.query({active: true, currentWindow: true}, tabs => {
 				setTimeout(() => window.close(), 100)
 			})
 		}
-    document.getElementById('card').innerHTML = avatar + title +
-      "<h2>" + escapeHtml((new URL(u)).hostname) + "</h2>" + desc + sel
   } catch {}
 })
