@@ -302,7 +302,7 @@ class WebextStorage {
               if (feed.sources?.length > 5) {
                 feed.sources = feed.sources.slice(0, 5)
               }
-              browser.browserAction.setIcon({tabId, path: "images/portrait.svg"})
+              browser.browserAction.setIcon({tabId, path: "images/portrait.png"})
               browser.browserAction.setTitle({tabId, title: "Follow with Fraidycat"})
               browser.browserAction.setPopup({tabId, popup: "popup.html?feed=" +
                 encodeURIComponent(JSON.stringify(feed))})

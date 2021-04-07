@@ -581,7 +581,7 @@ module.exports = {
       this.noteUpdate(ids, false)
       for (let id of ids) {
         try {
-          let current = this.findFeed(id, incoming.url), incoming = inc.follows[id], notify = false
+          let incoming = inc.follows[id], current = this.findFeed(id, incoming.url), notify = false
           if (incoming.url) {
             if (!(id.match && id.match(/-[0-9a-f]{1,8}$/))) {
               id = urlToID(urlToNormal(incoming.url))
