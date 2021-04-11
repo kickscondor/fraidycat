@@ -308,7 +308,7 @@ module.exports = {
         meta.posts = meta.posts.filter(item =>
           !((item.updatedAt > oldestDate) && !urls[item.url]))
       }
- 
+
       //
       // Normalize the post entries for display.
       //
@@ -464,7 +464,7 @@ module.exports = {
     // off empty items from the history.
     //
     let arr = [], len = 0, now = new Date()
-    arr.length = ACTIVITY_IN_MAIN_INDEX 
+    arr.length = ACTIVITY_IN_MAIN_INDEX
     arr.fill(0)
     meta.posts.find(post => {
       let daysAgo = Math.floor((now - post.updatedAt) / 86400000)
@@ -583,22 +583,20 @@ module.exports = {
       for (let id of ids) {
         try {
           let incoming = inc.follows[id], current = this.findFeed(id, incoming.url), notify = false
-          if (incoming.url) {
-            if (!(id.match && id.match(/-[0-9a-f]{1,8}$/))) {
-              id = urlToID(urlToNormal(incoming.url))
+          if (incoming.deleted) {
+            if (current) {
+              delete this.all[id]
+              this.update({op: 'remove', path: `/all/${id}`})
+              this.deleteFile(`/feeds/${id}.json`)
             }
-            if (!(id in this.follows))
-              this.follows[id] = incoming
-            if (!current || current.editedAt < incoming.editedAt || !isValidFollow(current)) {
-              if (incoming.deleted) {
+          } else {
+            if (incoming.url) {
+              if (!(id.match && id.match(/-[0-9a-f]{1,8}$/))) {
+                id = urlToID(urlToNormal(incoming.url))
+              }
+              if (!(id in this.follows))
                 this.follows[id] = incoming
-                if (current) {
-                  delete this.all[id]
-                  this.update({op: 'remove', path: `/all/${id}`})
-                  this.deleteFile(`/feeds/${id}.json`)
-                  follows.push(id)
-                }
-              } else {
+              if (!current || current.editedAt < incoming.editedAt || !isValidFollow(current)) {
                 try {
                   incoming.id = id
                   await this.refresh(incoming, FETCH_SILENT)
@@ -608,17 +606,17 @@ module.exports = {
                   }
                 } catch {}
                 // catch(msg => console.log(`${incoming.url} is ${msg}`))
+                updated = true
+              } else if (current.editedAt > incoming.editedAt) {
+                if (syncType !== SYNC_EXTERNAL) {
+                  notify = true
+                }
               }
-              updated = true
-            } else if (current.editedAt > incoming.editedAt) {
-              if (syncType !== SYNC_EXTERNAL) {
-                notify = true
-              }
-            }
 
-            if (notify && current) {
-              follows.push(id)
-              this.notifyFollow(current)
+              if (notify && current) {
+                follows.push(id)
+                this.notifyFollow(current)
+              }
             }
           }
         } finally {
@@ -754,7 +752,7 @@ module.exports = {
       mimeType = 'text/xml'
       for (let id in this.all) {
         let follow = this.all[id]
-        let category = `importance/${follow.importance}` + 
+        let category = `importance/${follow.importance}` +
           (follow.tags ? ',' + follow.tags.join(',') : '')
         let item = {category, created: follow.editedAt, text: followTitle(follow),
           xmlUrl: follow.feed, htmlUrl: follow.url}
@@ -842,7 +840,7 @@ module.exports = {
         return feed.sources
       }
     }
-    
+
     if (!savedId) {
       let found = false
       if (this.findFeed(follow))
