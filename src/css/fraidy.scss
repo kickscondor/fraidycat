@@ -178,6 +178,10 @@ div.intro {
       border-radius: 18px;
       font-weight: bold;
       color: white;
+
+      img {
+        margin: -1px 0px;
+      }
     }
   }
 }
@@ -270,7 +274,7 @@ div.intro {
         }
       }
     }
-    
+
     &:last-child {
       border-bottom: none;
     }
@@ -710,7 +714,7 @@ div.intro {
             color: t('button');
           }
         }
-        
+
         &:last-child::after {
           content: "";
         }
@@ -752,7 +756,7 @@ div.intro {
     list-style: none;
     margin: 0;
     padding: 0;
-    
+
     & > li {
       border-bottom: dotted 1px #C77;
       padding-bottom: 8px;
