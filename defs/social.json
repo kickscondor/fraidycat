@@ -166,6 +166,7 @@
     "acceptHtml": [
       {"var": "out:title", "op": "//head/title/text()"},
       {"op": "//meta[@name='generator' and @content='TiddlyWiki']", "use": "tiddlywiki"},
+      {"op": "//head/script[@id='versionArea' and contains(text(), 'TiddlyWiki')]", "use": "tiddlywiki-classic"},
       {"op": ["//link[(@rel='alternate' or @rel='feed') and (@type='application/atom+xml' or @type='application/rss+xml' or @type='application/json' or @type='text/plain') and string-length(@href) > 0]",
               "//a[contains(concat(@href, ' ', text()), 'rss') or contains(concat(@href, ' ', text()), 'feed') and string-length(@href) > 0]"],
        "var": "out:sources", "acceptHtml": [
@@ -196,6 +197,22 @@
         {"var": "title", "op": "@title"},
         {"var": "out:publishedAt", "op": "@created", "mod": ["date"]},
         {"var": "out:updatedAt", "op": "@modified", "mod": ["date"]},
+        {"var": "out:url", "op": "=$title", "mod": ["slug", "url"]},
+        {"var": "out:title", "op": "=$title"}
+      ]}
+    ]
+  },
+
+  "tiddlywiki-classic": {
+    "acceptHtml": [
+      {"var": "out:title", "op": "//head/title/text()"},
+      {"var": "out:photos:avatar", "op": ["//head/link[@rel='shortcut icon']/@href"], "mod": ["url"]},
+      {"var": "out:flags", "op": "=COMPLETE"},
+      {"op": "//div[@id='storeArea']/div[not(starts-with(@title, concat('$', ':/'))) and @created]",
+       "var": "out:posts", "acceptHtml": [
+        {"var": "title", "op": "@title"},
+        {"var": "out:publishedAt", "op": "@created", "mod": ["int", "*100", "uppercase", "date"]},
+        {"var": "out:updatedAt", "op": "@modified", "mod": ["int", "*100", "uppercase", "date"]},
         {"var": "out:url", "op": "=$title", "mod": ["slug", "url"]},
         {"var": "out:title", "op": "=$title"}
       ]}
