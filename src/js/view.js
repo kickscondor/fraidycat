@@ -14,6 +14,8 @@ import images from '../images/*.png'
 import webp from '../images/*.webp'
 
 const CAN_ARCHIVE = (process.env.STORAGE === 'dat')
+const IS_WEBEXT = (process.env.STORAGE === 'webext')
+
 
 const FormFreeze = (e) => {
   e.preventDefault()
@@ -373,6 +375,7 @@ const ListFollow = ({ location, match }) => ({follows}, actions) => {
           <li><Setting name="mode-expand" value="all">Expand All</Setting></li>
           <li class="dark-mode"><Setting name="mode-theme" value="dark">Dark Mode</Setting></li>
           <li class="light-mode"><Setting name="mode-theme" value="light">Light Mode</Setting></li>
+          {IS_WEBEXT && <li><Setting name="mode-tab" value="_blank">Open In New Tab</Setting></li>}
         </ul>
       </div>
     </div>
@@ -398,7 +401,7 @@ const ListFollow = ({ location, match }) => ({follows}, actions) => {
                 <img class="favicon" src={Favicon(follows.baseHref, follow)}
                   onerror={e => e.target.src=follows.baseHref + svg['globe']} width="20" height="20" />
               </Link>
-              <Link class="url" to={linkUrl}>{followTitle(follow)}</Link>
+              <Link class="url" to={linkUrl} target={`${follows.settings['mode-tab'] || "" }`}>{followTitle(follow)}</Link>
               {follow.status instanceof Array && follow.status.map(st =>
                 <a class={`status status-${st.type}`} oncreate={ToggleHover} href={st.url || follow.url}
                   >{st.type === 'live' ? <span><img src={follows.baseHref + svg['rec']} width="12" /> LIVE</span> : <span><img src={follows.baseHref + svg['notepad']} width="16" /></span>}
