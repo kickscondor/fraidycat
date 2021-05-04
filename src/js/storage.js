@@ -534,7 +534,6 @@ module.exports = {
         let {site, tasks, error} = await this.scrapeLive(url, tabId)
         if (!error) {
           let feed = tasks?.vars?.out
-          console.log([site, feed])
           if ((site && site !== "default") || feed?.posts?.length > 0) {
             found = 1
           } else if (feed?.sources) {
