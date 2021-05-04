@@ -135,7 +135,7 @@ module.exports = {
       // conflicting IDs (dict key vs. the object's property)
       //
       let all = {}, allf = await this.readFile('/follows.json')
-      for (let follow of allf) {
+      for (let follow of Object.values(allf)) {
         if (follow.id) {
           all[follow.id] = follow
         }
