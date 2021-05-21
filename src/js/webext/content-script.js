@@ -8,21 +8,19 @@ const fraidyscrape = require('fraidyscrape')
 let extURL = browser.extension.getURL('/').replace(/\/$/, '')
 
 async function scrapeMessage(data, options = null) {
+  let scraper = new fraidyscrape(options ? JSON.parse(options, jsonDateParser) : {}, parseDom, xpathDom)
+  let {tasks, site, url} = JSON.parse(data, jsonDateParser)
+  let error = null
   try {
-    let scraper = new fraidyscrape(options ? JSON.parse(options, jsonDateParser) : {}, parseDom, xpathDom)
-    let {tasks, site, url} = JSON.parse(data, jsonDateParser)
-    let error = null
-    try {
-      if (options && site.url) {
-        delete site.url
-        site.accept = ["html"]
-      }
-      await scraper.scrapeRender(tasks, site, window)
-    } catch (e) {
-      error = "Couldn't find a follow at this location."
+    if (options && site.url) {
+      delete site.url
+      site.accept = ["html"]
     }
-    return JSON.stringify({tasks, url, error})
-  } catch {}
+    await scraper.scrapeRender(tasks, site, window)
+  } catch (e) {
+    error = "Couldn't find a follow at this location."
+  }
+  return JSON.stringify({tasks, url, error})
 }
 
 //
@@ -30,8 +28,10 @@ async function scrapeMessage(data, options = null) {
 // of TikTok and other sites that require rendering.
 //
 window.addEventListener('message', async e => {
-  let response = await scrapeMessage(e.data)
-  e.source.postMessage(response, extURL)
+  try {
+    let response = await scrapeMessage(e.data)
+    e.source.postMessage(response, extURL)
+  } catch {}
 })
 
 //
