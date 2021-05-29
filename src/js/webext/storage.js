@@ -276,7 +276,7 @@ class WebextStorage {
     browser.webRequest.onBeforeSendHeaders.addListener(rewriteUserAgentHeader,
       {urls: ["<all_urls>"], types: ["xmlhttprequest"]}, ["blocking", "requestHeaders"])
 
-    browser.webRequest.onHeadersReceived.addListener(e => {
+    let headersRecvFn = e => {
       let initiator = e.initiator || e.originUrl
       let headers = e.responseHeaders
       if (e.tabId === -1 && initiator && extUrl && (initiator + "/").startsWith(extUrl)) {
@@ -288,7 +288,16 @@ class WebextStorage {
         }
       }
       return {responseHeaders: headers};
-    }, {urls: ["<all_urls>"]}, ["blocking", "responseHeaders", "extraHeaders"])
+    }
+
+    // Firefox throws an error on "extraHeaders"
+    try {
+      browser.webRequest.onHeadersReceived.addListener(headersRecvFn,
+        {urls: ["<all_urls>"]}, ["blocking", "responseHeaders", "extraHeaders"])
+    } catch {
+      browser.webRequest.onHeadersReceived.addListener(headersRecvFn,
+        {urls: ["<all_urls>"]}, ["blocking", "responseHeaders"])
+    }
 
     browser.webRequest.onCompleted.addListener(async e => {
       let headers = e.responseHeaders
