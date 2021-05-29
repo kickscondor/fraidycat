@@ -70,7 +70,7 @@ export function urlToID (normLink) {
 }
 
 export function followTitle(follow) {
-  return follow.title || follow.actualTitle || follow.url
+  return (follow.title || follow.actualTitle || follow.url).toString()
 }
 
 export function isValidFollow(follow) {

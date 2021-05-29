@@ -81,7 +81,7 @@
     "electron-updater": "^4.3.8",
     "ent": "^2.2.0",
     "fast-json-patch": "^3.0.0-1",
-    "fraidyscrape": "^1.0.12",
+    "fraidyscrape": "^1.0.14",
     "fsbin": "^1.0.9",
     "hyperapp": "^1.2.9",
     "json-date-parser": "^1.0.1",
