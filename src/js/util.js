@@ -1,10 +1,10 @@
 const ent = require('ent/decode')
 const normalizeUrl = require('normalize-url')
-import u from '@kickscondor/umbrellajs'
+const u = require('@kickscondor/umbrellajs')
 
-export const house = "\u{1f3e0}"
+const house = "\u{1f3e0}"
 
-export const Importances = [
+const Importances = [
   [0,   "Real-time", "\u{1f684}", "Following this with complete devotion."], // 1f525
   [1,   "Frequent", "\u{1f304}", "Keep just out of view. Nevertheless: beloved."], // 2728
   [7,   "Occasional", "\u{1f407}", "For when I have free time."], 
@@ -12,7 +12,7 @@ export const Importances = [
   [365, "Rarely", "\u{2602}", "Not very active. Or, just don't lose this."]
 ]
 
-export async function responseToObject (resp) {
+async function responseToObject (resp) {
   let headers = {}
   let body = await resp.text()
   for (let h of resp.headers)
@@ -20,7 +20,7 @@ export async function responseToObject (resp) {
   return {status: resp.status, ok: resp.ok, url: resp.url, body, headers}
 }
 
-export function fixupHeaders (options, list) {
+function fixupHeaders (options, list) {
   if (options && options.headers) {
     let fix = {}
     for (let k in options.headers) {
@@ -31,7 +31,7 @@ export function fixupHeaders (options, list) {
   return options
 }
 
-export function getIndexById (ary, id, field = 'id') {
+function getIndexById (ary, id, field = 'id') {
   for (let i = 0; i < ary.length; i++) {
     if (ary[i][field] == id)
       return i
@@ -39,24 +39,24 @@ export function getIndexById (ary, id, field = 'id') {
   return -1
 }
 
-export function getMaxIndex (index) {
+function getMaxIndex (index) {
   let vals = Object.values(index)
   if (vals.length == 0)
     return 0
   return Math.max(...vals)
 }
 
-export function html2text (html) {
+function html2text (html) {
   if (html.replace)
     html = html.replace(/[a-z]+:\/\//g, ' ')
   return u("<div>" + html).text()
 }
 
-export function urlToFeed(abs, href) {
+function urlToFeed(abs, href) {
   return normalizeUrl(url.resolve(abs, href), {stripWWW: false, stripHash: true, removeTrailingSlash: false})
 }
 
-export function urlToNormal (link) {
+function urlToNormal (link) {
   try {
     return normalizeUrl(link, {stripProtocol: true, removeDirectoryIndex: true, stripHash: true})
   } catch {
@@ -64,20 +64,20 @@ export function urlToNormal (link) {
   }
 }
 
-export function urlToID (normLink) {
+function urlToID (normLink) {
   let hashInt = normLink.split("").reduce(function(a,b){a=((a<<5)-a)+b.charCodeAt(0);return a&a},0)
   return `${normLink.split('/')[0]}-${(hashInt >>> 0).toString(16)}`
 }
 
-export function followTitle(follow) {
+function followTitle(follow) {
   return follow.title || follow.actualTitle || follow.url
 }
 
-export function isValidFollow(follow) {
+function isValidFollow(follow) {
   return follow.url && follow.feed && follow.id
 }
 
-export function sortBySettings(follow, settings) {
+function sortBySettings(follow, settings) {
   let sortPosts = settings['mode-updates'] || 'publishedAt'
   let showReposts = settings['mode-reposts'] === 'all'
   let sortedBy = [sortPosts, showReposts].join(',')
@@ -92,7 +92,7 @@ export function sortBySettings(follow, settings) {
 //
 // HTML traversal and string building.
 //
-export function parseDom(str, mime) {
+function parseDom(str, mime) {
   return (new DOMParser()).parseFromString(str, mime)
 }
 
@@ -111,7 +111,7 @@ function innerHtmlDom(node) {
   return v
 }
 
-export function xpathDom(doc, node, path, asText, ns) {
+function xpathDom(doc, node, path, asText, ns) {
   let lookup = null
   if (ns) lookup = (pre) => ns[pre]
   let result = doc.evaluate(path, node, lookup, 7, null), list = []
@@ -125,3 +125,7 @@ export function xpathDom(doc, node, path, asText, ns) {
   }
   return list
 }
+
+module.exports = {fixupHeaders, followTitle, getIndexById, getMaxIndex, house,
+  html2text, innerHtmlDom, isValidFollow, parseDom, responseToObject,
+  sortBySettings, urlToFeed, urlToID, urlToNormal, xpathDom, Importances}

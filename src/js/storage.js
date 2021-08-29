@@ -16,9 +16,9 @@
 // instance to pull down feeds and operate independently. This allows the
 // instance to run alone, with no syncing, should the user want it that way.
 //
-import { followTitle, house, html2text, getIndexById, Importances,
-  urlToFeed, urlToID, urlToNormal, isValidFollow } from './util'
-import u from '@kickscondor/umbrellajs'
+const { followTitle, house, html2text, getIndexById, Importances,
+  urlToFeed, urlToID, urlToNormal, isValidFollow } = require('./util')
+const u = require('@kickscondor/umbrellajs')
 
 const fraidyscrape = require('fraidyscrape')
 const og = require('opml-generator')
@@ -32,7 +32,7 @@ const SYNC_EXTERNAL = 3
 const POSTS_IN_MAIN_INDEX = 10
 const ACTIVITY_IN_MAIN_INDEX = 180
 
-import rules from '../../defs/social.json'
+const rules = require('../../defs/social.json')
 
 function fetchedAt(fetched, id) {
   let fetch = fetched[id]
