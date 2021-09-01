@@ -1,5 +1,5 @@
 const decompress = require('decompress')
-const fetch = require('node-fetch')
+const needle = require('needle')
 const fs = require('fs')
 const fg = require('fast-glob')
 const koalaesce = require('koalaesce')
@@ -21,15 +21,45 @@ function mkpdir(outputPath) {
   try { fs.mkdirSync(outputDir, {recursive: true}) } catch {}
 }
 
-async function download(dUrl) {
-  let localPath = path.join(cacheDir, path.basename(new URL(dUrl).pathname))
-  if (!fs.existsSync(localPath)) {
-    let res = await fetch(dUrl)
-    mkpdir(localPath)
-    let dest = fs.createWriteStream(localPath)
-    res.body.pipe(dest)
+async function streamWithProgress(response, writer, progressCallback) {
+  let length = parseInt(response.headers.get('Content-Length' || '0'), 10)
+  let reader = response.body.getReader()
+  let bytesDone = 0;
+
+  while (true) {
+    const result = await reader.read();
+    if (result.done) {
+      if (progressCallback != null) {
+        progressCallback(length, 100);
+      }
+      return;
+    }
+
+    const chunk = result.value;
+    if (chunk == null) {
+      throw Error('Empty chunk received during download');
+    } else {
+      writer.write(Buffer.from(chunk));
+      if (progressCallback != null) {
+        bytesDone += chunk.byteLength;
+        const percent = length === 0 ? null : Math.floor(bytesDone / length * 100);
+        progressCallback(bytesDone, percent);
+      }
+    }
   }
-  return localPath
+}
+
+async function download(dUrl, fn) {
+  let localPath = path.join(cacheDir, path.basename(new URL(dUrl).pathname))
+  if (fs.existsSync(localPath))
+    return localPath
+
+  return new Promise((resolve, reject) => {
+    let dest = fs.createWriteStream(localPath)
+    mkpdir(localPath)
+    needle.get(dUrl).pipe(dest).
+      on('done', () => resolve(localPath))
+  })
 }
 
 (async function () {
@@ -52,9 +82,9 @@ async function download(dUrl) {
   }
 
   //
-  // Ensure we've got the needed build applications.
+  // Ensure we've got the appropriate Node binary.
   //
-  let nodeBinaryPath = await download(nodeBinaryUrl)
+  let nodeBinaryPath = await download(nodeBinaryUrl, () => {})
   let nodeDir = path.basename(nodeBinaryPath, tarExt)
   let nodeExe = null
   await decompress(nodeBinaryPath, cacheDir, {filter: file => {
@@ -65,4 +95,11 @@ async function download(dUrl) {
   }})
   fs.copyFileSync(path.join(cacheDir, nodeExe),
     path.join(output, path.basename(nodeExe)))
+
+  if (platform === 'darwin') {
+    // let appdmg = require('appdmg')
+    // let dmg = appdmg({target: 'dist/Fraidycat-' + pkg.version + '.dmg',
+    //   basepath: __dirname, specification: {
+    //     title: pkg.productName,
+  }
 })()
