@@ -1,7 +1,6 @@
 const { Worker, isMainThread, threadId } = require('worker_threads')
 
 const fs = require('fs')
-const ngrok = require('ngrok')
 const os = require('os')
 const path = require('path')
 const platform = require('./platform')
@@ -64,6 +63,23 @@ if (isMainThread) {
     await local.setup()
     os.cpus().forEach(() => new Worker(__filename))
   })();
+
+  const tor = require('@pointnetwork/granax')();
+  tor.on('ready', function() {
+    // Service URL: wztce3wkojaako7knpcconj7togcmse73zkru2izsu6kts2wxpcqkcid.onion
+    let opts = {
+      keyType: 'ED25519-V3',
+      keyBlob: 'KFBn2E7zc/P1CEPs8GMLIhvp4Neo+cc9T0zZtU4e4kWKcKPM9LrL1u8c5/je/4PgdP2NdBjp5q80OnQBh0coUQ'
+    }
+    tor.createHiddenService('127.0.0.1:7547', opts, (err, result) => {
+      console.info(`Service URL: ${result.serviceId}.onion`)
+      console.info(`Private Key: ${result.privateKey}`)
+    })
+  })
+
+  tor.on('error', function(err) {
+    console.error(err);
+  })
 
 } else {
 
@@ -179,8 +195,5 @@ if (isMainThread) {
 
   app.listen(7547, sock => {
     console.log("Started server")
-    // ngrok.connect(7547).then(url => {
-    //   console.log(`Running on ${url}`)
-    // })
   })
 }
