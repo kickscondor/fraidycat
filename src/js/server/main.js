@@ -5,7 +5,6 @@ const os = require('os')
 const path = require('path')
 const platform = require('./platform')
 const storage = require('./storage')
-const upnp = require('nat-upnp')
 const uws = require('uWebSockets.js')
 
 if (isMainThread) {
@@ -64,7 +63,7 @@ if (isMainThread) {
     os.cpus().forEach(() => new Worker(__filename))
   })();
 
-  const tor = require('@pointnetwork/granax')();
+  const tor = require('@kickscondor/granax')();
   tor.on('ready', function() {
     // Service URL: wztce3wkojaako7knpcconj7togcmse73zkru2izsu6kts2wxpcqkcid.onion
     let opts = {

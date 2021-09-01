@@ -27,12 +27,13 @@
   "targets": {
     "desktop": {
       "context": "node",
-      "includeNodeModules": []
+      "optimize": false,
+      "includeNodeModules": true
     }
   },
   "assets": [
     {
-      "source": "src/images/flatcat-32.*",
+      "source": "src/images/flatcat-*.png",
       "dest": "images"
     },
     {
@@ -47,22 +48,24 @@
   "browserslist": "firefox >= 57, chrome >= 49",
   "dependencies": {
     "@kickscondor/elasticlunr": "^0.9.8",
-    "appdmg": "^0.6.2",
+    "@kickscondor/granax": "^3.2.8",
     "deasync": "^0.1.23",
     "electron-fetch": "^1.7.4",
     "fraidyscrape": "^1.0.14",
     "json-date-parser": "^1.0.1",
     "nat-upnp": "^1.1.1",
     "needle": "^3.0.0",
-    "ngrok": "^3.4.1",
-    "node-fetch": "^2.6.1",
     "normalize-url": "^4.5.1",
     "open": "^7.4.2",
     "opml-generator": "^1.1.1",
+    "pg-hstore": "^2.3.4",
     "regenerator-runtime": "^0.13.9",
     "selfsigned": "^1.10.11",
     "systray": "^1.0.5",
     "uWebSockets.js": "github:uNetworking/uWebSockets.js#binaries"
+  },
+  "darwinDependencies": {
+    "appdmg": "^0.6.2"
   },
   "devDependencies": {
     "@babel/core": "^7.15.0",
