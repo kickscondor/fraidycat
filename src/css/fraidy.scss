@@ -5,8 +5,8 @@ $themes: (
     backmute: #FCFCF3,
     plain: #000000,
     link: #0000EE,
-    visited: #BB9944,
-    color: #663300,
+    visited: #AA8844,
+    color: #662200,
     hover: #007799,
     title: #888866,
     latest: #FFEFD5,
@@ -38,7 +38,7 @@ $themes: (
     backmute: #181818,
     plain: #FFEEEE,
     link: #DDFFFF,
-    visited: #FFDDFF,
+    visited: #AAAAAA,
     color: #CCEEEE,
     hover: #EEFF33,
     title: #CCBBBB,
@@ -189,6 +189,10 @@ div.intro {
       border-radius: 18px;
       font-weight: bold;
       color: white;
+
+      img {
+        margin: -1px 0px;
+      }
     }
   }
 }
@@ -309,7 +313,7 @@ div.intro {
         }
       }
     }
-    
+
     &:last-child {
       border-bottom: none;
     }
@@ -657,7 +661,7 @@ div.intro {
       li {
         margin-bottom: 6px;
 
-        a {
+        .txt, a {
           text-decoration: none;
 
           s {
@@ -675,6 +679,14 @@ div.intro {
           }
         }
 
+        span.author::before {
+          content: "@";
+        }
+
+        span.author::after {
+          content: ":\0000a0";
+        }
+
         a:hover {
           text-decoration: underline;
           @include themed() {
@@ -683,6 +695,14 @@ div.intro {
         }
 
         @include themed() {
+          a:visited {
+            color: t('visited');
+          }
+
+          span.author {
+            color: t('title');
+          }
+
           span.ago {
             margin-left: 8px;
             font-size: 0.9rem;
@@ -774,12 +794,12 @@ div.intro {
             color: t('button');
           }
         }
-        
+
         &:last-child::after {
           content: "";
         }
 
-        a {
+        .txt, a {
           span:after {
             content: "\2026";
           }
@@ -1003,12 +1023,16 @@ div.intro {
 }
 
 #feed-select {
-  li {
-    list-style: none;
+  ul {
+    margin: 1em;
 
-    em {
-      font-size: 0.9rem;
-      padding-left: 20px;
+    li {
+      list-style: none;
+
+      em {
+        font-size: 0.9rem;
+        padding-left: 20px;
+      }
     }
   }
 }
@@ -1196,6 +1220,39 @@ button.delete {
   to {
     text-decoration: none;
     font-style: none;
+  }
+}
+
+/* "loading" anim */
+#scanner {
+  color: #F09;
+  background-color: white;
+  font-family: Arial, sans-serif;
+
+  #logo {
+    padding: 12px 32px;
+  }
+
+  #loading {
+    width: 420px;
+    margin: 0px auto;
+    text-align: center;
+
+    p {
+      display: inline-block;
+      text-align: center;
+      padding: 6px;
+      font-weight: bold;
+      overflow: hidden;
+      transform: skew(20deg);
+      animation: slide 3s linear infinite;
+    }
+  }
+}
+
+@keyframes slide {
+  50% {
+    transform: skew(-20deg);
   }
 }
 

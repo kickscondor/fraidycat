@@ -254,7 +254,7 @@ function urlToID (normLink) {
 }
 
 function followTitle(follow) {
-  return follow.title || follow.actualTitle || follow.url
+  return (follow.title || follow.actualTitle || follow.url).toString()
 }
 
 function isValidFollow(follow) {

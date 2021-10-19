@@ -2,21 +2,39 @@ import 'regenerator-runtime/runtime'
 import { parseDom, xpathDom } from '../util' 
 import { jsonDateParser } from "json-date-parser"
 
-if (window.self !== window.top) {
-  const browser = require('webextension-polyfill')
-  const fraidyscrape = require('fraidyscrape')
+const browser = require('webextension-polyfill')
+const fraidyscrape = require('fraidyscrape')
 
-  let scraper = new fraidyscrape({}, parseDom, xpathDom)
-  let extURL = browser.extension.getURL('/').replace(/\/$/, '')
+let extURL = browser.extension.getURL('/').replace(/\/$/, '')
 
-  window.addEventListener('message', async e => {
-    let {tasks, site, url} = JSON.parse(e.data, jsonDateParser)
-    let error = null
-    try {
-      await scraper.scrapeRender(tasks, site, window)
-    } catch {
-      error = "Couldn't find a follow at this location."
+async function scrapeMessage(data, options = null) {
+  let scraper = new fraidyscrape(options ? JSON.parse(options, jsonDateParser) : {}, parseDom, xpathDom)
+  let {tasks, site, url} = JSON.parse(data, jsonDateParser)
+  let error = null
+  try {
+    if (options && site.url) {
+      delete site.url
+      site.accept = ["html"]
     }
-    e.source.postMessage(JSON.stringify({tasks, url, error}), extURL)
-  })
+    await scraper.scrapeRender(tasks, site, window)
+  } catch (e) {
+    error = "Couldn't find a follow at this location."
+  }
+  return JSON.stringify({tasks, url, error})
 }
+
+//
+// Messages coming in through the iframe: used for regular fetching
+// of TikTok and other sites that require rendering.
+//
+window.addEventListener('message', async e => {
+  try {
+    let response = await scrapeMessage(e.data)
+    e.source.postMessage(response, extURL)
+  } catch {}
+})
+
+//
+// Messages coming in to sense the capabilities of the web page.
+//
+browser.runtime.onMessage.addListener(data => scrapeMessage(data.req, data.options))

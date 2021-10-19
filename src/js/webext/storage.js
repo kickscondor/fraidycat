@@ -46,13 +46,32 @@ class WebextStorage {
     iframe.src = req.url
     return new Promise((resolve, reject) => {
       this.scraper.addWatch(req.url, {tasks, resolve, reject, iframe, render: req.render,
-        remove: () => document.body.removeChild(iframe)})
+        remove: () => {
+          iframe.src = "about:blank"
+          setTimeout(() => iframe.remove(), 1000)
+        }})
       iframe.addEventListener('load', e => {
         iframe.contentWindow.postMessage(this.encode({url: req.url, tasks, site}), '*')
       })
       document.body.appendChild(iframe)
       setTimeout(() => this.scraper.removeWatch(req.url), 40000)
     })
+  }
+
+  async scrapeLive(url, tabId) {
+    let tasks = this.scraper.detect(url)
+    let id = tasks.queue.shift()
+    let site = this.scraper.options[id]
+    return browser.tabs.sendMessage(tabId, {req: this.encode({url, tasks, site}), options: this.socialJson}).
+      then(resp => {
+        let obj = this.decode(resp)
+        obj.site = id
+        let out = obj.tasks?.vars?.out
+        if (out?.posts?.length > 0) {
+          out.posts = out.posts.slice(0, 5)
+        }
+        return obj
+      })
   }
 
   async mkdir(dest) {
@@ -242,26 +261,43 @@ class WebextStorage {
       return {requestHeaders: e.requestHeaders}
     }
 
+    //
+    // Open Fraidycat if the extension icon or the "Follow" icon is clicked.
+    //
     browser.browserAction.onClicked.addListener(tab => {
       browser.tabs.create({url: homepage})
     })
 
+    // browser.pageAction.onClicked.addListener(tab => {
+    //   browser.tabs.create({url: homepage + "#!/add?url=" +
+    //     encodeURIComponent(tab.url)})
+    // })
+
     browser.webRequest.onBeforeSendHeaders.addListener(rewriteUserAgentHeader,
       {urls: ["<all_urls>"], types: ["xmlhttprequest"]}, ["blocking", "requestHeaders"])
 
-    browser.webRequest.onHeadersReceived.addListener(e => {
+    let headersRecvFn = e => {
       let initiator = e.initiator || e.originUrl
       let headers = e.responseHeaders
       if (e.tabId === -1 && initiator && extUrl && (initiator + "/").startsWith(extUrl)) {
         for (let i = headers.length - 1; i >= 0; --i) {
           let header = headers[i].name.toLowerCase()
-          if (header == 'x-frame-options' || header == 'frame-options') {
+          if (header == 'x-frame-options' || header == 'frame-options' || header == 'content-security-policy') {
             headers.splice(i, 1)
           }
         }
       }
       return {responseHeaders: headers};
-    }, {urls: ["<all_urls>"]}, ["blocking", "responseHeaders"])
+    }
+
+    // Firefox throws an error on "extraHeaders"
+    try {
+      browser.webRequest.onHeadersReceived.addListener(headersRecvFn,
+        {urls: ["<all_urls>"]}, ["blocking", "responseHeaders", "extraHeaders"])
+    } catch {
+      browser.webRequest.onHeadersReceived.addListener(headersRecvFn,
+        {urls: ["<all_urls>"]}, ["blocking", "responseHeaders"])
+    }
 
     browser.webRequest.onCompleted.addListener(async e => {
       let headers = e.responseHeaders
@@ -272,10 +308,38 @@ class WebextStorage {
 
     browser.tabs.query({url: homepage}).then(tabs => {
       tabs.map(x => browser.tabs.reload(x.id))})
+
+    browser.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
+      if (changeInfo.status === "complete" && tab.url?.startsWith('http') && !tab.url?.startsWith('https://fraidyc.at/s/')) {
+        this.urlDetails(tab.url, tabId).then(({found, feed}) => {
+          // console.log([`${tab.url} => ${found}`, feed])
+          if (found === 1) {
+            try {
+              feed = JSON.parse(JSON.stringify(feed))
+              if (feed.sources?.length > 5) {
+                feed.sources = feed.sources.slice(0, 5)
+              }
+              browser.browserAction.setIcon({tabId, path: "images/portrait.png"})
+              browser.browserAction.setTitle({tabId, title: "Follow with Fraidycat"})
+              browser.browserAction.setPopup({tabId, popup: "popup.html?feed=" +
+                encodeURIComponent(JSON.stringify(feed))})
+            } catch {}
+          }
+        })
+      }
+    })
   }
 }
 
+async function clearAll() {
+  browser.storage.sync.get().
+    then(o => browser.storage.sync.remove(Object.keys(o)))
+  browser.storage.local.get().
+    then(o => browser.storage.local.remove(Object.keys(o)))
+}
+
 module.exports = async function () {
+  // clearAll()
   let session = Math.random().toString(36)
   return new WebextStorage(session)
 }

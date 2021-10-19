@@ -584,6 +584,7 @@
     }],
     "acceptHtml": [
       {"op": "//script[@id='__NEXT_DATA__']/text()", "match": ".", "acceptJson": [
+        {"var": "secUid", "op": ["$.props.pageProps.userInfo.user.secUid", "$.props.pageProps.feedConfig.secUid"]},
         {"op": "$.props.pageProps.userInfo.user", "acceptJson": [
           {"var": "userId", "op": "$.id"},
           {"var": "out:title", "op": "$.nickname", "mod": ["str"]},

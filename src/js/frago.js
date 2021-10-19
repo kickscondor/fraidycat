@@ -74,9 +74,14 @@ module.exports = {
         data = decode(data)
       }
       if (km[0] === subkey) {
-        let n = Number(km[1])
-        for (let id in data)
-          master.index[id] = n
+        let n = Number(km[1]), dk = Object.keys(data)
+        for (let id of dk) {
+          if (id in master.index) {
+            delete data[id]
+          } else {
+            master.index[id] = n
+          }
+        }
         Object.assign(master[km[0]], data)
       } else {
         master[k] = data

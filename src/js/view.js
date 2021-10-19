@@ -10,6 +10,8 @@ const sparkline = require('./sparkline')
 import u from '@kickscondor/umbrellajs'
 
 const CAN_ARCHIVE = (process.env.STORAGE === 'dat')
+const IS_WEBEXT = (process.env.STORAGE === 'webext')
+
 
 const FormFreeze = (e) => {
   e.preventDefault()
@@ -171,7 +173,7 @@ const FollowForm = (match, setup, isNew) => ({follows}, actions) => {
       <div>
         <label for="url">URL <img src={new URL('../images/supported.png', import.meta.url)} /></label>
         <input type="text" id="url" name="url" value={follow.url} autocorrect="off" autocapitalize="none"
-          oninput={e => follow.url = e.target.value} />
+          oninput={e => follow.url = e.target.value} autofocus />
         <p class="note">(See <a href="https://rss.app/">RSS.app</a> and <a href="https://rssbox.herokuapp.com">RSS Box</a> for other services. Or <a href="https://notifier.in/integrations/email-to-rss">Notifier</a> for email newsletters.)</p>
       </div>}
 
@@ -241,9 +243,11 @@ const AddFollow = ({ match, setup }) => ({follows}) => {
 
 const AddFeed = () => ({follows, settings}, actions) => {
   let {list, site} = follows.feeds
+  let actual = list.some(feed => feed.type)
   return <div id="feed-select">
     <h2>Select a Feed</h2>
-    <p>{site.url} has several feeds:</p>
+    <p>{actual ? `${site.url} has several feeds:` :
+      `${site.url} has no official feeds, but a few possible feeds were found:`}</p>
     <form class="feeds" onsubmit={FormFreeze}>
     <ul>
     {list.map(feed =>
@@ -398,7 +402,7 @@ const ListFollow = ({ location, match }) => ({follows}, actions) => {
     }
     if (follow.posts instanceof Array && follow.posts[0]) {
       if (isShown) {
-        frago.sort(follow, sortPosts, showReposts, false)
+        frago.sort(follow, follow.sortBy || sortPosts, showReposts, false)
       }
       lastPost = follow.posts[0]
     }
@@ -457,6 +461,7 @@ const ListFollow = ({ location, match }) => ({follows}, actions) => {
           <li><Setting name="mode-expand" value="all">Expand All</Setting></li>
           <li class="dark-mode"><Setting name="mode-theme" value="dark">Dark Mode</Setting></li>
           <li class="light-mode"><Setting name="mode-theme" value="light">Light Mode</Setting></li>
+          {IS_WEBEXT && <li><Setting name="mode-tab" value="_blank">Open In New Tab</Setting></li>}
         </ul>
       </div>
     </div>
@@ -506,8 +511,8 @@ const ListFollow = ({ location, match }) => ({follows}, actions) => {
                       let postAge = timeAgo(f[sortPosts], now)
                       return <li class={timeDarkness(f[sortPosts], now)}>
                         {f.author && f.author !== follow.author && <span class="author">{f.author}</span>}
-                        <a href={f.url} target="_blank">{TitleTrunc(f.title)}</a>
-                        <span class="ago">{timeAgo(f[sortPosts], now)}</span>
+                        {f.url.startsWith('id:') ? <span class="txt">{TitleTrunc(f.title)}</span> : <a href={f.url}>{TitleTrunc(f.title)}</a>}
+                        {!f.index && <span class="ago">{timeAgo(f[sortPosts], now)}</span>}
                       </li>
                   })}
                 </ol>
@@ -635,7 +640,15 @@ if (process.env.STORAGE === 'electron') {
 export default (state, actions) => {
   let settings = window.location.pathname === "/settings.html"
   if (!state.follows.started)
-    return ''
+    return <div id="scanner">
+      <div id="logo">
+        <img src={new URL('../images/fc.png', import.meta.url)} />
+      </div>
+      <div id="loading">
+        <img src={new URL('../images/catspace.webp', import.meta.url)} alt="..." />
+        <p>LOADING</p>
+      </div>
+    </div>
 
   //	
   // Report progress on follows that are currently updating.	

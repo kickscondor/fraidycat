@@ -267,7 +267,9 @@ if (!canRun) {
       tray.on("click", () => win.show())
     }
     createWindow()
-    autoUpdater.checkForUpdatesAndNotify()
+    if (!isLinux) {
+      autoUpdater.checkForUpdatesAndNotify()
+    }
   })
 
   if (!isWindows) {

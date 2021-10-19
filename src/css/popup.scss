@@ -1,0 +1,84 @@
+body {
+  background-color: #cdd;
+    margin: 0;
+      padding: 0;
+}
+#insert {
+  border: solid 8px #cdd;
+  border-radius: 20px;
+  background-color: #dee;
+  color: #579;
+  font-family: "Inria Sans";
+  font-size: 1.1rem;
+  width: 300px;
+}
+#card {
+  margin: 12px;
+}
+#avatar {
+  float: left;
+}
+#avatar img {
+  width: 64px;
+    border: solid 4px #fff;
+    max-height: 200px;
+      margin-right: 16px;
+    margin-bottom: 12px;
+}
+h1 {
+  font-size: 1.3rem;
+  margin: 0;
+}
+h2 {
+  margin: 0;
+  font-size: 0.8rem;
+    font-style: italic;
+}
+button {
+  border: none;
+    border: solid 4px transparent;
+    box-shadow: 4px 4px 0 0 #AAA;
+  display: block;
+  margin: 20px 12px 12px 12px;
+  padding: 6px;
+    width: 276px;
+  font-family: "Inria Sans";
+    font-size: 1rem;
+  color: white;
+  background-color: #557;
+}
+button:hover {
+  border: solid 4px #FFFFFF;
+}
+#add {
+  background: #943;
+}
+button a {
+  color: white;
+}
+p.or {
+  position: relative;
+    height: 12px;
+    border-bottom: solid 2px #BCC;
+      margin: 0 12px 10px 12px;
+      color: #899;
+}
+p.or span {
+      left: 110px;
+  position: absolute;
+  background-color: #dee;
+  padding: 0 8px;
+}
+a.no {
+  text-decoration: none;
+    padding: 4px;
+}
+div.source {
+  clear: both;
+  margin: 12px 0px;
+}
+div.source span {
+  font-size: 0.7rem;
+  padding-left: 26px;
+}
+@font-face{font-family:Inria Sans;font-style:normal;font-weight:400;font-display:swap;src:local("Inria Sans Regular"),local("InriaSans-Regular"),url(/fonts/inria-400.woff2) format("woff2");unicode-range:u+0100-024f,u+0259,u+1e??,u+2020,u+20a0-20ab,u+20ad-20cf,u+2113,u+2c60-2c7f,u+a720-a7ff}@font-face{font-family:Inria Sans;font-style:normal;font-weight:400;font-display:swap;src:local("Inria Sans Regular"),local("InriaSans-Regular"),url(/fonts/inria-400x.woff2) format("woff2");unicode-range:u+00??,u+0131,u+0152-0153,u+02bb-02bc,u+02c6,u+02da,u+02dc,u+2000-206f,u+2074,u+20ac,u+2122,u+2191,u+2193,u+2212,u+2215,u+feff,u+fffd}@font-face{font-family:Inria Sans;font-style:normal;font-weight:700;font-display:swap;src:local("Inria Sans Bold"),local("InriaSans-Bold"),url(/fonts/inria-700.woff2) format("woff2");unicode-range:u+0100-024f,u+0259,u+1e??,u+2020,u+20a0-20ab,u+20ad-20cf,u+2113,u+2c60-2c7f,u+a720-a7ff}@font-face{font-family:Inria Sans;font-style:normal;font-weight:700;font-display:swap;src:local("Inria Sans Bold"),local("InriaSans-Bold"),url(/fonts/inria-700x.woff2) format("woff2");unicode-range:u+00??,u+0131,u+0152-0153,u+02bb-02bc,u+02c6,u+02da,u+02dc,u+2000-206f,u+2074,u+20ac,u+2122,u+2191,u+2193,u+2212,u+2215,u+feff,u+fffd}

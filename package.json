@@ -13,7 +13,7 @@
   "repository": {
     "url": "https://github.com/kickscondor/fraidycat"
   },
-  "version": "1.1.5",
+  "version": "2.0.0",
   "scripts": {
     "build": "pnpm run build:desktop && node ./src/package.js build/desktop",
     "build:desktop": "fsbin emptyDir build/desktop && fsbin copy build/frontend build/desktop/frontend && cross-env STORAGE=desktop parcel build src/js/server/main.js --target desktop",
