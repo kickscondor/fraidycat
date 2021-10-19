@@ -1,11 +1,13 @@
 const ent = require('ent/decode')
-const normalizeUrl = require('normalize-url')
+let normalizeUrl = null
+import('normalize-url').then(x => normalizeUrl = x.default)
+const sanitizeHtml = require('./sanitize')
 const u = require('@kickscondor/umbrellajs')
 
 const house = "\u{1f3e0}"
 
 const Importances = [
-  [0,   "Real-time", "\u{1f684}", "Following this with complete devotion."], // 1f525
+  [0,   "Realtime", "\u{1f684}", "Following this with complete devotion."], // 1f525
   [1,   "Frequent", "\u{1f304}", "Keep just out of view. Nevertheless: beloved."], // 2728
   [7,   "Occasional", "\u{1f407}", "For when I have free time."], 
   [30,  "Sometime", "\u{1f34a}", "Maintaining a mild curiosity here."],
@@ -46,6 +48,188 @@ function getMaxIndex (index) {
   return Math.max(...vals)
 }
 
+const ATTR_DIM = 1
+const ATTR_SRC = 2
+const ATTR_HREF = 3
+
+//
+// Sanitize some attributes where a range of options is allowed
+// TODO: Scan 'style' attributes for acceptable CSS.
+//
+function sanitizeAttr(ele, name, type, attr, url) {
+  let a = ele.attributes.getNamedItem(name), m
+  if (a && a.value) {
+    let val = a.value
+    switch (type) {
+      case ATTR_DIM:
+        m = val.match(/^(\d+)$|^(\d+)%$/)
+        if (!m) {
+          return false
+        }
+        if (m[1]) {
+          //
+          // Allow from 5px to 500px as a dimension
+          // 
+          let n = Number(m[1])
+          if (n < 5 && n > 500) {
+            return false
+          }
+        } else if (m[2]) {
+          //
+          // Allow 5% to 100 dimension size
+          //
+          let n = Number(m[2])
+          if (n < 5 && n > 100) {
+            return false
+          }
+        }
+      break
+      case ATTR_SRC:
+        //
+        // Allow HTTPS and Hypercore network URLs
+        //
+        m = a.value.match(/^((https?|hyper):)?\/\/|(\w+:\/\/)/)
+        if (m) {
+          if (m[3]) {
+            return false
+          }
+        } else {
+          val = new URL(val, url).toString()
+        }
+      break
+      case ATTR_HREF:
+        //
+        // Allow a few different link URL types
+        // TODO: Allow fragment links and rewrite the IDs to make them work.
+        //
+        m = a.value.match(/^((https?|ftp|mailto|hyper):)?\/\/|(\w+:\/\/)/)
+        if (m) {
+          if (!m[3]) {
+            attr.target = '_blank'
+          } else {
+            return false
+          }
+        } else {
+          attr.target = '_blank'
+          val = new URL(val, url).toString()
+        }
+      break
+    }
+
+    attr[name] = val
+    return true
+  }
+  return false
+}
+
+//
+// Whitelist for specific tags allowed in HTML throughout Fraidycat
+//
+function sanitize(html, url) {
+  let dirty = html
+  if (dirty.nodeType >= 2 && dirty.nodeType <= 4) {
+    return html
+  } else if (dirty.nodeType >= 5 && dirty.nodeType <= 8) {
+    return ''
+  }
+
+  return sanitizeHtml(dirty, ele => {
+    let attr = {}
+    if ((ele.nodeType >= 2 && ele.nodeType <= 4) || ele.nodeType === 11) {
+      return true
+    } else if (ele.nodeType >= 5 && ele.nodeType <= 10) {
+      return false
+    }
+
+    switch (ele.tagName.toUpperCase()) {
+      case 'STYLE': case 'SCRIPT':
+        ele.parentNode.removeChild(ele)
+        return false
+      case 'AUDIO':
+      case 'VIDEO':
+        sanitizeAttr(ele, 'width', ATTR_DIM, attr)
+        sanitizeAttr(ele, 'height', ATTR_DIM, attr)
+        attr.controls = 'true'
+        break
+      case 'SOURCE':
+        sanitizeAttr(ele, 'type', 0, attr)
+        if (!sanitizeAttr(ele, 'src', ATTR_SRC, attr, url)) {
+          return false
+        }
+        break
+      case 'TRACK':
+        sanitizeAttr(ele, 'kind', 0, attr)
+        sanitizeAttr(ele, 'srclang', 0, attr)
+        sanitizeAttr(ele, 'label', 0, attr)
+        if (!sanitizeAttr(ele, 'src', ATTR_SRC, attr, url)) {
+          return false
+        }
+        break
+      case 'IFRAME':
+      case 'IMG':
+        sanitizeAttr(ele, 'width', ATTR_DIM, attr)
+        sanitizeAttr(ele, 'height', ATTR_DIM, attr)
+        if (!sanitizeAttr(ele, 'src', ATTR_SRC, attr, url)) {
+          return false
+        }
+        break
+      case 'A':
+        sanitizeAttr(ele, 'alt', 0, attr)
+        if (!sanitizeAttr(ele, 'href', ATTR_HREF, attr, url)) {
+          return false
+        }
+      case 'DFN': case 'ABBR':
+        sanitizeAttr(ele, 'title', 0, attr)
+
+      //
+      // With text markup, eliminate tags that are basically empty.
+      //
+      case 'BLOCKQUOTE': case 'P': case 'NL': case 'LABEL':
+      case 'CODE': case 'CAPTION': case 'CITE': case 'LI': case 'ADDRESS':
+      case 'TH': case 'TD': case 'PRE': case 'DT': case 'DD':
+      case 'H1': case 'H2': case 'H3': case 'H4': case 'H5': case 'H6':
+      case 'FIGCAPTION': case 'SUMMARY': case 'TIME':
+      case 'DIV':
+        if (!ele.textContent.trim() && !ele.hasChildNodes()) {
+          return false
+        }
+        break
+
+      //
+      // With container elements, remove them if they have no children
+      //
+      case 'DL': case 'DI': case 'UL': case 'OL': case 'DEL': case 'INS':
+      case 'B': case 'I': case 'STRONG': case 'EM': case 'STRIKE':
+      case 'S': case 'SMALL': case 'SUB': case 'SUP': case 'U':
+      case 'TABLE': case 'THEAD': case 'TBODY': case 'TFOOT': case 'TR':
+      case 'DETAILS': case 'FIGURE': case 'ARTICLE': case 'ASIDE':
+      case 'FOOTER': case 'HEADER': case 'MAIN':
+        if (!ele.hasChildNodes()) {
+          return false
+        }
+
+      case 'HR':
+        break
+      case 'BR': case 'WBR':
+        if (ele.parentNode.firstChild == ele || ele.parentNode.lastChild == ele)
+          return false
+        break
+      default:
+        return false
+    }
+
+    while (ele.attributes.length > 0) {
+      ele.removeAttribute(ele.attributes[0].name)
+    }
+
+    for (let k in attr) {
+      ele.setAttribute(k, attr[k])
+    }
+
+    return true
+  })
+}
+
 function html2text (html) {
   if (html.replace)
     html = html.replace(/[a-z]+:\/\//g, ' ')
@@ -56,9 +240,9 @@ function urlToFeed(abs, href) {
   return normalizeUrl(url.resolve(abs, href), {stripWWW: false, stripHash: true, removeTrailingSlash: false})
 }
 
-function urlToNormal (link) {
+function urlToNormal (link, stripHash) {
   try {
-    return normalizeUrl(link, {stripProtocol: true, removeDirectoryIndex: true, stripHash: true})
+    return normalizeUrl(link, {stripProtocol: true, removeDirectoryIndex: true, stripHash})
   } catch {
     return link
   }
@@ -127,5 +311,5 @@ function xpathDom(doc, node, path, asText, ns) {
 }
 
 module.exports = {fixupHeaders, followTitle, getIndexById, getMaxIndex, house,
-  html2text, innerHtmlDom, isValidFollow, parseDom, responseToObject,
+  html2text, innerHtmlDom, isValidFollow, parseDom, responseToObject, sanitize,
   sortBySettings, urlToFeed, urlToID, urlToNormal, xpathDom, Importances}

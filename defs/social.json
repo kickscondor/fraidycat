@@ -1,11 +1,14 @@
 {
   "domains": {
     "api.twitch.tv": {"headers:Client-Id": "vnvcshh0aehfkq0bvu6rzpbtaf25et",
-      "headers:Authorization": "Bearer wzj7gzgrae4ha1n5rl12jqrofm0vvo"},
-    "m.facebook.com": {"headers:User-Agent": "curl/7.58.0"},
-    "twitter.com": {"headers:User-Agent": "curl/7.58.0"},
-    "www.instagram.com": {"headers:User-Agent": "curl/7.58.0"},
-    "www.youtube.com": {"headers:User-Agent": "curl/7.58.0"}
+      "headers:Authorization": "Bearer 5rcbanhgq25nek8q67jixqukpj6poi"},
+    "api.twitter.com": {"headers:Authorization": "Bearer AAAAAAAAAAAAAAAAAAAAANRILgAAAAAAnNwIzUejRCOuH5E6I8xnZz4puTs=1Zv7ttfk8LF81IUq16cHjhLTvJu4FA33AGWWjCpTnA",
+      "headers:DNT": "1", "headers:Content-Type": "application/json",
+      "headers:X-Twitter-Active-User": "yes", "headers:Authority": "api.twitter.com",
+      "headers:Accept-Language": "en-US,en;q=0.9", "headers:Accept": "*/*"},
+    "api.tumblr.com": {"headers:Authorization": "Bearer aIcXSOoTtqrzR8L8YEIOmBeW94c3FmbSNSWAUbxsny9KKx5VFh"},
+    "m.facebook.com": {"headers:User-Agent": "curl/7.68.0"},
+    "www.youtube.com": {"headers:User-Agent": "curl/7.68.0"}
   },
 
   "default": {
@@ -13,7 +16,7 @@
   },
 
   "feed": {
-    "accept": ["rss", "atom", "rdf", "jsonfeed"]
+    "accept": ["rss", "atom", "rdf", "twtxt", "jsonfeed"]
   },
 
   "rdf": {
@@ -71,7 +74,10 @@
           "./link[@type='text/html' and @rel='alternate']/@href",
           "./link[@rel='alternate' or @type='text/html']/@href",
           "./link[not(@rel)]/@href", "./enclosure/@url"]},
-        {"var": "out:publishedAt", "op": "./pubDate/text()", "mod": ["date"]}
+        {"var": "out:publishedAt", "op": "./pubDate/text()", "mod": ["date"]},
+        {"op": ["./enclosure[starts-with(@type, 'audio/')]"], "var": "out:embeds", "acceptXml": [
+          {"var": "out:audio:full", "op": "@url"}
+        ]}
       ]
     },
     "acceptXml": [
@@ -98,15 +104,17 @@
   "atom": {
     "namespaces": {
       "atom": "http://www.w3.org/2005/Atom",
-      "fc": "http://fraidyc.at/ext/1.0"
+      "fc": "http://fraidyc.at/ext/1.0",
+      "media": "http://search.yahoo.com/mrss/"
     },
     "rules": {
       "entry": [
         {"var": "out:title", "op": "./atom:title/text()"},
-        {"var": "out:html", "op": "./atom:content[@type='html']"},
+        {"var": "out:html", "op": ["./atom:content[@type='html']", "./atom:content[@type='xhtml']"]},
         {"var": "out:url", "op": ["./atom:link[@type='text/html' and @rel='alternate'][1]/@href",
           "./atom:link[@rel='alternate' or @type='text/html'][1]/@href",
           "./atom:link[not(@rel)][1]/@href", "./atom:id/text()"], "mod": ["url"]},
+        {"var": "out:graphic:thumb", "op": "./media:group/media:thumbnail[1]/@url"},
         {"var": "out:publishedAt", "op": ["./atom:published/text()", "./atom:updated/text()"], "mod": ["date"]},
         {"var": "out:updatedAt", "op": "./atom:updated/text()", "mod": ["date"]}
       ]
@@ -135,22 +143,22 @@
   "jsonfeed": {
     "rules": {
       "entry": [
-        {"var": "out:title", "op": "$.title"},
-        {"var": "out:html", "op": "$.content_html"},
+        {"var": "out:title", "op": "$.title", "mod": ["html-to-text"]},
+        {"var": "out:html", "op": "$.content_html", "mod": ["str"]},
         {"var": "out:url", "op": "$.url", "mod": ["url"]},
         {"var": "out:publishedAt", "op": "$.date_published", "mod": ["date"]},
         {"var": "out:updatedAt", "op": "$.date_modified", "mod": ["date"]}
       ]
     },
     "acceptJson": [
-      {"var": "out:title", "op": "$.title"},
+      {"var": "out:title", "op": "$.title", "mod": ["html-to-text"]},
       {"var": "out:photos:avatar", "op": "$.icon", "mod": ["url"]},
-      {"var": "out:photos:favicon", "op": "$.favicon"},
-      {"var": "out:description", "op": "$.description"},
-      {"var": "out:url", "op": "$.home_page_url"},
+      {"var": "out:photos:favicon", "op": "$.favicon", "mod": ["url"]},
+      {"var": "out:description", "op": "$.description", "mod": ["str"]},
+      {"var": "out:url", "op": "$.home_page_url", "mod": ["url"]},
       {"op": "$._status.*", "var": "out:status", "acceptJson": [
-        {"var": "out:label", "op": "$.label"},
-        {"var": "out:type", "op": "$.type"},
+        {"var": "out:label", "op": "$.label", "mod": ["str"]},
+        {"var": "out:type", "op": "$.type", "mod": ["str"]},
         {"rule": "entry"}
       ]},
       {"op": "$.items.*", "var": "out:posts", "acceptJson": [
@@ -163,19 +171,20 @@
     "acceptHtml": [
       {"var": "out:title", "op": "//head/title/text()"},
       {"op": "//meta[@name='generator' and @content='TiddlyWiki']", "use": "tiddlywiki"},
-      {"op": ["//link[(@rel='alternate' or @rel='feed') and (@type='application/atom+xml' or @type='application/rss+xml' or @type='application/json')]",
-              "//a[contains(concat(@href, ' ', text()), 'rss') or contains(concat(@href, ' ', text()), 'feed')]"],
+      {"op": "//head/script[@id='versionArea' and contains(text(), 'TiddlyWiki')]", "use": "tiddlywiki-classic"},
+      {"op": ["//link[(@rel='alternate' or @rel='feed') and (@type='application/atom+xml' or @type='application/rss+xml' or @type='application/json' or @type='text/plain') and string-length(@href) > 0]",
+              "//a[contains(concat(@href, ' ', text()), 'rss') or contains(concat(@href, ' ', text()), 'feed') and string-length(@href) > 0]"],
        "var": "out:sources", "acceptHtml": [
         {"var": "out:url",   "op": "@href", "mod": ["url"]},
         {"var": "out:title", "op": ["@title", "=Possible feed"]},
         {"var": "out:type",  "op": "@type"}
       ]},
-      {"op": "//*[@rel and contains(concat(' ', normalize-space(@rel), ' '), ' me ')]",
+      {"op": "//*[@rel and contains(concat(' ', normalize-space(@rel), ' '), ' me ') and string-length(@href) > 0]",
        "var": "out:rels", "acceptHtml": [
         {"var": "out:url", "op": "@href", "mod": ["url"]},
         {"var": "out:title", "op": "text()"}
       ]},
-      {"op": "//link[contains(@rel, 'icon') and not(contains(@rel, 'mask'))]",
+      {"op": "//link[contains(@rel, 'icon') and not(contains(@rel, 'mask')) and string-length(@href) > 0]",
        "acceptHtml": [
          {"var": "sizes", "op": ["@sizes", "=avatar"]},
          {"var": "out:photos:$sizes",   "op": "@href", "mod": ["url"]}
@@ -196,6 +205,39 @@
         {"var": "out:url", "op": "=$title", "mod": ["slug", "url"]},
         {"var": "out:title", "op": "=$title"}
       ]}
+    ]
+  },
+
+  "tiddlywiki-classic": {
+    "acceptHtml": [
+      {"var": "out:title", "op": "//head/title/text()"},
+      {"var": "out:photos:avatar", "op": ["//head/link[@rel='shortcut icon']/@href"], "mod": ["url"]},
+      {"var": "out:flags", "op": "=COMPLETE"},
+      {"op": "//div[@id='storeArea']/div[not(starts-with(@title, concat('$', ':/'))) and @created]",
+       "var": "out:posts", "acceptHtml": [
+        {"var": "title", "op": "@title"},
+        {"var": "out:publishedAt", "op": "@created", "mod": ["int", "*100", "uppercase", "date"]},
+        {"var": "out:updatedAt", "op": "@modified", "mod": ["int", "*100", "uppercase", "date"]},
+        {"var": "out:url", "op": "=$title", "mod": ["slug", "url"]},
+        {"var": "out:title", "op": "=$title"}
+      ]}
+    ]
+  },
+
+  "twtxt": {
+    "acceptText": [
+      {"var": "out:title", "op": "^#\\s*nick\\s*=\\s*(.+)$"},
+      {"var": "out:url",   "op": ["^#\\s*source\\s*=\\s*(.+)$", "^#\\s*url\\s*=\\s*(.+)$", "^#\\s*twturl\\s*=\\s*(.+)$"]},
+      {"var": "out:flags", "op": "=COMPLETE"},
+      {"var": "mime",      "op": "=application/json"},
+      {"var": "out:posts", "op": "^(?<timestamp>\\d{4}-\\d{2}-\\d{2}[tT]\\d{2}:\\d{2}\\S+)\\t(?<text>.+)$",
+       "acceptJson": [
+         {"var": "out:url", "op": "=id:$index"},
+         {"var": "out:publishedAt", "op": "$.timestamp", "mod": ["date"]},
+         {"var": "html", "op": "$.text", "mod": ["s/([@#])<(\\w+) ([^>]+)>|\\[(.+?)\\]\\((.+?)\\)|(https?:\\/(\\/\\S+))/<a href=\"$3$5$6\">$1$2$4$6<\\/a>/g"]},
+         {"var": "out:html", "op": "=<p>$html</p>"}
+       ]
+      }
     ]
   },
 
@@ -229,26 +271,43 @@
         {"var": "itemId", "op": "$.item_id"},
         {"var": "itemType", "op": "$.item_type"},
         {"var": "out:url", "op": ["=${items:$itemType-$itemId}", "=/releases"], "mod": ["url"]},
-        {"var": "out:title", "op": "$.title"},
+        {"var": "out:title", "op": "$.title", "mod": ["str"]},
+        {"var": "type", "op": "$.item_type"},
+        {"var": "out:html", "op": "=<iframe width='100%' height='42' src='https://bandcamp.com/EmbeddedPlayer/$type=$itemId/size=small/bgcol=ffffff/linkcol=0687f5/transparent=true/' seamless></iframe>"},
+        {"var": "art", "op": "$.art_id"},
+        {"var": "out:graphic:thumb", "op": "=https://f4.bcbits.com/img/a${art}_2.jpg"},
+        {"var": "out:graphic:full", "op": "=https://f4.bcbits.com/img/a${art}_10.jpg"},
         {"var": "out:publishedAt", "op": "$.release_date", "mod": ["date"]}
       ]}
     ]
   },
 
+  "deviantart.com:artist": {
+    "match": "^deviantart\\.com\\/([-\\w]+)",
+    "arguments": [0, {"var": "username"}],
+    "url": "https://backend.deviantart.com/rss.xml?q=gallery%3A$username",
+    "patch": [
+      {"var": "out:url", "op": "=https://www.deviantart.com/$username/gallery"}
+    ],
+    "accept": ["rss"]
+  },
+
   "facebook.com:user": {
-    "match": "^(?:[\\.\\w]+\\.)?facebook\\.com\\/([^\\/?]+)",
+    "match": "^(?:[\\.\\w]+\\.)?facebook\\.com\\/((?:groups\\/)?[^\\/?]+)",
     "arguments": [0, {"var": "user"}],
     "url": "https://m.facebook.com/$user",
     "acceptHtml": [
       {"var": "out:title", "op": "//title/text()"},
+      {"var": "out:author", "op": "//title/text()"},
       {"var": "out:photos:avatar", "op": "//meta[@property='og:image']/@content"},
       {"var": "out:description", "op": "//meta[@property='og:description']/@content"},
-      {"op": "//div[./span/p]/..", "var": "out:posts", "acceptHtml": [
+      {"op": "//table[.//h3//a]/../..", "var": "out:posts", "acceptHtml": [
         {"var": "obj", "op": ".//a/@href"},
         {"var": "story", "op": "=$obj", "match": "story_fbid%22%3A%5B([0-9]+)"},
         {"var": "page", "op": "=$obj", "match": "page_id%22%3A([0-9]+)"},
         {"var": "out:url", "op": "=https://www.facebook.com/story.php?story_fbid=$story&id=$page"},
-        {"var": "out:title", "op": "./div/span//text()"},
+        {"var": "out:author", "op": ".//h3//strong[1]/a/text()"},
+        {"var": "out:html", "op": [".//div/span", "."]},
         {"var": "out:publishedAt", "op": "=$obj", "match": "publish_time%22%3A([0-9]+)%2C",
          "mod": ["int", "*1000", "date"]}
       ]}
@@ -261,20 +320,23 @@
     "url": "https://www.instagram.com/$username",
     "acceptHtml": [
       {"op": "//link[@rel='canonical' and contains(@href, 'instagram.com/accounts/')]", "use": "down"},
-      {"var": "out:title", "op": "//title/text()"},
       {"op": "//script[contains(text(), 'profile_pic_url')]", "match": "({.+});",
         "acceptJson": [
           {"op": "$.entry_data.ProfilePage[0].graphql.user", "acceptJson": [
-            {"var": "out:description", "op": "$.biography"},
-            {"var": "out:photos:avatar", "op": "$.profile_pic_url"},
+            {"var": "out:title", "op": "$.full_name", "mod": ["str"]},
+            {"var": "out:description", "op": "$.biography", "mod": ["str"]},
+            {"var": "out:photos:avatar", "op": "$.profile_pic_url", "mod": ["url"]},
             {"op": "$.edge_owner_to_timeline_media.edges.*", "var": "out:posts",
              "acceptJson": [
               {"var": "shortcode", "op": "$.node.shortcode"},
               {"var": "out:url", "op": "=https://www.instagram.com/p/$shortcode"},
               {"var": "out:publishedAt", "op": "$.node.taken_at_timestamp",
                 "mod": ["int", "*1000", "date"]},
+              {"var": "out:video:full", "op": "$.node.video_url"},
+              {"var": "out:graphic:full", "op": "$.node.display_url", "mod": ["url"]},
+              {"var": "out:graphic:thumb", "op": "$.node.thumbnail_src", "mod": ["url"]},
               {"var": "out:text", "op": ["$.node.edge_media_to_caption.edges[0].node.text",
-                "$.node.accessibility_caption"]}
+                "$.node.accessibility_caption"], "mod": ["str"]}
             ]}
         ]}
       ]}
@@ -304,13 +366,34 @@
       {"var": "out:photos:avatar", "op": "//img[@class='avatar-image']/@src"},
       {"op": "//div[@data-projects]/@data-projects", "var": "out:posts",
        "match": ".", "acceptJson": [
-        {"var": "out:title", "op": "$.name"},
-        {"var": "out:url", "op": "$.urls.web.project"},
+        {"var": "out:title", "op": "$.name", "mod": ["str"]},
+        {"var": "out:url", "op": "$.urls.web.project", "mod": ["url"]},
         {"var": "out:publishedAt", "op": "$.launched_at",
           "mod": ["int", "*1000", "date"]},
         {"var": "out:updatedAt", "op": "$.state_changed_at",
           "mod": ["int", "*1000", "date"]},
-        {"var": "out:text", "op": "$.blurb"}
+        {"var": "out:text", "op": "$.blurb", "mod": ["str"]}
+      ]}
+    ]
+  },
+
+  "neocities.org:updates-dates": {
+    "url": "https://neocities.org/site/$name.rss",
+    "accept": ["atom"]
+  },
+
+  "neocities.org:updates": {
+    "match": "^([\\-\\.\\w]+)\\.neocities\\.org(\\/|$)",
+    "arguments": [0, {"var": "name"}],
+    "url": "https://neocities.org/site/$name",
+    "depends": ["neocities.org:updates-dates"], 
+    "acceptHtml": [
+      {"var": "out:title", "op": "//title/text()", "mod": ["s/Neocities - //"]},
+      {"var": "out:photos:avatar", "op": "//fieldset/a[@class='screenshot']/@style",
+       "mod": ["s/^.*background-image:url\\((.+)\\.\\w+\\.\\w+\\);.*$/https:\\/\\/neocities.org$1.50x50.jpg/"]},
+      {"op": "//div[@class='news-item update']", "var": "*", "acceptHtml": [
+        {"var": "out:posts:${index}:title", "op": ".//div[@class='file']//span/text()"},
+        {"var": "out:posts:${index}:url", "op": ".//div[@class='title']/span[@class='date']/a/@href", "mod": ["s/^/https:\\/\\/neocities.org"]}
       ]}
     ]
   },
@@ -320,14 +403,20 @@
     "arguments": [0, {"var": "user"}],
     "url": "https://www.patreon.com/$user",
     "render": [{
-      "match": "^patreon\\.com/api/posts",
+      "match": "^patreon\\.com/api/posts.+campaign_id%5D=(\\d+)",
+      "validate": ["campaignId"],
       "acceptJson": [
         {"op": "$.data.*", "var": "out:posts", "acceptJson": [
-          {"var": "out:title", "op": "$.attributes.title"},
-          {"var": "out:url", "op": "$.attributes.url"},
-          {"var": "out:description", "op": "$.attributes.teaser_text"},
+          {"var": "out:title", "op": "$.attributes.title", "mod": ["str"]},
+          {"var": "out:url", "op": "$.attributes.url", "mod": ["url"]},
+          {"var": "out:description", "op": "$.attributes.teaser_text", "mod": ["str"]},
           {"var": "out:publishedAt", "op": "$.attributes.published_at",
-            "mod": ["date"]}
+            "mod": ["date"]},
+          {"var": "out:text", "op": "$.attributes.teaser_text"},
+          {"var": "out:html", "op": "$.attributes.content"},
+          {"op": "$.attributes.post_file", "var": "out:embeds", "acceptJson": [
+            {"var": "out:audio:full", "op": "$.url"}
+          ]}
         ]}
       ]
     }],
@@ -335,7 +424,7 @@
       {"op": "//script[contains(text(), 'window.patreon.bootstrap')]",
        "match": "window.patreon.bootstrap,\\s+({[\\s\\S]+?})\\);",
        "acceptJson": [
-        {"var": "out:photos:avatar", "op": "$.campaign.data.attributes.avatar_photo_url"},
+        {"var": "out:photos:avatar", "op": "$.campaign.data.attributes.avatar_photo_url", "mod": ["url"]},
         {"var": "campaignId", "op": "$.campaign.data.id"}
        ]},
       {"var": "out:title", "op": "//meta[@name='title']/@content"},
@@ -354,11 +443,11 @@
     "url": "https://www.pinterest.com/resource/UnauthProfilePinFeedResource/get/?source_url=%2F$user%2F&data=%7B%22options%22%3A%7B%22isPrefetch%22%3Afalse%2C%22add_vase%22%3Atrue%2C%22field_set_key%22%3A%22unauth_react%22%2C%22page_size%22%3A25%2C%22username%22%3A%22$user%22%7D%2C%22context%22%3A%7B%7D%7D&_=1580963929964",
     "acceptJson": [
       {"op": "$.resource_response.data.*", "var": "out:posts", "acceptJson": [
-        {"var": "out:title", "op": ["$.rich_metadata.title", "$.pin_join.seo_description"]},
-        {"var": "out:text", "op": ["$.rich_metadata.description"]},
+        {"var": "out:title", "op": ["$.rich_metadata.title", "$.pin_join.seo_description"], "mod": ["str"]},
+        {"var": "out:text", "op": ["$.rich_metadata.description"], "mod": ["str"]},
         {"var": "out:publishedAt", "op": "$.created_at", "mod": ["date"]},
-        {"var": "out:graphic:full", "op": "$.images.orig.url"},
-        {"var": "out:url", "op": "$.link"}
+        {"var": "out:graphic:full", "op": "$.images.orig.url", "mod": ["url"]},
+        {"var": "out:url", "op": "$.link", "mod": ["url"]}
       ]}
     ]
   },
@@ -375,49 +464,102 @@
     ]
   },
 
+  "reddit.com:post": {
+    "match": "^(?:[\\.\\w]+\\.)?reddit\\.com\\/r\\/([^\\/]+)/comments/(\\w+).*?(\\?.*)?$",
+    "arguments": [0, {"var": "sub"}, {"var": "id"}, {"var": "query"}],
+    "url": "https://www.reddit.com/r/$sub/comments/$id/.rss$query",
+    "accept": ["atom"]
+  },
+
+  "reddit.com:features": {
+    "match": "^(?:[\\.\\w]+\\.)?reddit\\.com\\/r\\/([^\\/]+)/(new|comments)/?$",
+    "arguments": [0, {"var": "sub"}, {"var": "feature"}],
+    "url": "https://www.reddit.com/r/$sub/$feature/.rss?sort=$feature",
+    "accept": ["atom"]
+  },
+
   "reddit.com:sub": {
-    "match": "^(?:[\\.\\w]+\\.)?reddit\\.com\\/r\\/([^\\/]+)",
+    "match": "^(?:[\\.\\w]+\\.)?reddit\\.com\\/r\\/([^\\/]+)/?$",
     "arguments": [0, {"var": "sub"}],
     "url": "https://www.reddit.com/r/$sub/top/.rss?sort=top",
     "accept": ["atom"]
   },
 
   "reddit.com:user": {
-    "match": "^(?:[\\.\\w]+\\.)?reddit\\.com\\/user\\/([^\\/]+)",
+    "match": "^(?:[\\.\\w]+\\.)?reddit\\.com\\/u(?:ser)?\\/([^\\/]+)/?$",
     "arguments": [0, {"var": "user"}],
     "url": "https://www.reddit.com/user/$user/.rss",
     "accept": ["atom"]
   },
 
+  "reddit.com:search": {
+    "match": "^(?:[\\.\\w]+\\.)?reddit\\.com\\/(.*?)search\\?(.+)$",
+    "arguments": [0, {"var": "sub"}, {"var": "query"}],
+    "url": "https://www.reddit.com/${sub}search.rss?$query",
+    "accept": ["atom"]
+  },
+
   "soundcloud.com:user": {
-    "match": "^soundcloud\\.com/",
-    "acceptHtml": [
-      {"var": "out:title", "op": "//title/text()"},
-      {"var": "out:photos:avatar", "op": "//meta[@property='twitter:image']/@content"},
-      {"var": "out:description", "op": "//meta[@property='twitter:description']/@content"},
-      {"op": "//noscript//article[@class='audible']", "var": "out:posts", "acceptHtml": [
-        {"var": "out:url", "op": ".//a[@itemprop='url']/@href", "mod": ["url"]},
-        {"var": "out:publishedAt", "op": ".//time[@pubdate]/text()",
-          "mod": ["date"]},
-        {"var": "out:title", "op": ".//a[@itemprop='url']/text()"}
+    "url": "https://api-widget.soundcloud.com/resolve?url=https%3A//soundcloud.com/$user&format=json&client_id=Iy5e1Ri4GTNgrafaXe4mLpmJLXbXEfBR",
+    "acceptJson": [
+      {"var": "id", "op": "$.id"},
+      {"var": "out:title", "op": "$.username"},
+      {"var": "out:photos:avatar", "op": "$.avatar_url"},
+      {"var": "out:description", "op": "$.description"}
+    ]
+  },
+
+  "soundcloud.com:tracks": {
+    "match": "^soundcloud\\.com/([^\\/]+)",
+    "arguments": [0, {"var": "user"}],
+    "depends": ["soundcloud.com:user"],
+    "url": "https://api-widget.soundcloud.com/users/$id/tracks?limit=20&offset=0&linked_partitioning=1&format=json&client_id=Iy5e1Ri4GTNgrafaXe4mLpmJLXbXEfBR",
+    "acceptJson": [
+      {"op": "$.collection.*", "var": "out:posts", "acceptJson": [
+        {"var": "out:url", "op": "$.permalink_url"},
+        {"var": "out:publishedAt", "op": "$.created_at", "mod": ["date"]},
+        {"var": "out:title", "op": "$.title"},
+        {"var": "uri", "op": "$.uri", "mod": ["encode"]},
+        {"var": "out:html", "op": "=<iframe width='100%' height='166' scrolling='no' frameborder='no' src='https://w.soundcloud.com/player/?url=$uri&color=%23ff5500&auto_play=false&hide_related=false&show_comments=false&show_user=false&show_reposts=false&show_teaser=false'></iframe>"}
       ]}
     ]
   },
 
   "tumblr.com:user": {
-    "match": "^([\\-\\.\\w]+)\\.tumblr\\.com\\/rss",
+    "match": "^([\\-\\.\\w]+)\\.tumblr\\.com(\\/|$)",
     "arguments": [0, {"var": "user"}],
-    "patch": [
-      {"var": "out:author", "op": "=$user"},
-      {"var": "out:posts", "op": "$.posts.*", "patch": [
-        {"var": "out", "op": "$"},
-        {"op": "$.html", "acceptHtml": [
-          {"var": "out:title"},
-          {"var": "out:author", "op": "/p/a[@class='tumblr_blog']"}
-        ]}
+    "url": "https://api.tumblr.com/v2/blog/$user.tumblr.com/posts",
+    "rules": {
+      "entry": [
+        {"var": "id",                "op": ["$.trail[0].post.id", "$.id_string"]},
+        {"var": "author",            "op": ["$.trail[0].blog.name", "$.blog_name"]},
+        {"var": "out:title",         "op": ["$.title", "$.summary", "$.date"], "mod": ["str"]},
+        {"var": "out:author",        "op": "=$author"},
+        {"var": "out:html",          "op": "$.body", "mod": ["str"]},
+        {"var": "out:url",           "op": "=https://$author.tumblr.com/post/$id", "mod": ["url"]},
+        {"var": "out:publishedAt",   "op": "$.timestamp",
+          "mod": ["int", "*1000", "date"]}
+      ]
+    },
+    "acceptJson": [
+      {"var": "out:title",  "op": "$.response.blog.title", "mod": ["str"]},
+      {"var": "out:author", "op": "$.response.blog.name", "mod": ["str"]},
+      {"var": "out:url",    "op": "$.response.blog.url", "mod": ["url"]},
+      {"op": "$.response.blog.avatar.*", "acceptJson": [
+        {"var": "width", "op": "$.width"},
+        {"var": "height", "op": "$.height"},
+        {"var": "sizes", "op": "=${width}x${height}"},
+        {"var": "out:photos:$sizes", "op": "$.url", "mod": ["url"]}
+      ]},
+      {"var": "out:description", "op": "$.response.blog.description"},
+      {"op": "$.response.posts[?(@.is_pinned !== true)]", "var": "out:posts", "acceptJson": [
+        {"rule": "entry"}
+      ]},
+      {"op": "$.response.posts[?(@.is_pinned === true)]", "var": "out:status", "acceptJson": [
+        {"var": "out:type", "op": "=pinned"},
+        {"rule": "entry"}
       ]}
-    ],
-    "accept": ["rss"]
+    ]
   },
 
   "tiktok.com:profile": {
@@ -425,16 +567,17 @@
     "arguments": [0, 0, {"var": "user"}],
     "url": "https://www.tiktok.com/$user",
     "render": [{
-      "match": "^m\\.tiktok\\.com\\/api\\/item_list.+&id=(\\d+)",
-      "validate": ["userId"],
+      "match": "^m\\.tiktok\\.com\\/api\\/(?:post\\/)?item_list.+",
+      "validate": ["url"],
       "acceptJson": [
-        {"op": "$.items.*", "var": "out:posts", "acceptJson": [
-          {"var": "out:title", "op": "$.desc"},
+        {"op": ["$.itemList.*", "$.items.*"], "var": "out:posts", "acceptJson": [
+          {"var": "out:title", "op": "$.desc", "mod": ["str"]},
           {"var": "itemId", "op": "$.id"},
           {"var": "username", "op": "$.author.uniqueId"},
           {"var": "out:publishedAt", "op": "$.createTime",
             "mod": ["int", "*1000", "date"]},
-          {"var": "out:graphic:full", "op": ["$.video.dynamicCover", "$.video.cover"]},
+          {"var": "out:graphic:full", "op": ["$.video.dynamicCover", "$.video.cover"], "mod": ["url"]},
+          {"var": "out:video:full", "op": ["$.video.playAddr", "$.video.downloadAddr"]},
           {"var": "out:url", "op": "=https://www.tiktok.com/@$username/video/$itemId"}
         ]}
       ]
@@ -443,10 +586,9 @@
       {"op": "//script[@id='__NEXT_DATA__']/text()", "match": ".", "acceptJson": [
         {"op": "$.props.pageProps.userInfo.user", "acceptJson": [
           {"var": "userId", "op": "$.id"},
-          {"var": "secUid", "op": "$.secUid"},
-          {"var": "out:title", "op": "$.nickname"},
-          {"var": "out:photos:avatar", "op": "$.avatarThumb"},
-          {"var": "out:description", "op": "$.signature"}
+          {"var": "out:title", "op": "$.nickname", "mod": ["str"]},
+          {"var": "out:photos:avatar", "op": "$.avatarThumb", "mod": ["url"]},
+          {"var": "out:description", "op": "$.signature", "mod": ["str"]}
         ]}
       ]}
     ]
@@ -458,9 +600,9 @@
     "acceptJson": [
       {"op": "$.data[?(@.login === '$streamer')]", "acceptJson": [
         {"var": "userId",            "op": "$.id"},
-        {"var": "out:title",         "op": "$.display_name"},
-        {"var": "out:photos:avatar", "op": "$.profile_image_url"},
-        {"var": "out:description",   "op": "$.description"}
+        {"var": "out:title",         "op": "$.display_name", "mod": ["str"]},
+        {"var": "out:photos:avatar", "op": "$.profile_image_url", "mod": ["url"]},
+        {"var": "out:description",   "op": "$.description", "mod": ["str"]}
       ]}
     ]
   },
@@ -470,8 +612,10 @@
     "url": "https://api.twitch.tv/helix/streams",
     "acceptJson": [
       {"op": "$.data[?(@.user_id === '$userId')]", "var": "out:status", "acceptJson": [
-        {"var": "out:type", "op": "$.type"},
-        {"var": "out:title", "op": "$.title"},
+        {"var": "out:type", "op": "$.type", "mod": ["str"]},
+        {"var": "out:title", "op": "$.title", "mod": ["str"]},
+        {"var": "out:graphic:thumb", "op": "$.thumbnail_url", "mod": ["s/\\{width\\}/320/", "s/\\{height\\}/180/"]},
+        {"var": "out:graphic:full", "op": "$.thumbnail_url", "mod": ["s/\\{width\\}/600/", "s/\\{height\\}/338/"]},
         {"var": "out:publishedAt", "op": "$.started_at", "mod": ["date"]}
       ]}
     ]
@@ -485,60 +629,129 @@
     "url": "https://api.twitch.tv/helix/videos?type=archive&user_id=$userId",
     "acceptJson": [
       {"op": "$.data.*", "var": "out:posts", "acceptJson": [
-        {"var": "out:title",       "op": "$.title"},
-        {"var": "out:text",        "op": "$.description"},
-        {"var": "out:url",         "op": "$.url"},
-        {"var": "out:publishedAt", "op": "$.published_at", "mod": ["date"]}
+        {"var": "out:title",         "op": "$.title", "mod": ["str"]},
+        {"var": "out:text",          "op": "$.description", "mod": ["str"]},
+        {"var": "out:url",           "op": "$.url", "mod": ["url"]},
+        {"var": "out:graphic:thumb", "op": "$.thumbnail_url", "mod": ["s/%\\{width\\}/320/", "s/%\\{height\\}/180/", "url"]},
+        {"var": "out:graphic:full",  "op": "$.thumbnail_url", "mod": ["s/%\\{width\\}/600/", "s/%\\{height\\}/338/", "url"]},
+        {"var": "out:publishedAt",   "op": "$.published_at", "mod": ["date"]}
       ]}
+    ]
+  },
+
+  "twitter.com:token": {
+    "url": "https://api.twitter.com/1.1/guest/activate.json",
+    "request": {"method": "POST"},
+    "acceptJson": [
+      {"var": "token", "op": "$.guest_token"}
     ]
   },
 
   "twitter.com:user": {
-    "match": "^twitter\\.com/(.+)",
-    "arguments": [0, {"var": "username"}],
-    "url": "https://twitter.com/$username",
-    "acceptHtml": [
-      {"var": "out:title", "op": "//h1/a/text()"},
-      {"var": "out:photos:avatar", "op": "//img[contains(@class, 'ProfileAvatar-image')]/@src"},
-      {"var": "out:description", "op": "//p[contains(@class, 'ProfileHeaderCard-bio')]/text()"},
-      {"op": "//div[@class='ProfileHeaderCard']//a[not(starts-with(@href, '/')) and @title]",
-        "var": "out:rels", "acceptHtml": [
-        {"var": "out:url", "op": "@title", "mod": ["url"]}
-      ]},
-      {"op": "//div[@data-tweet-id and contains(@class, 'pinned')]",
-       "var": "out:status", "acceptHtml": [
-        {"var": "out:type", "op": "=pinned"},
-        {"op": "@data-supports-broadcast-player", "acceptHtml": [
-          {"var": "out:type", "op": "=live"}
-        ]},
-        {"var": "out:url", "op": "@data-permalink-path", "mod": ["url"]},
-        {"var": "out:publishedAt", "op": ".//span[@data-time]/@data-time",
-          "mod": ["int", "*1000", "date"]},
-        {"var": "out:html", "op": ".//p[contains(@class, 'tweet-text')]"}
-      ]},
-      {"op": "//div[@data-tweet-id and not(contains(@class, 'pinned'))]",
-       "var": "out:posts", "acceptHtml": [
-        {"var": "out:author", "op": "@data-retweet-id/../@data-screen-name"},
-        {"var": "url", "op": "@data-permalink-path", "mod": ["url"]},
-        {"var": "out:url", "op": ["@data-has-parent-tweet/../@data-conversation-id", "@data-tweet-id"], "mod": ["url"]},
-        {"var": "out:publishedAt", "op": ".//span[@data-time]/@data-time",
-          "mod": ["int", "*1000", "date"]},
-        {"var": "out:html", "op": ".//p[contains(@class, 'tweet-text')]"}
+    "request": {"query:screen_name": "$username", "headers:X-Guest-Token": "$token"},
+    "url": "https://api.twitter.com/1.1/users/show.json?screen_name=$username",
+    "acceptJson": [
+      {"var": "userId",            "op": "$.id_str"},
+      {"var": "out:author",        "op": "$.screen_name", "mod": ["str"]},
+      {"var": "out:title",         "op": "$.name", "mod": ["str"]},
+      {"var": "out:photos:avatar", "op": "$.profile_image_url", "mod": ["url"]},
+      {"var": "out:description",   "op": "$.description", "mod": ["str"]},
+      {"op": "$.entities.*.urls.*", "var": "out:rels", "acceptJson": [
+        {"var": "out:url", "op": "$.expanded_url", "mod": ["url"]}
       ]}
     ]
   },
 
+  "twitter.com:timeline": {
+    "match": "^twitter\\.com/(.+)",
+    "arguments": [0, {"var": "username"}],
+    "depends": ["twitter.com:token", "twitter.com:user"],
+    "request": {"headers:X-Guest-Token": "$token"},
+    "url": "https://api.twitter.com/2/timeline/profile/$userId.json?include_profile_interstitial_type=0&include_blocking=0&include_blocked_by=0&include_followed_by=1&include_want_retweets=0&include_mute_edge=0&include_can_dm=0&include_can_media_tag=1&skip_status=1&cards_platform=Web-12&include_cards=1&include_ext_alt_text=true&include_reply_count=1&tweet_mode=extended&include_entities=true&include_user_entities=true&include_ext_media_color=false&include_ext_media_availability=true&send_error_codes=true&simple_quoted_tweet=true&include_tweet_replies=false&userId=$userId&count=40&ext=mediaStats%2ChighlightedLabel%2CcameraMoment&include_quote_count=true",
+    "rules": {
+      "entry": [
+        {"var": "out", "op": "&.tw['$id']"},
+        {"op": ["&.tw['tweet-$out:quoted']", "&.out.embeds.*"], "var": "out:embeds",
+         "acceptJson": [
+          {"var": "out", "op": "$"}
+        ]},
+        {"var": "out:quoted"}
+      ]
+    },
+    "acceptJson": [
+      {"op": "$.globalObjects.users.*", "var": "*", "acceptJson": [
+        {"var": "id", "op": "$.id_str"},
+        {"var": "authors:$id", "op": "$.screen_name"}
+      ]},
+      {"op": "$.globalObjects.tweets.*", "var": "*", "acceptJson": [
+        {"var": "id", "op": "$.id_str"},
+        {"var": "aid", "op": "$.user_id_str"},
+        {"var": "author", "op": "=${authors:$aid}"},
+        {"var": "key", "op": "=tw:tweet-$id"},
+        {"op": "$.entities.urls.*", "var": "*", "acceptJson": [
+          {"var": "tid", "op": "$.url", "match": "https://t\\.co/(\\w+)"},
+          {"var": "view", "op": "$.display_url"},
+          {"var": "turl", "op": "$.expanded_url", "mod": ["encode-uri"]},
+          {"var": "tco:${tid}", "op": "=<a href=\"$turl\">$view</a>"}
+        ]},
+        {"var": "${key}:author", "op": "=$author"},
+        {"var": "${key}:url", "op": "=http://twitter.com/$author/status/$id", "mod": ["encode-uri"]},
+        {"var": "${key}:publishedAt", "op": "$.created_at", "mod": ["date"]},
+        {"var": "d0", "op": "$.display_text_range.0"},
+        {"var": "d1", "op": "$.display_text_range.1"},
+        {"var": "${key}:threadUrl", "op": "$.self_thread.id_str", "mod": ["s/.+/https:\\/\\/twitter.com\\/$author\\/status\\/$&/"]},
+        {"var": "${key}:html", "op": "$.full_text", "mod": ["[$d0,$d1]", "s/https:\\/\\/t\\.co\\/(\\w+)/$tco:$1/g", "s/\\n/<br>/g"]},
+        {"op": "$.retweeted_status_id_str", "var": "*", "acceptJson": [
+          {"var": "${key}:html"}
+        ]},
+        {"var": "${key}:quoted", "op": ["$.retweeted_status_id_str", "$.quoted_status_id_str"]},
+        {"op": ["$.extended_entities.media.*", "$.entities.media.*"],
+         "var": "${key}:embeds", "acceptJson": [
+          {"var": "out:url", "op": "$.expanded_url"},
+          {"var": "out:graphic:full", "op": "$.media_url_https"},
+          {"var": "out:video:preview", "op": "$.video_info.variants[?(@.bitrate === 832000)].url"},
+          {"var": "out:video:full", "op": "$.video_info.variants[?(@.bitrate === 1280000 || @.content_type === 'video/mp4')].url"}
+        ]}
+      ]},
+      {"op": "$.timeline.instructions.*.pinEntry", "var": "out:status", "acceptJson": [
+        {"var": "id", "op": "$.entry.entryId"},
+        {"rule": "entry"}
+      ]},
+      {"op": "$.timeline.instructions.*.addEntries.entries.*",
+       "var": "out:posts", "acceptJson": [
+        {"var": "id", "op": "$.entryId"},
+        {"rule": "entry"}
+      ]}
+    ]
+  },
+
+  "vimeo.com:user": {
+    "match": "^vimeo\\.com\\/([-\\w]+)/?$",
+    "arguments": [0, {"var": "user"}],
+    "url": "https://vimeo.com/$user/videos/rss",
+    "accept": ["rss"]
+  },
+
   "youtube.com:feed": {
-    "match": "^youtube\\.com\\/channel\\/([-\\w]+)",
+    "match": "^youtube\\.com\\/feeds\\/videos\\.xml\\?channel_id=([-\\w]+)",
     "arguments": [0, {"var": "id"}],
-    "url": "https://www.youtube.com/feeds/videos.xml?channel_id=$id",
     "patch": [
       {"var": "out:posts", "op": "$.posts.*", "patch": [
         {"var": "out", "op": "$"},
+        {"var": "id", "op": "$.url", "match": "v=(.+)"},
+        {"var": "out:html", "op": "=<iframe width='560' height='315' src='https://www.youtube.com/embed/$id'></iframe>"},
+        {"var": "out:graphic:full", "op": "=http://i.ytimg.com/vi/$id/maxresdefault.jpg"},
         {"var": "out:updatedAt"}
       ]}
     ],
     "accept": ["atom"]
+  },
+
+  "youtube.com:channel": {
+    "match": "^youtube\\.com\\/channel\\/([-\\w]+)",
+    "arguments": [0, {"var": "id"}],
+    "url": "https://www.youtube.com/feeds/videos.xml?channel_id=$id",
+    "accept": ["youtube.com:feed"]
   },
 
   "youtube.com:playlist": {
@@ -546,22 +759,31 @@
     "url": "https://www.youtube.com/playlist?list=$id",
     "arguments": [0, {"var": "id"}],
     "acceptHtml": [
-      {"var": "out:title", "op": "//h1[@class='pl-header-title']"},
+      {"var": "out:title", "op": "//meta[@name='title']/@content"},
       {"var": "out:photos:avatar", "op": "//meta[@property='og:image']/@content"},
       {"var": "out:description", "op": "//meta[@property='og:description']/@content"},
-      {"op": "//tr", "var": "out:posts", "acceptHtml": [
-        {"var": "videoId",         "op": "@data-video-id"},
-        {"var": "out:title",       "op": "@data-title"},
-        {"var": "out:url",         "op": "=https://www.youtube.com/watch?v=$videoId&list=$id"}
+      {"op": "//script[contains(text(), 'ytInitialData')]", "match": "({.+});",
+        "acceptJson": [
+        {"op": "$.contents.twoColumnBrowseResultsRenderer.tabs[0].tabRenderer.content.sectionListRenderer.contents[0].itemSectionRenderer.contents[0].playlistVideoListRenderer.contents.*",
+         "var": "out:posts", "acceptJson": [
+          {"var": "videoId",          "op": "$.playlistVideoRenderer.videoId"},
+          {"var": "out:graphic:full", "op": "$.playlistVideoRenderer.thumbnail.thumbnails[-1:].url", "mod": ["url"]},
+          {"var": "out:title",        "op": ["$.playlistVideoRenderer.title.simpleText", "$.playlistVideoRenderer.title.runs[0].text"], "mod": ["str"]},
+          {"var": "out:url",          "op": "=https://www.youtube.com/watch?v=$videoId&list=$id"}
+        ]}
       ]}
     ]
   },
 
-  "youtube.com:user": {
-    "match": "^youtube\\.com\\/user\\/",
+  "carrd.co:user": {
+    "match": "^(\\w+)\\.carrd\\.co/?$",
+    "arguments": [0, {"var": "username"}],
     "acceptHtml": [
-      {"op": "//link[@rel='canonical']", "var": "out:sources", "acceptHtml": [
-        {"var": "out:url", "op": "@href", "mod": ["url"]}
+      {"var": "out:title", "op": "//head/title/text()"},
+      {"var": "out:photos:avatar", "op": "//meta[@property='og:image']/@content"},
+      {"op": "//li/a[starts-with(@href, 'http')]", "var": "out:rels", "acceptHtml": [
+        {"var": "out:url",   "op": "@href", "mod": ["url"]},
+        {"var": "out:title", "op": ["./span/text()"]}
       ]}
     ]
   },
@@ -594,6 +816,45 @@
     "accept": ["rss"]
   },
 
+  "futureland.tv:user": {
+    "match": "^futureland\\.tv\\/([-\\w]+)(\\/(stream)?)?$",
+    "arguments": [0, {"var": "user"}],
+    "url": "https://futureland.tv/api/users/$user/entries",
+    "acceptJson": [
+      {"var": "out:title", "op": "=Futureland: $user"},
+      {"var": "out:photos:avatar", "op": "$.list[0].user.avatarLink"},
+      {"op": "$.list.*", "var": "out:posts", "acceptJson": [
+        {"var": "id", "op": "$.id"},
+        {"var": "slug", "op": "$.journal.slug"},
+        {"var": "out:url", "op": "=https://futureland.tv/$user/$slug/$id"},
+        {"var": "out:publishedAt", "op": "$.createdAt"},
+        {"var": "out:updatedAt", "op": "$.updatedAt"},
+        {"var": "out:graphic:thumb", "op": "$.preview_link", "mod": ["url"]},
+        {"var": "out:text", "op": "$.notes", "mod": ["str"]}
+      ]}
+    ]
+  },
+
+  "futureland.tv:journal": {
+    "match": "^futureland\\.tv\\/([-\\w]+)\\/([-\\w]+)\\/?$",
+    "arguments": [0, {"var": "user"}, {"var": "journal"}],
+    "url": "https://futureland.tv/api/users/$user/journals/$journal",
+    "acceptJson": [
+      {"var": "out:title", "op": "$.title", "mod": ["str"]},
+      {"var": "out:photos:avatar", "op": "$.iconLink", "mod": ["url"]},
+      {"var": "out:description", "op": "$.description", "mod": ["str"]},
+      {"op": "$.entries.*", "var": "out:posts", "acceptJson": [
+        {"var": "id", "op": "$.id"},
+        {"var": "author", "op": "$.user.futureland_user"},
+        {"var": "out:url", "op": "=https://futureland.tv/$author/$journal/$id"},
+        {"var": "out:publishedAt", "op": "$.createdAt"},
+        {"var": "out:updatedAt", "op": "$.updatedAt"},
+        {"var": "out:graphic:thumb", "op": "$.preview_link", "mod": ["url"]},
+        {"var": "out:text", "op": "$.notes", "mod": ["str"]}
+      ]}
+    ]
+  },
+
   "legiblenews.com:archives": {
     "match": "^legiblenews\\.com(/|$)",
     "url": "https://legiblenews.com/archive.html",
@@ -607,29 +868,107 @@
     ]
   },
 
+  "linktr.ee:user": {
+    "match": "^linktr\\.ee/(.+)",
+    "arguments": [0, {"var": "username"}],
+    "acceptHtml": [
+      {"var": "out:title", "op": "//head/title/text()"},
+      {"op": "//script[@id='__NEXT_DATA__']/text()", "match": ".", "acceptJson": [
+        {"var": "out:photos:avatar", "op": "$.props.pageProps.account.profilePictureUrl"},
+        {"op": "$.props.pageProps.account.links", "var": "out:rels", "acceptJson": [
+          {"var": "out:url",   "op": "$.url", "mod": ["url"]},
+          {"var": "out:title", "op": "$.title", "mod": ["str"]}
+        ]}
+      ]}
+    ]
+  },
+
   "news.ycombinator.com:front": {
-    "match": "^news.ycombinator.com(|/rss|/news)$",
+    "match": "^news\\.ycombinator\\.com(|/rss|/news)$",
     "url": "https://hnrss.org/frontpage",
     "accept": ["rss"]
   },
 
   "news.ycombinator.com:best": {
-    "match": "^news.ycombinator.com/best$",
+    "match": "^news\\.ycombinator\\.com/best$",
     "url": "https://hnrss.org/newest?points=300",
     "accept": ["rss"]
   },
 
   "news.ycombinator.com:special": {
-    "match": "^news.ycombinator.com/(ask|newest|show|jobs)$",
+    "match": "^news\\.ycombinator\\.com/(ask|newest|show|jobs)$",
     "arguments": [0, {"var": "name"}],
     "url": "https://hnrss.org/$name",
     "accept": ["rss"]
   },
 
   "news.ycombinator.com:user": {
-    "match": "^news.ycombinator.com/user\\?id=(.+)$",
+    "match": "^news\\.ycombinator\\.com/user\\?id=(.+)$",
     "arguments": [0, {"var": "user"}],
     "url": "https://hnrss.org/user?id=$user",
     "accept": ["rss"]
+  },
+
+  "news.ycombinator.com:threads": {
+    "match": "^news\\.ycombinator\\.com/threads\\?id=(.+)$",
+    "arguments": [0, {"var": "user"}],
+    "url": "https://hnrss.org/threads?id=$user",
+    "accept": ["rss"]
+  },
+
+  "special.fish:logs": {
+    "match": "^special\\.fish(/logs)?$",
+    "url": "https://special.fish/logs",
+    "acceptHtml": [
+      {"var": "out:title", "op": "//title/text()"},
+      {"var": "out:photos:avatar", "op": "//meta[@property='twitter:image']/@content"},
+      {"var": "out:description", "op": "//meta[@property='twitter:description']/@content"},
+      {"op": ["//section[@class='log']"], "var": "out:posts", "acceptHtml": [
+        {"var": "out:author", "op": ".//a[@class='username']/text()"},
+        {"var": "out:url", "op": ".//a[@class='username']/@href", "mod": ["url"]},
+        {"var": "out:text", "op": ".//div[@class='log-body']/text()"}
+      ]}
+    ]
+  },
+
+  "store.steampowered.com:app": {
+    "url": "https://store.steampowered.com/api/appdetails?appids=$app",
+    "acceptJson": [
+      {"var": "out:title", "op": "$.$app.data.name", "mod": ["str"]},
+      {"var": "out:description", "op": "$.$app.data.short_description", "mod": ["str"]}
+    ]
+  },
+
+  "store.steampowered.com:curator": {
+    "match": "^store\\.steampowered\\.com/curator/([^\\/?]+)",
+    "arguments": [0, 0, {"var": "curator"}],
+    "acceptHtml": [
+      {"var": "out:title", "op": "//a[@class='curator_url']/text()"},
+      {"var": "out:photos:avatar", "op": "//meta[@property='og:image']/@content"},
+      {"var": "out:description", "op": "//meta[@name='Description']/@content"},
+      {"op": ["//div[@class='recommendation']"], "var": "out:posts", "acceptHtml": [
+        {"var": "out:url", "op": ".//div[@class='recommendation_readmore']/a/@href", "mod": ["url"]},
+        {"var": "out:publishedAt", "op": ".//span[@class='curator_review_date']/text()",
+         "mod": ["date"]},
+        {"var": "out:html", "op": ".//div[@class='recommendation_desc']"}
+      ]}
+    ]
+  },
+
+  "store.steampowered.com:news": {
+    "match": "^(?:store\\.steampowered\\.com|steamcommunity\\.com)/app/(\\d+)",
+    "arguments": [0, {"var": "app"}],
+    "depends": ["store.steampowered.com:app"],
+    "url": "http://api.steampowered.com/ISteamNews/GetNewsForApp/v0002/?appid=$app&count=20&format=json",
+    "acceptJson": [
+      {"op": "$.appnews.newsitems[?(@.feedname === 'steam_community_announcements')]",
+       "var": "out:posts", "acceptJson": [
+        {"var": "out:url", "op": "$.url", "mod": ["url"]},
+        {"var": "out:publishedAt", "op": "$.date",
+         "mod": ["int", "*1000", "date"]},
+        {"var": "out:title", "op": "$.title", "mod": ["str"]},
+        {"var": "out:html", "op": "$.contents", "mod": ["str"]}
+      ]}
+    ]
   }
 }

@@ -17,7 +17,7 @@
 // instance to run alone, with no syncing, should the user want it that way.
 //
 const { followTitle, house, html2text, getIndexById, Importances,
-  urlToFeed, urlToID, urlToNormal, isValidFollow } = require('./util')
+  sanitize, urlToFeed, urlToID, urlToNormal, isValidFollow } = require('./util')
 const u = require('@kickscondor/umbrellajs')
 
 const fraidyscrape = require('fraidyscrape')
@@ -60,6 +60,21 @@ function isOutOfDate(follow, fetched) {
 }
 
 module.exports = {
+  //
+  // Logging convenience methods
+  //
+  info(msg) {
+    this.log(msg)
+  },
+
+  error(msg) {
+    this.log(msg, 'ERROR')
+  },
+
+  warn(msg) {
+    this.log(msg, 'WARN')
+  },
+
   async setup(msg, sender) {
     let obj = {started: true, updating: {}, baseHref: this.baseHref, all: {}, settings: {}}
     if (this.started) {
@@ -80,13 +95,13 @@ module.exports = {
         pollDate = now
 
         try {
-          let soc = await this.fetch("https://fraidyc.at/defs/social.json")
+          let soc = await this.fetch("https://huh.fraidyc.at/defs/social.json")
           mod = soc.headers.get('last-modified')
           if (pollMod !== mod) {
             let txt = await soc.text()
             defs = JSON.parse(txt)
           }
-        } catch {
+        } catch (e) {
           if (!this.scraper) {
             let obj
             try { obj = await this.readFile('/social.json') } catch {}
@@ -160,13 +175,14 @@ module.exports = {
     }
   },
 
-  pollfetch(follow) {
-    this.fetchfeed(follow, false).then(feed => {
+  async pollfetch(follow) {
+    return this.fetchfeed(follow, false).then(feed => {
+      this.log(feed)
       if (feed.fresh) {
         this.update({op: 'replace', path: `/all/${follow.id}`, value: follow})
         this.write({update: false})
       }
-    }).catch(console.log)
+    }).catch(err => this.log(err))
   },
 
   noteUpdate(list, isDone) {
@@ -185,6 +201,35 @@ module.exports = {
       this.updating = {}
     }
     // this.update({op: 'replace', path: '/updating', value: this.updating})
+  },
+
+  parsePost(str) {
+    let frag = false
+    str = str.trim()
+    if (str[0] !== '<') {
+      frag = true
+      str = "<div>" + str + "</div>"
+    }
+    let doc = this.dom(str, 'text/html')
+    if (frag) {
+      let docf = doc.createDocumentFragment()
+      let cn = doc.childNodes[0].firstChild
+      while (cn) {
+        let sib = cn.nextSibling
+        docf.appendChild(cn)
+        cn = sib
+      }
+      return docf
+    }
+    return doc
+  },
+
+  sanitizePost(post) {
+    if (post.html) {
+      let frag = this.parsePost(post.html)
+      post.html = sanitize(frag, post.url)
+      this.info(post.html)
+    }
   },
 
   //
@@ -215,13 +260,15 @@ module.exports = {
             //
             let res = await this.fetch(req.url,
               Object.assign(req.options, {cache: 'no-cache'}))
+      this.log('fetch')
             if (!res.ok) {
               // console.log(`${req.url} is giving a ${res.status} error.`)
               err = `${req.url} is giving a ${res.status} error.`
             }
 
+      this.log([tasks, req, res])
             obj = await this.scraper.scrape(tasks, req, res)
-
+      this.log(obj)
             if (obj.out && res.headers) {
               obj.out.etag = res.headers.get('etag')
                 || res.headers.get('last-modified')
@@ -234,6 +281,7 @@ module.exports = {
             throw new Error("This follow is temporarily down.")
           }
         } catch (e) {
+      this.log(e)
           err = e.message
           if (err === "Failed to fetch")
             err = "Couldn't connect - check your spelling, be sure this URL really exists."
@@ -245,6 +293,14 @@ module.exports = {
     if (err != null)
       throw err
 
+    if (typeof(meta.details) === 'undefined') {
+      force = true
+      meta.details = {}
+    }
+    if (feed.flags === 'COMPLETE') {
+      meta.details = {}
+    }
+   
     //
     // Merge the new posts into the feed's master post list.
     //
@@ -290,7 +346,7 @@ module.exports = {
           continue
         let i = getIndexById(meta.posts, item.url, 'url'), index = null
         if (i < 0) {
-          index = {id: urlToID(urlToNormal(item.url)), url: item.url, createdAt: now}
+          index = {id: urlToID(urlToNormal(item.url, false)), url: item.url, createdAt: now}
           if (feed.flags !== 'COMPLETE') {
             meta.posts.unshift(index)
           }
@@ -316,6 +372,7 @@ module.exports = {
           }
         }
 
+				this.sanitizePost(item)
         index.title = (ident === 0 && item.title) || item.text
         if (!index.title && item.html)
           index.title = html2text(item.html)
@@ -329,11 +386,13 @@ module.exports = {
         index.title = index.title.toString().trim()
         index.publishedAt = item.publishedAt || index.publishedAt || index.createdAt
         index.updatedAt = (item.updatedAt && item.updatedAt < now ? item.updatedAt : index.publishedAt)
+				meta.details[index.id] = item
       }
       if (feed.flags === 'COMPLETE') {
         meta.posts = posts
       }
       delete feed.posts
+			delete feed.details
 
       //
       // Normalize the status entries.
@@ -352,6 +411,7 @@ module.exports = {
       // Sort posts based on the settings.
       //
       Object.assign(meta, feed)
+			feed.details = meta.details
       frago.sort(meta, this.settings['mode-updates'] || 'publishedAt',
         this.settings['mode-reposts'] !== 'hide', true)
     }
@@ -384,6 +444,7 @@ module.exports = {
     }
 
     let feed = await this.scrape(meta, force)
+      this.log(feed)
     if (!feed.fresh)
       return feed
 
@@ -453,7 +514,7 @@ module.exports = {
   // we don't need to recompute all the hashes necessarily.
   //
   async fetchfeed(follow, force) {
-    let id = follow.id || urlToID(urlToNormal(follow.url))
+    let id = follow.id || urlToID(urlToNormal(follow.url), true)
     this.noteUpdate([id], false)
     // console.log(`Updating ${followTitle(follow)}`)
     let feed
@@ -522,7 +583,7 @@ module.exports = {
           let current = this.all[id], incoming = inc.follows[id], notify = false
           if (incoming.url) {
             if (!(id.match && id.match(/-\w{8}$/))) {
-              id = urlToID(urlToNormal(incoming.url))
+              id = urlToID(urlToNormal(incoming.url, true))
             }
             if (!(id in this.follows))
               this.follows[id] = incoming
@@ -539,13 +600,17 @@ module.exports = {
                 if (current)
                   incoming.id = id
                 try {
-                  await this.refresh(incoming)
-                  if (syncType === SYNC_EXTERNAL) {
-                    current = this.all[id]
-                    notify = true
+                  let feeds = await this.refresh(incoming)
+                  if (feeds) {
+                    throw "This follow needs to be manually updated."
                   }
-                } catch {}
-                // catch(msg => console.log(`${incoming.url} is ${msg}`))
+                } catch (e) {
+                  this.all[id] = Object.assign({error: e.message}, incoming)
+                }
+                if (syncType === SYNC_EXTERNAL) {
+                  current = this.all[id]
+                  notify = true
+                }
               }
               updated = true
             } else if (current.editedAt > incoming.editedAt) {
@@ -592,9 +657,13 @@ module.exports = {
       this.all[follow.id] = follow
       this.update({op: 'replace', path: `/all/${follow.id}`, value: follow})
     }
-    this.follows[follow.id] = {url: follow.feed,
-      importance: follow.importance, title: follow.title, tags: follow.tags,
-      fetchesContent: follow.fetchesContent, editedAt: follow.editedAt}
+
+    let obj = {url: follow.feed, title: follow.title, tags: follow.tags,
+      importance: follow.importance, editedAt: follow.editedAt}
+    if (follow.originalUrl !== follow.feed) {
+      obj.ori = follow.originalUrl
+    }
+    this.follows[follow.id] = obj
   },
 
   //
@@ -670,7 +739,7 @@ module.exports = {
       if (url) {
         if (tags.length == 0)
           tags = null
-        follows[urlToID(urlToNormal(url))] =
+        follows[urlToID(urlToNormal(url, true))] =
           {url, tags, importance,
             title: title && title.value,
             editedAt: node.attributes.created ? new Date(node.attributes.created.value) : new Date()}
@@ -784,6 +853,17 @@ module.exports = {
     }
 
     this.notifyFollow(follow, true)
+  },
+
+  async loadPosts(id, sender) {
+    let meta = await this.readFile(`/feeds/${id}.json`)
+    if (typeof(meta.details) === 'undefined') {
+      let follow = this.all[id]
+      if (follow) {
+        meta = await this.pollfetch(follow)
+      }
+    }
+    this.update({op: 'load', id, meta}, sender)
   },
 
   async save(follow, sender) {

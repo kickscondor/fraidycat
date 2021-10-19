@@ -15,20 +15,30 @@
   },
   "version": "1.1.5",
   "scripts": {
-    "build": "pnpm run server:setup && node ./src/package.js build/server",
-    "start": "node ./src/js/server/main.js",
+    "build": "pnpm run build:desktop && node ./src/package.js build/desktop",
+    "build:desktop": "fsbin emptyDir build/desktop && fsbin copy build/frontend build/desktop/frontend && cross-env STORAGE=desktop parcel build src/js/server/main.js --target desktop",
+    "build:frontend": "fsbin emptyDir build/frontend && cross-env STORAGE=frontend parcel build src/index.html --target frontend",
+    "start": "pnpm run build:frontend && node ./src/js/server/main.js",
     "start:firefox": "web-ext run --source-dir ./build/webext/",
     "test": "ava",
-    "server:setup": "fsbin emptyDir build/server && cross-env STORAGE=server parcel build src/js/server/main.js --target desktop --dist-dir build/server",
     "webext": "fsbin emptyDir build/webext && cross-env STORAGE=webext parcel build src/manifest.json --no-cache --no-source-maps --dist-dir build/webext",
     "webext:lint": "web-ext lint --source-dir ./build/webext/",
     "webext:safe": "find build/webext -type f -name '*.js' | xargs sed -i='' -e 's/Function(\"return this\")/function(){return this}/g' -e 's/\\([=: {]\\)Function(/\\1(function(){return function(){}})(/g'"
   },
   "targets": {
     "desktop": {
+      "distDir": "build/desktop",
       "context": "node",
       "optimize": false,
       "includeNodeModules": true
+    },
+    "frontend": {
+      "distDir": "build/frontend",
+      "scopeHoist": false,
+      "optimize": false,
+      "engines": {
+        "browsers": "> 0.5%, last 2 versions, not dead"
+      }
     }
   },
   "assets": [
@@ -47,29 +57,31 @@
   ],
   "browserslist": "firefox >= 57, chrome >= 49",
   "dependencies": {
-    "@kickscondor/elasticlunr": "^0.9.8",
     "@kickscondor/granax": "^3.2.8",
-    "deasync": "^0.1.23",
+    "@xmldom/xmldom": "^0.7.5",
+    "domify": "^1.4.1",
     "electron-fetch": "^1.7.4",
-    "fraidyscrape": "^1.0.14",
+    "fraidyscrape": "1.0.14",
     "json-date-parser": "^1.0.1",
-    "nat-upnp": "^1.1.1",
     "needle": "^3.0.0",
-    "normalize-url": "^4.5.1",
-    "open": "^7.4.2",
+    "normalize-url": "^7.0.2",
+    "open": "^8.2.1",
     "opml-generator": "^1.1.1",
     "pg-hstore": "^2.3.4",
     "regenerator-runtime": "^0.13.9",
+    "rotating-file-stream": "^2.1.6",
     "selfsigned": "^1.10.11",
+    "sqlite3": "^5.0.2",
     "systray": "^1.0.5",
-    "uWebSockets.js": "github:uNetworking/uWebSockets.js#binaries"
+    "uWebSockets.js": "github:uNetworking/uWebSockets.js#binaries",
+    "xpath": "^0.0.32"
   },
   "darwinDependencies": {
     "appdmg": "^0.6.2"
   },
   "devDependencies": {
-    "@babel/core": "^7.15.0",
-    "@babel/preset-env": "^7.15.0",
+    "@babel/core": "^7.15.5",
+    "@babel/preset-env": "^7.15.6",
     "@kickscondor/emoji-button": "^2.1.4",
     "@kickscondor/router": "^0.7.3",
     "@kickscondor/umbrellajs": "^3.1.2",
@@ -79,14 +91,13 @@
     "ent": "^2.2.0",
     "fast-glob": "^3.2.7",
     "fast-json-patch": "^3.1.0",
-    "fsbin": "^1.0.10",
+    "fsbin": "^1.0.11",
     "hyperapp": "^1.2.10",
     "koalaesce": "^0.6.5",
     "parcel": "^2.0.0-rc.0",
     "pkg": "github:geekuillaume/pkg",
-    "sass": "^1.38.2",
+    "sass": "^1.39.2",
     "sequelize": "^6.6.5",
-    "sqlite3": "^5.0.2",
     "umzug": "^2.3.0",
     "web-ext": "^4.3.0",
     "webextension-polyfill": "^0.6.0"

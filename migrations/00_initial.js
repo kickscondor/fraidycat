@@ -1,9 +1,32 @@
 const { Sequelize } = require('sequelize')
 
 async function up(db) {
+  let createdAt = {
+    type: Sequelize.DATE,
+    defaultValue: Sequelize.literal('CURRENT_TIMESTAMP')
+  }
+  let updatedAt = {
+    type: Sequelize.DATE,
+    defaultValue: Sequelize.literal('CURRENT_TIMESTAMP')
+  }
+
   if (db.constructor.name !== 'SQLiteQueryInterface') {
     throw "Cannot migrate non-SQLite database"
   }
+
+  //
+  // Storage of global settings
+  //
+  await db.createTable('Globals', {
+    key: {
+      type: Sequelize.STRING,
+      allowNull: false,
+      primaryKey: true
+    },
+    json: {
+      type: Sequelize.STRING
+    }
+  })
 
   //
   // Storage of cached documents (scraper rules, blog templates, etc)
@@ -16,12 +39,15 @@ async function up(db) {
     },
     ownerId: {
       type: Sequelize.INTEGER,
-      primaryKey: true
+      primaryKey: true,
+      allowNull: true
     },
     content: {
       type: Sequelize.STRING,
       allowNull: false
-    }
+    },
+    createdAt,
+    updatedAt
   })
 
   //
@@ -54,13 +80,8 @@ async function up(db) {
     avatar: {
       type: Sequelize.STRING
     },
-    createdAt: {
-      type: Sequelize.DATE,
-      allowNull: false
-    },
-    updatedAt: {
-      type: Sequelize.DATE
-    },
+    createdAt,
+    updatedAt,
     //
     // Cached computations like 'activity', as well as etcetera such as 'author'
     // and 'description' are stored here
@@ -93,16 +114,11 @@ async function up(db) {
       type: Sequelize.STRING,
       allowNull: false
     },
-    createdAt: {
-      type: Sequelize.DATE,
-      allowNull: false
-    },
+    createdAt,
+    updatedAt,
     publishedAt: {
       type: Sequelize.DATE,
       allowNull: false
-    },
-    updatedAt: {
-      type: Sequelize.DATE
     },
     //
     // Storage of 'author', 'photos', 'videos', etc.
@@ -171,14 +187,8 @@ async function up(db) {
     title: {
       type: Sequelize.STRING
     },
-    createdAt: {
-      type: Sequelize.DATE,
-      allowNull: false
-    },
-    editedAt: {
-      type: Sequelize.DATE,
-      allowNull: false
-    }
+    createdAt,
+    updatedAt
   })
 
   await db.addIndex('Follows', ['importance'])
@@ -197,6 +207,8 @@ async function up(db) {
       allowNull: false,
       unique: true
     },
+    createdAt,
+    updatedAt,
     auth: {
       type: Sequelize.STRING
     },
@@ -222,7 +234,14 @@ async function up(db) {
 // Don't want to risk deleting the DB through a migration... so just delete the
 // DB if you need to go down to zero.
 //
-async function down(db) {
+async function down(db, Sequelize) {
+  await db.dropTable('Globals')
+  await db.dropTable('Caches')
+  await db.dropTable('Sources')
+  await db.dropTable('Tags')
+  await db.dropTable('Posts')
+  await db.dropTable('Follows')
+  await db.dropTable('Users')
 }
 
 module.exports = { up, down }
