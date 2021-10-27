@@ -1,3 +1,4 @@
+$emoji-fonts: "Twemoji Mozilla", "Segoe UI Emoji", "Segoe UI Symbol", "Segoe UI", "Apple Color Emoji", "Noto Color Emoji", "EmojiOne Color", "Android Emoji";
 $themes: (
   light: (
     pattern: url('../images/fc-light.png'),
@@ -95,6 +96,7 @@ $theme-map: null;
 
 html {
   overflow-y: scroll;
+  font-family: $emoji-fonts;
 }
 
 body {
@@ -126,7 +128,7 @@ ul {
 article {
   /* max-width: 780px; */
   padding: 20px 40px 60px 40px;
-  font-family: 'Inria Sans';
+  font-family: 'Inria Sans', $emoji-fonts;
   font-size: 1.1rem;
   min-height: 100%;
 
@@ -632,7 +634,7 @@ div.intro {
   a.favicon {
     display: block;
     float: left;
-    margin: 6px 20px;
+    margin: 6px;
 
     & > img {
       margin: 6px 6px -6px 0px;
@@ -771,7 +773,7 @@ div.intro {
       overflow: hidden;
       height: 1.5rem;
       white-space: nowrap;
-      max-width: calc(100% - 80px);
+      max-width: calc(100% - 54px);
 
       &:after {
         content: "";
@@ -788,7 +790,7 @@ div.intro {
         display: inline-block;
 
         &::after {
-          content: " /\0000a0";
+          content: " \002756\0000a0";
 
           @include themed() {
             color: t('button');
@@ -978,7 +980,7 @@ div.intro {
 
     &:after {
       display: block;
-      content: "\1f65e";
+      content: "\0025c7";
       text-align: center;
       color: #877;
       font-size: 1.4rem;
@@ -1037,9 +1039,9 @@ div.intro {
   }
 }
 
-#add-feed {
+#add-feed, #edit-feed {
   a.emoji {
-    margin-left: 6px;
+    margin-left: 8px;
   }
 }
 
@@ -1121,7 +1123,7 @@ label.optional {
 }
 
 input, textarea, select {
-  font: 1em sans-serif;
+  font-size: 1em;
   box-sizing: border-box;
   border: 1px solid #999;
 
@@ -1137,6 +1139,10 @@ select#importance {
 
 input, textarea {
   padding: 4px;
+}
+
+input, textarea, select, button {
+  font-family: "Inria Sans", $emoji-fonts;
 }
 
 input[type="checkbox"] {
@@ -1292,4 +1298,10 @@ button.delete {
   font-display: swap;
   src: local('Inria Sans Bold'), local('InriaSans-Bold'), url("../fonts/inria-700x.woff2") format('woff2');
   unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: "Twemoji Mozilla";
+  src: url("../fonts/Twemoji.ttf");
+  text-decoration: none;
+  font-style: normal;
 }

@@ -193,7 +193,7 @@ const FollowForm = (match, setup, isNew) => ({follows}, actions) => {
         oninput={e => e.target.value ? (follow.tags = e.target.value.trim().split(/\s+/)) : (delete follow.tags)} />
       <a href="#" class="emoji" onclick={e => {
         e.preventDefault()
-        picker.pickerVisible ? picker.hidePicker() : picker.showPicker(e)
+        picker.pickerVisible ? picker.hidePicker() : picker.showPicker(e.target)
       }}>&#128513;</a>
       <p class="note">(If left blank, tag is assumed to be '&#x1f3e0;'&mdash;the main page tag.)</p>
     </div>

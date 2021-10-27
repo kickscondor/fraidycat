@@ -73,6 +73,7 @@
     "selfsigned": "^1.10.11",
     "sqlite3": "^5.0.2",
     "systray": "^1.0.5",
+    "twemoji": "^13.1.0",
     "uWebSockets.js": "github:uNetworking/uWebSockets.js#binaries",
     "xpath": "^0.0.32"
   },
@@ -85,6 +86,8 @@
     "@kickscondor/emoji-button": "^2.1.4",
     "@kickscondor/router": "^0.7.3",
     "@kickscondor/umbrellajs": "^3.1.2",
+    "@parcel/transformer-image": "^2.0.0-rc.0",
+    "@parcel/transformer-sass": "^2.0.0-rc.0",
     "ava": "^3.15.0",
     "cross-env": "^7.0.3",
     "decompress": "^4.2.1",
