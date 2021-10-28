@@ -88,7 +88,7 @@ async function download(dUrl, fn) {
   let nodeDir = path.basename(nodeBinaryPath, tarExt)
   let nodeExe = null
   await decompress(nodeBinaryPath, cacheDir, {filter: file => {
-    if (file.path.startsWith(nodeDir + '/bin/node')) {
+    if (file.path.startsWith(nodeDir + '/bin/node') || file.path.startsWith(nodeDir + '/node.exe')) {
       nodeExe = file.path
       return true
     }

@@ -7,6 +7,7 @@ const path = require('path')
 const uws = require('uWebSockets.js')
 
 const platform = require('./platform')
+const sqlite3 = require('sqlite3')
 const storage = require('./storage')
 
 function ab2str(buf) {                                                                                      
