@@ -27,7 +27,7 @@ if (isMainThread) {
     const open = require('open')
 
     const icon = fs.readFileSync(path.join(__dirname,
-      `images/flatcat-32.${platform.isWindows === 'win32' ? 'ico' : 'png'}`)).
+      `images/flatcat-32.${platform.isWindows ? 'ico' : 'png'}`)).
       toString('base64')
     
     const tray = new SysTray({

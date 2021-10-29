@@ -46,7 +46,7 @@
       "source": "build/frontend/**/*"
     },
     {
-      "source": "src/images/flatcat-*.png",
+      "source": "src/images/flatcat-*.{png,ico}",
       "dir": "src/js/server/images"
     },
     {
@@ -55,7 +55,7 @@
     },
     {
       "source": "node_modules/systray/traybin/tray_${platform_full}_release*",
-      "dir": "."
+      "dir": "src/js/traybin"
     },
     {
       "source": "node_modules/node-pre-gyp/**/*"
