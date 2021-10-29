@@ -1,4 +1,5 @@
 const Sequelize = require('sequelize')
+
 const Umzug = require('umzug')
 const { fixupHeaders, responseToObject } = require('../util')
 const { jsonDateParser } = require("json-date-parser")
@@ -42,6 +43,7 @@ function parseDom(str, mime) {
 
 class ServerStorage {
   constructor(opts) {
+    this.inDebug = opts.debug
     this.db = new Sequelize({ dialect: 'sqlite',
       storage: path.join(opts.profile, '/db.sqlite')});
     connect(this.db)
@@ -55,8 +57,8 @@ class ServerStorage {
     if (!fs.existsSync(logPath)) {
       fs.mkdirSync(logPath, {recursive: true})
     }
-    this.logStream = rfs.createStream(path.join(logPath, 'server.log'), {
-      size: "1M", interval: "1d", compress: "gzip", maxFiles: 7})
+    this.logStream = rfs.createStream('server.log', {path: logPath,
+      size: "10M", interval: "1d", compress: "gzip", maxFiles: 7})
     this.log("Starting up Fraidycat server.")
   }
 
@@ -74,6 +76,8 @@ class ServerStorage {
   }
 
   log(message, type = 'INFO') {
+    if (type == 'DEBUG' && !this.inDebug)
+      return
     let date = new Date()
     let timestamp = `${("0" + date.getUTCFullYear()).slice(-2)}-${("0" + (date.getUTCMonth() + 1)).slice(-2)}-${("0" + date.getUTCDate()).slice(-2)} ${("0" + date.getUTCHours()).slice(-2)}:${("0" + date.getUTCMinutes()).slice(-2)}:${("0" + date.getUTCSeconds()).slice(-2)}`
     if (typeof(message) !== 'string') message = JSON.stringify(message)
@@ -180,7 +184,6 @@ class ServerStorage {
         obj[item.path.substr(10)] = this.decode(item.content)
       }
     }
-    console.log(obj)
     return obj
   }
 

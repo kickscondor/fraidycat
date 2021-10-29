@@ -83,6 +83,10 @@ module.exports = {
     this.log(msg, 'WARN')
   },
 
+  debug(msg) {
+    this.log(msg, 'DEBUG')
+  },
+
   async setup(msg, sender) {
     let obj = {started: true, updating: {}, baseHref: this.baseHref, all: {}, settings: {}}
     if (this.started) {
@@ -198,12 +202,12 @@ module.exports = {
 
   async pollfetch(follow) {
     return this.fetchfeed(follow, 0).then(feed => {
-      this.log(feed)
+      // this.debug(feed)
       if (feed.fresh) {
         this.update({op: 'replace', path: `/all/${follow.id}`, value: follow})
         this.write({update: false})
       }
-    }).catch(err => this.log(err))
+    }).catch(err => this.debug(err))
   },
 
   noteUpdate(list, isDone) {
@@ -249,7 +253,7 @@ module.exports = {
     if (post.html) {
       let frag = this.parsePost(post.html)
       post.html = sanitize(frag, post.url)
-      this.info(post.html)
+      // this.debug(post.html)
     }
   },
 
@@ -475,7 +479,7 @@ module.exports = {
     }
 
     let feed = await this.scrape(meta, flags)
-      this.log(feed)
+    // this.debug(feed)
     if (!feed.fresh)
       return feed
 
@@ -551,7 +555,7 @@ module.exports = {
   async fetchfeed(follow, flags) {
     let id = follow.id || urlToID(urlToNormal(follow.url), true)
     this.noteUpdate([id], false)
-    // console.log(`Updating ${followTitle(follow)}`)
+    // this.log(`Updating ${followTitle(follow)}`)
     let feed
     try {
       feed = await this.refetch(id, follow, flags)
@@ -599,7 +603,7 @@ module.exports = {
         }
         return {found, feed}
       } catch (e) {
-        console.log(e)
+        this.error(e)
       }
     }
 

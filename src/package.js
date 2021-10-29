@@ -52,7 +52,7 @@ async function streamWithProgress(response, writer, progressCallback) {
   }
 }
 
-async function download(dUrl, fn) {
+async function download(dUrl) {
   let localPath = path.join(cacheDir, path.basename(new URL(dUrl).pathname))
   if (fs.existsSync(localPath))
     return localPath
@@ -71,6 +71,8 @@ async function download(dUrl, fn) {
   //
   if (pkg.assets) {
     for (let asset of pkg.assets) {
+      if (asset.platform && asset.platform !== platform)
+        continue
       let source = asset.source.replace(/\$\{(.+?)\}/g,
         (_, p1) => koalaesce.getNamed(env, p1))
       let entries = fg.sync(source)
@@ -87,7 +89,7 @@ async function download(dUrl, fn) {
   //
   // Ensure we've got the appropriate Node binary.
   //
-  let nodeBinaryPath = await download(nodeBinaryUrl, () => {})
+  let nodeBinaryPath = await download(nodeBinaryUrl)
   let nodeDir = path.basename(nodeBinaryPath, tarExt)
   let nodeExe = null
   await decompress(nodeBinaryPath, cacheDir, {filter: file => {
@@ -96,13 +98,39 @@ async function download(dUrl, fn) {
       return true
     }
   }})
-  fs.copyFileSync(path.join(cacheDir, nodeExe),
-    path.join(output, path.basename(nodeExe)))
+  let outpath = path.join(output, path.basename(nodeExe))
+  console.log(outpath)
+  fs.copyFileSync(path.join(cacheDir, nodeExe), outpath)
+
+  //
+  // Pull down SQLite3 binaries
+  //
+  let bindingDir = path.join('node_modules', 'sqlite3', 'lib', 'binding')
+  fs.rmSync(bindingDir, {recursive: true, force: true})
+  mkpdir(bindingDir)
+
+  let sqlitePkgPath = await download(`https://mapbox-node-binary.s3.amazonaws.com/sqlite3/${pkg.dependencies.sqlite3.replace("^", "v")}/napi-v3-${env.platform}-x64.tar.gz`)
+  let sqliteDir = path.basename(sqlitePkgPath, '.tar.gz')
+  await decompress(sqlitePkgPath, cacheDir)
+  outpath = path.join(output, path.join(bindingDir, sqliteDir))
+  console.log(outpath)
+  fs.cpSync(path.join(cacheDir, sqliteDir), outpath, {recursive: true})
+
+  //
+  // Patch up the binding loader
+  //
+  outpath = path.join(output, path.join('node_modules', 'sqlite3', 'lib', 'sqlite3-binding.js'))
+  console.log(outpath)
+  fs.writeFileSync(outpath, `module.exports = exports = require('./binding/napi-v3-${env.platform}-x64/node_sqlite3.node')`)
 
   if (platform === 'darwin') {
     // let appdmg = require('appdmg')
     // let dmg = appdmg({target: 'dist/Fraidycat-' + pkg.version + '.dmg',
     //   basepath: __dirname, specification: {
     //     title: pkg.productName,
+  } else if (platform == 'win') {
+    outpath = path.join(output, 'start.bat')
+    console.log(outpath)
+    fs.writeFileSync(outpath, `.\\node.exe .\\src\\js\\server\\main.js`)
   }
 })()

@@ -74,7 +74,7 @@ if (isMainThread) {
     //
     // Setup database
     //
-    const local = await storage({profile: platform.profile})
+    const local = await storage({profile: platform.profile, debug: platform.debug})
     await local.init()
     const workers = os.cpus().map(() => {
       //
