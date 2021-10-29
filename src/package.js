@@ -9,11 +9,14 @@ const url = require('url')
 
 const cacheDir = path.join(os.homedir(), '.exexe')
 const output = process.argv[2]
-const arch = process.env.ARCH || process.arch
 const platform = process.env.PLATFORM || process.platform
+const env = {arch: process.env.ARCH || process.arch,
+  platform: (platform == 'win' ? 'win32' : platform),
+  platform_full: (platform == 'win' ? 'windows' : platform),
+  vmod: process.versions.modules, exe: (platform == 'win' ? '.exe' : '')}
 const tarExt = (platform == 'win' ? '.zip' : '.tar.gz')
 const nodeBinaryUrl = process.release.sourceUrl.replace('.tar.gz',
-  '-' + platform + '-' + arch + tarExt)
+  '-' + platform + '-' + env.arch + tarExt)
 const pkg = JSON.parse(fs.readFileSync('package.json'))
 
 function mkpdir(outputPath) {
@@ -69,11 +72,11 @@ async function download(dUrl, fn) {
   if (pkg.assets) {
     for (let asset of pkg.assets) {
       let source = asset.source.replace(/\$\{(.+?)\}/g,
-        (_, p1) => koalaesce.getNamed(process, p1))
+        (_, p1) => koalaesce.getNamed(env, p1))
       let entries = fg.sync(source)
       for (let entry of entries) {
         let outputPath = path.join(output,
-          asset.dest ? path.join(asset.dest, path.basename(entry)) : entry)
+          asset.dest ? asset.dest : (asset.dir ? path.join(asset.dir, path.basename(entry)) : entry))
         console.log(outputPath)
         mkpdir(outputPath)
         fs.copyFileSync(entry, outputPath)

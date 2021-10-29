@@ -15,8 +15,8 @@
   },
   "version": "2.0.0",
   "scripts": {
-    "build": "pnpm run build:desktop && node ./src/package.js build/desktop",
-    "build:desktop": "fsbin emptyDir build/desktop && fsbin copy build/frontend build/desktop/frontend && cross-env STORAGE=desktop parcel build src/js/server/main.js --target desktop",
+    "build": "pnpm run build:frontend && pnpm run build:desktop && node ./src/package.js build/desktop",
+    "build:desktop": "fsbin emptyDir build/desktop && cross-env esbuild src/js/server/main.js migrations/00_initial.js --bundle --platform=node --external:electron --external:sqlite3 --outdir=build/desktop",
     "build:frontend": "fsbin emptyDir build/frontend && cross-env STORAGE=frontend parcel build src/index.html --target frontend",
     "start": "pnpm run build:frontend && node ./src/js/server/main.js",
     "start:firefox": "web-ext run --source-dir ./build/webext/",
@@ -43,16 +43,25 @@
   },
   "assets": [
     {
+      "source": "build/frontend/**/*"
+    },
+    {
       "source": "src/images/flatcat-*.png",
-      "dest": "images"
+      "dir": "src/js/server/images"
     },
     {
-      "source": "node_modules/uWebSockets.js/uws_${platform}_${arch}_${versions.modules}.node",
-      "dest": "."
+      "source": "node_modules/uWebSockets.js/uws_${platform}_${arch}_${vmod}.node",
+      "dir": "src/js/server"
     },
     {
-      "source": "node_modules/systray/traybin/tray_${platform}_release*",
-      "dest": "."
+      "source": "node_modules/systray/traybin/tray_${platform_full}_release*",
+      "dir": "."
+    },
+    {
+      "source": "node_modules/node-pre-gyp/**/*"
+    },
+    {
+      "source": "node_modules/sqlite3/**/*"
     }
   ],
   "browserslist": "firefox >= 57, chrome >= 49",

@@ -7,7 +7,6 @@ const path = require('path')
 const uws = require('uWebSockets.js')
 
 const platform = require('./platform')
-const sqlite3 = require('sqlite3')
 const storage = require('./storage')
 
 function ab2str(buf) {                                                                                      
@@ -103,32 +102,39 @@ if (isMainThread) {
     //
     // Setup Tor tunnel
     //
-    const tor = require('@kickscondor/granax')();
-    tor.on('ready', async () => {
-      let opts = await local.localGet('tor-options', {})
-      tor.createHiddenService('127.0.0.1:7547', opts, (err, result) => {
-        if (result.privateKey) {
-          local.localSet('tor-options', result.privateKey)
-        }
-        local.onionId = result.serviceId
-        console.info(`Tor URL: ${result.serviceId}.onion`)
+    const tbb = require('@kickscondor/granax/script/download-tbb')
+    tbb.install(err => {
+      if (err) {
+        return local.error(err)
+      }
+
+      const tor = require('@kickscondor/granax')();
+      tor.on('ready', async () => {
+        let opts = await local.localGet('tor-options', {})
+        tor.createHiddenService('127.0.0.1:7547', opts, (err, result) => {
+          if (result.privateKey) {
+            local.localSet('tor-options', result.privateKey)
+          }
+          local.onionId = result.serviceId
+          console.info(`Tor URL: ${result.serviceId}.onion`)
+        })
       })
-    })
 
-    tor.on('error', err => local.error(err))
+      tor.on('error', err => local.error(err))
 
-    //
-    // Cleanup workers and processes on exit
-    //
-    // const cleanup = function () {
-    //   workers.forEach((worker) => {
-    //     worker.postMessage('cleanup')
-    //   })
-    // }
-    // process.on('SIGTERM', cleanup)
-    // process.on('SIGINT', cleanup)
-    process.on('exit', code => {
-      tor.shutdown(() => local.info('Tor process shutdown'))
+      //
+      // Cleanup workers and processes on exit
+      //
+      // const cleanup = function () {
+      //   workers.forEach((worker) => {
+      //     worker.postMessage('cleanup')
+      //   })
+      // }
+      // process.on('SIGTERM', cleanup)
+      // process.on('SIGINT', cleanup)
+      process.on('exit', code => {
+        tor.shutdown(() => local.info('Tor process shutdown'))
+      })
     })
 
   })();
