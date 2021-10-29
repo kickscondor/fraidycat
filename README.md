@@ -1,4 +1,7 @@
-     
+**Note: this main branch represents the upcoming FRAIDYCAT 2 - which is not 
+quite there - to access the stable branch (the web extension), please see
+the [v1.1 branch](https://github.com/kickscondor/fraidycat/tree/v1.1).**
+
                              /||
                              \ \\
             ,_       _,     _/ //
@@ -14,18 +17,14 @@
             | ||   | ||
             '-''   '-''                            :. :.
 
-**Fraidycat** is a browser extension for Firefox or Chrome - or an Electron
-app - that can be used to follow folks on a variety of platforms. But rather
+**Fraidycat** is an app for Linux, Windows or Mac OS X - but which can be
+accessed from a local browser or a Tor onion site - and is a tool
+that can be used to follow folks on a variety of platforms. But rather
 than showing you a traditional 'inbox' or 'feed' view of all the incoming
 posts - Fraidycat braces itself against this unbridled firehose! - you are
 shown an overview of who is active and a brief summary of their activity.
 
-* Official Add-on for Firefox:
-  [Download](https://addons.mozilla.org/en-US/firefox/addon/fraidycat/)
-* Official Extension for Chrome:
-  [Download](https://chrome.google.com/webstore/detail/fraidycat/hecfkgekabkkhiidlinmifelhdooeool)
-* Official Packages for Linux, Windows and Mac OS X:
-  [Download](https://github.com/kickscondor/fraidycat/releases)
+**[Release links coming soon.]**
 
 Here is my Fraidycat home page from October 25th, 2019:
 
@@ -87,22 +86,6 @@ Here is a current list of what is fully supported:
 Feel free to file an issue for any site you want added - I will try to help
 you!
 
-### Sync Support
-
-The only way to sync your follows at the moment is through your browser account.
-So, if you are using Firefox, you must be signed in as the same user with the
-same browser and Fraidycat installed on both machines.
-
-**Sync support is not sophisticated! It cannot do complex merging of changes.
-It also may take a few minutes for a browser to update from a sync.**
-
-You can really only get sync support if you install from an official web store
-or if you install [from source](#Installation) in Chrome.
-
-Be aware that each browser will fetch feeds independently - so they may fall out
-of sync as they try to stay updated. However, every time you add or edit or
-remove a follow, your other computers will be notified.
-
 ### Importance
 
 Fraidycat lets you assign an 'importance' to your feeds. They are:
@@ -122,51 +105,20 @@ actually refetched if they haven't changed.
 
 ## Installation
 
-Presently I really only encourage use of Fraidycat as a web extension for
-Firefox and Chrome. (I also use it with Vivaldi - works great.) The Electron
-app works, but lacks support for syncing between machines, which is rather
-crucial. I also have a proof-of-concept Dat website - but Beaker still
-needs to release some fixes I have submitted - only then I will feel okay
-promoting it on the Dat network.
-
 ### Building the Firefox / Chrome Web Extension
 
 If you're checking out the code from Github, make sure you've installed
 [git-lfs](https://git-lfs.github.com) first. Then, clone normally.
 
-Then, to build the web extension, use:
+Then, to build the app, use:
 
     npm install
-    npm run webext
-    npm run webext:safe
+    npm run build
 
-(The final step eliminates some code that triggers Mozilla's security scan.
-This code is unused by Fraidycat and is included by its dependencies.)
+To force building a package for a different platform, pass in the platform
+name through the `PLATFORM` environment variable.
 
-The extension will appear in a `build/webext` folder. You can then load that
-"unpacked" extension from the browser - as a 'temporary add-on', for example,
-in Firefox.
-
-To use Fraidycat, click on the 'F' icon in the browser toolbar.
-
-(Be aware that syncing may not work when using the extension in this way - it
-does in Chrome, though.)
-
-### Building the Windows / Max / Linux Standalone
-
-If you're checking out the code from Github, make sure you've installed
-[git-lfs](https://git-lfs.github.com) first. Then, clone normally.
-
-Then, to build the Electron app:
-
-    npm install -D
-    npm run electron:mac
-    (or: npm run electron:windows)
-    (or: npm run electron:linux)
-
-A `dist` directory will contain the appropriate installers.
-
-(Syncing is not supported in the standalone apps yet.)
+    PLATFORM=win npm run build
 
 ### License
 
