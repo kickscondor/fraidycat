@@ -69,7 +69,7 @@ Here is a current list of what is fully supported:
   of this. (*ALL SITES SHOULD SUPPORT THIS COME ON FRIENDS! IT'S TOO EASY!*)
 * **TiddlyWiki.** As odd as this seems, I use this heavily to follow wikis
   like philosopher.life and wiki.waifu.haus. The entire wiki is read every time
-  it changes - so be aware that this can cause some strain on the extension.
+  it changes - so be aware that this can eat up CPU time.
 * **Pinboard, YouTube and Reddit.** These sites offer RSS feeds, but they are
   not discoverable (in the meta tags), so there is some logic to figure out
   these feeds for you.
@@ -105,7 +105,7 @@ actually refetched if they haven't changed.
 
 ## Installation
 
-### Building the Firefox / Chrome Web Extension
+### Building the Thing
 
 If you're checking out the code from Github, make sure you've installed
 [git-lfs](https://git-lfs.github.com) first. Then, clone normally.
