@@ -2,7 +2,9 @@
   "name": "fraidycat",
   "description": "Follow blogs, wikis, YouTube, Twitter, Reddit, Instagram and the like... from a distance.",
   "homepage": "https://fraidyc.at/",
-  "main": "build/electron/js/electron/main.js",
+  "bin": {
+    "fraidycat-server": "src/js/server/main.js"
+  },
   "productName": "Fraidycat",
   "author": {
     "name": "Kicks Condor",
@@ -11,98 +13,111 @@
   "repository": {
     "url": "https://github.com/kickscondor/fraidycat"
   },
-  "version": "1.1.10",
+  "version": "2.0.0",
   "scripts": {
-    "start": "npm run electron:setup && electron .",
+    "build": "pnpm run build:frontend && pnpm run build:desktop && node ./src/package.js build/desktop",
+    "build:desktop": "fsbin emptyDir build/desktop && cross-env esbuild src/js/server/main.js migrations/00_initial.js --bundle --platform=node --external:electron --external:sqlite3 --outdir=build/desktop",
+    "build:frontend": "fsbin emptyDir build/frontend && cross-env STORAGE=frontend parcel build src/index.html --target frontend",
+    "start": "pnpm run build:frontend && node ./src/js/server/main.js",
     "start:firefox": "web-ext run --source-dir ./build/webext/",
     "test": "ava",
-    "electron": "npm run electron:setup && electron-builder -wml",
-    "electron:linux": "npm run electron:setup && electron-builder -l",
-    "electron:mac": "npm run electron:setup && electron-builder -m",
-    "electron:windows": "npm run electron:setup && electron-builder -w",
-    "electron:setup": "fsbin emptyDir build/electron && cross-env parcel build src/js/electron/main.js src/js/electron/content-script.js src/index.html src/background.html --target=electron --public-url ./ -d build/electron",
-    "dat": "fsbin emptyDir build/dat && fsbin copy src/root/dat build/dat && cross-env STORAGE=dat parcel build src/index.html --no-cache -d build/dat",
-    "webext": "fsbin emptyDir build/webext && cross-env STORAGE=webext parcel build src/manifest.json --no-cache --no-source-maps -d build/webext",
+    "webext": "fsbin emptyDir build/webext && cross-env STORAGE=webext parcel build src/manifest.json --no-cache --no-source-maps --dist-dir build/webext",
     "webext:lint": "web-ext lint --source-dir ./build/webext/",
-    "webext:safe": "find build/webext -type f -name '*.js' | xargs sed -i -e 's/Function(\"return this\")/function(){return this}/g' -e 's/\\([=: {]\\)Function(/\\1(function(){return function(){}})(/g'",
-    "publish": "npm run electron:setup && electron-builder -wml -p always",
-    "publish:windows": "npm run electron:setup && electron-builder -w -p always"
+    "webext:safe": "find build/webext -type f -name '*.js' | xargs sed -i='' -e 's/Function(\"return this\")/function(){return this}/g' -e 's/\\([=: {]\\)Function(/\\1(function(){return function(){}})(/g'"
   },
-  "build": {
-    "appId": "at.fraidyc",
-    "copyright": "by Kicks Condor",
-    "files": [
-      "build/electron/**/*"
-    ],
-    "mac": {
-      "category": "public.app-category.news",
-      "target": "dmg",
-      "entitlements": "src/entitlements.mac.plist",
-      "entitlementsInherit": "src/entitlements.mac.plist",
-      "hardenedRuntime": true,
-      "icon": "src/images/flatcat-512.png"
+  "targets": {
+    "desktop": {
+      "distDir": "build/desktop",
+      "context": "node",
+      "optimize": false,
+      "includeNodeModules": true
     },
-    "win": {
-      "target": "nsis",
-      "icon": "src/images/flatcat-512.png"
-    },
-    "linux": {
-      "target": [
-        "appImage",
-        "deb"
-      ],
-      "icon": "src/images/flatcat-512.png",
-      "category": "News"
-    },
-    "dmg": {
-      "sign": false
-    },
-    "nsis": {
-      "deleteAppDataOnUninstall": true
-    },
-    "afterSign": "src/notarize.js",
-    "publish": [
-      {
-        "provider": "github"
+    "frontend": {
+      "distDir": "build/frontend",
+      "scopeHoist": false,
+      "optimize": false,
+      "engines": {
+        "browsers": "> 0.5%, last 2 versions, not dead"
       }
-    ]
+    }
   },
+  "assets": [
+    {
+      "source": "build/frontend/**/*"
+    },
+    {
+      "source": "src/images/flatcat-*.{png,ico}",
+      "dir": "src/js/server/images"
+    },
+    {
+      "source": "node_modules/uWebSockets.js/uws_${platform}_${arch}_${vmod}.node",
+      "dir": "src/js/server"
+    },
+    {
+      "source": "node_modules/systray/traybin/tray_${platform_full}_release*",
+      "dir": "src/js/traybin"
+    },
+    {
+      "source": "node_modules/7zip/7zip-lite/7z.*",
+      "dir": "src/js/server/7zip-lite",
+      "platform": "win"
+    },
+    {
+      "source": "node_modules/node-pre-gyp/**/*"
+    },
+    {
+      "source": "node_modules/sqlite3/**/*"
+    }
+  ],
   "browserslist": "firefox >= 57, chrome >= 49",
   "dependencies": {
-    "@kickscondor/elasticlunr": "^0.9.8",
+    "@kickscondor/granax": "^3.2.9",
+    "@xmldom/xmldom": "^0.7.5",
+    "domify": "^1.4.1",
+    "electron-fetch": "^1.7.4",
+    "esbuild": "^0.13.10",
+    "fraidyscrape": "^1.0.16",
+    "json-date-parser": "^1.0.1",
+    "needle": "^3.0.0",
+    "normalize-url": "^7.0.2",
+    "open": "^8.2.1",
+    "opml-generator": "^1.1.1",
+    "pg-hstore": "^2.3.4",
+    "regenerator-runtime": "^0.13.9",
+    "rotating-file-stream": "^2.1.6",
+    "selfsigned": "^1.10.11",
+    "sqlite3": "^5.0.2",
+    "systray": "^1.0.5",
+    "twemoji": "^13.1.0",
+    "uWebSockets.js": "github:uNetworking/uWebSockets.js#binaries",
+    "xpath": "^0.0.32"
+  },
+  "darwinDependencies": {
+    "appdmg": "^0.6.2"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.15.5",
+    "@babel/preset-env": "^7.15.6",
     "@kickscondor/emoji-button": "^2.1.4",
     "@kickscondor/router": "^0.7.3",
     "@kickscondor/umbrellajs": "^3.1.2",
-    "@shelacek/ubjson": "^1.0.2",
-    "about-window": "^1.14.0",
-    "cross-env": "^7.0.3",
-    "electron-log": "^4.3.2",
-    "electron-process": "^0.2.0",
-    "electron-updater": "^4.3.8",
-    "ent": "^2.2.0",
-    "fast-json-patch": "^3.0.0-1",
-    "fraidyscrape": "^1.0.14",
-    "fsbin": "^1.0.9",
-    "hyperapp": "^1.2.9",
-    "json-date-parser": "^1.0.1",
-    "node-fetch": "^2.6.0",
-    "normalize-url": "^4.5.0",
-    "opml-generator": "^1.1.1",
-    "parcel-bundler": "^1.12.5",
-    "regenerator-runtime": "^0.13.6",
-    "yarn": "^1.22.10"
-  },
-  "devDependencies": {
-    "@babel/core": "^7.13.14",
-    "@babel/preset-env": "^7.13.12",
+    "@parcel/transformer-image": "^2.0.0-rc.0",
+    "@parcel/transformer-sass": "^2.0.0-rc.0",
     "ava": "^3.15.0",
-    "electron": "^8.5.5",
-    "electron-builder": "^22.10.5",
-    "electron-notarize": "^0.3.0",
-    "node-sass": "^4.14.1",
-    "parcel-plugin-web-extension": "^1.6.1",
-    "sass": "^1.32.8",
+    "cross-env": "^7.0.3",
+    "decompress": "^4.2.1",
+    "ent": "^2.2.0",
+    "fast-glob": "^3.2.7",
+    "fast-json-patch": "^3.1.0",
+    "fsbin": "^1.0.11",
+    "hyperapp": "^1.2.10",
+    "koalaesce": "^0.6.5",
+    "parcel": "^2.0.0-rc.0",
+    "pkg": "github:geekuillaume/pkg",
+    "sass": "^1.39.2",
+    "sequelize": "^6.6.5",
+    "umzug": "^2.3.0",
     "web-ext": "^4.3.0",
-    "webextension-polyfill": "^0.8.0"
+    "webextension-polyfill": "^0.6.0"
   }
 }

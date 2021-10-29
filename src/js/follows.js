@@ -22,7 +22,7 @@ export default ({
     //
     init: () => async (state, {update}) => {
       let local = await storage()
-      local.client(msg => update(msg))
+      await local.client(msg => update(msg))
       local.command('setup')
       state.local = local
     },
@@ -32,7 +32,9 @@ export default ({
     //
     update: (patch) => (state, {location, set}) => {
       // console.log([state, patch])
-      if (patch.op === 'discovery') {
+      if (patch.op === 'load') {
+        return {focus: patch.meta}
+      } else if (patch.op === 'discovery') {
         location.go("/add-feed")
         return {feeds: {list: patch.feeds, site: patch.follow}}
       } else if (patch.op === 'subscription') {
@@ -75,6 +77,14 @@ export default ({
         return patch
       }
     },
+
+    //
+    // Load a follow's posts, updating it if it's old school.
+    //
+    loadPosts: id => ({local}) => {
+      local.command("loadPosts", id)
+    },
+
 
     //
     // Change a setting.

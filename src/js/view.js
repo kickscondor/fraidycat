@@ -9,10 +9,6 @@ const url = require('url')
 const sparkline = require('./sparkline')
 import u from '@kickscondor/umbrellajs'
 
-import svg from '../images/*.svg'
-import images from '../images/*.png'
-import webp from '../images/*.webp'
-
 const CAN_ARCHIVE = (process.env.STORAGE === 'dat')
 const IS_WEBEXT = (process.env.STORAGE === 'webext')
 
@@ -50,9 +46,70 @@ const ToggleHover = (el, parentSel, childSel) => {
   })
 }
 
+const ToggleShowByEle = (ele, parentSel, cls) => {
+  u(ele).closest(parentSel).toggleClass(cls || "show")
+}
+
 const ToggleShow = (e, parentSel, cls) => {
   e.preventDefault()
-  u(e.target).closest(parentSel).toggleClass(cls || "show")
+  ToggleShowByEle(e.target, parentSel, cls)
+}
+
+const DragEdge = actions => e => {
+  e.preventDefault()
+  let t = u(e.target).addClass('resizing')
+  let c = u(e.target.parentElement), actualWidth = 0
+  let move = e => {
+    if (c) {
+      e.stopPropagation()
+      let width = Math.round(document.body.clientWidth - e.clientX)
+      if (width > 64 && width < document.body.clientWidth - 64) {
+        actualWidth = width
+        c.attr('style', 'width: ' + width + 'px')
+      }
+    }
+  }
+  let up = e => {
+    if (actualWidth > 0) {
+      let value = ((actualWidth / document.body.clientWidth) * 100).toFixed(2) + '%';
+      actions.follows.changeSetting({name: 'pane-width', value})
+    }
+    t.removeClass('resizing')
+    document.removeEventListener('mousemove', move)
+    document.removeEventListener('mouseup', up)
+  }
+  document.addEventListener('mousemove', move)
+  document.addEventListener('mouseup', up)
+}
+
+const WidenImages = el => {
+  u('img', el).each(img => {
+    if (img.naturalWidth == 0) {
+      img.addEventListener('load', _ => {
+        if (img.naturalWidth > 350) {
+          u(img).addClass('wide')
+        }
+      })
+    } else {
+      if (img.naturalWidth > 350) {
+        u(img).addClass('wide')
+      }
+    }
+  })
+
+  u('video', el).each(vid => {
+    if (vid.videoWidth == 0) {
+      vid.addEventListener('load', _ => {
+        if (vid.videoWidth > 350) {
+          u(vid).addClass('wide')
+        }
+      })
+    } else {
+      if (vid.videoWidth > 350) {
+        u(vid).addClass('wide')
+      }
+    }
+  })
 }
 
 const Nudge = (x) => a => {
@@ -114,7 +171,7 @@ const FollowForm = (match, setup, isNew) => ({follows}, actions) => {
   return follow && <form class="follow" onsubmit={FormFreeze}>
     {isNew &&
       <div>
-        <label for="url">URL <img src={follows.baseHref + images['supported']} /></label>
+        <label for="url">URL <img src={new URL('../images/supported.png', import.meta.url)} /></label>
         <input type="text" id="url" name="url" value={follow.url} autocorrect="off" autocapitalize="none"
           oninput={e => follow.url = e.target.value} autofocus />
         <p class="note">(See <a href="https://rss.app/">RSS.app</a> and <a href="https://rssbox.herokuapp.com">RSS Box</a> for other services. Or <a href="https://notifier.in/integrations/email-to-rss">Notifier</a> for email newsletters.)</p>
@@ -126,7 +183,7 @@ const FollowForm = (match, setup, isNew) => ({follows}, actions) => {
       {Importances.map(imp => 
         <option value={imp[0]} selected={imp[0] == follow.importance}>{imp[2]} {imp[1]} &mdash; {imp[3]}</option>)}
       </select>
-      <p class="note">Only 'Real-time' follows will highlight the tab when there
+      <p class="note">Only 'Realtime' follows will highlight the tab when there
         are updates.</p>
     </div>
 
@@ -136,7 +193,7 @@ const FollowForm = (match, setup, isNew) => ({follows}, actions) => {
         oninput={e => e.target.value ? (follow.tags = e.target.value.trim().split(/\s+/)) : (delete follow.tags)} />
       <a href="#" class="emoji" onclick={e => {
         e.preventDefault()
-        picker.pickerVisible ? picker.hidePicker() : picker.showPicker(e)
+        picker.pickerVisible ? picker.hidePicker() : picker.showPicker(e.target)
       }}>&#128513;</a>
       <p class="note">(If left blank, tag is assumed to be '&#x1f3e0;'&mdash;the main page tag.)</p>
     </div>
@@ -148,19 +205,12 @@ const FollowForm = (match, setup, isNew) => ({follows}, actions) => {
       <p class="note">(Leave empty to use <em>{follow.actualTitle || "the title loaded from the site"}</em>.)</p>
     </div>
 
-    {CAN_ARCHIVE &&
-      <div>
-        <input type="checkbox" id="fetchesContent" onclick={e => follow.fetchesContent = e.target.checked} checked={follow.fetchesContent} />
-        <label for="fetchesContent">Read here?</label>
-        <p class="note">(Check this to save a copy of complete posts and read them from Fraidycat.)</p>
-      </div>}
-
     <button onclick={e => {u('#working').attr('style', 'display: block'); return actions.follows.save(follow)}}>Save</button>
     {!isNew && <button type="button" class="delete" onclick={_ => actions.follows.confirmRemove(follow)}>Delete This</button>}
 
     <div id="working">
       <div>
-        <img src={follows.baseHref + webp['working']} />
+        <img src={new URL('../images/working.webp', import.meta.url)} />
         <p>FOLLOWING</p>
       </div>
     </div>
@@ -212,9 +262,9 @@ function timeAgo(from_time, to_time) {
   if (Number(from_time) == 0)
     return ''
 
-  from_time = Math.floor(from_time / 1000)
-  to_time = Math.floor(to_time / 1000)
-  let mins = Math.round(Math.abs(to_time - from_time)/60)
+  let from_i = Math.floor(from_time / 1000)
+  let to_i = Math.floor(to_time / 1000)
+  let mins = Math.round(Math.abs(to_i - from_i)/60)
 
   if (mins == 0)
     return '1m'
@@ -226,15 +276,13 @@ function timeAgo(from_time, to_time) {
     return Math.round(mins / 60) + 'h'
   if (mins >= 1441 && mins <= 2880)
     return '1d'
-  if (mins >= 2881 && mins <= 43220)
-    return Math.round(mins / 1440) + 'd'
-  if (mins >= 43221 && mins <= 86400)
-    return '1M'
-  if (mins >= 86401 && mins <= 525960)
-    return Math.round(mins / 43200) + 'M'
-  if (mins >= 525961 && mins <= 1051920)
-    return '1Y'
-  return Math.round(mins / 525600) + 'Y'
+  if (mins >= 2881 && mins <= 4320)
+    return '2d'
+  if (mins >= 4321 && mins <= 525600)
+    return from_time.toLocaleString('default',
+      {month: 'short', day: 'numeric'})
+  return from_time.toLocaleString('default',
+    {month: 'short', day: 'numeric', year: 'numeric'})
 }
 
 function timeDarkness(from_time, to_time) {
@@ -242,9 +290,9 @@ function timeDarkness(from_time, to_time) {
   to_time = Math.floor(to_time / 1000)
   let mins = Math.round(Math.abs(to_time - from_time)/60)
 
-  if (mins >= 0 && mins < 3600)
+	if (mins >= 0 && mins <= 4320)
     return 'age-h'
-  if (mins >= 3600 && mins <= 43220)
+	if (mins >= 4321 && mins <= 43220)
     return 'age-d'
   return 'age-M'
 }
@@ -285,10 +333,10 @@ function lastPostTime(follow, sortPosts) {
   return lastPostAt
 }
 
-const Favicon = function(baseHref, follow) {
+const Favicon = function(follow) {
   let src = null
   try { src = url.resolve(follow.url, follow.photo || '/favicon.ico') } catch {}
-  return src || (baseHref + svg['globe'])
+  return src || (new URL('../images/globe.svg', import.meta.url))
 }
 
 const TitleMaxlen = 60, TitleMinlen = 24
@@ -301,6 +349,42 @@ const TitleTrunc = function(title) {
   if (res != null && res.index > TitleMinlen)
     index = res.index + 1
   return <span>{title.slice(0, index)}<s>{title.slice(index)}</s></span>
+}
+
+const PostView = (detail, focus, cls) => {
+  if (detail) {
+    let graphic = null, vid = null, aud = null
+    if (!detail.html) {
+      if (detail.video) {
+        for (let size of ['preview', 'full', 'thumb']) {
+          if (size in detail.video) {
+            vid = [size, detail.video[size]]
+            break
+          }
+        }
+      }
+      if (vid === null && detail.graphic) {
+        for (let size of ['preview', 'full', 'thumb']) {
+          if (size in detail.graphic) {
+            graphic = [size, detail.graphic[size]]
+            break
+          }
+        }
+      }
+      aud = (vid === null && detail.audio && detail.audio.full)
+    }
+
+    let author = detail.author && detail.author !== focus.author && <span class="author">{detail.author}</span>
+    cls += (detail.text || detail.html) ? ' text' : ''
+    return <div class={cls} oncreate={WidenImages} onupdate={WidenImages}>
+        {vid && <video class={vid[0]} controls><source src={vid[1]} /></video>}
+        {graphic && <img class={graphic[0]} src={graphic[1]} />}
+        {aud && <audio controls="true" preload="none" src={aud} />}
+        {detail.text ? <p>{author}{detail.text}</p> : 
+          (detail.html && <div>{author}<div class="inner" innerHTML={detail.html} /></div>)}
+        {detail.embeds && detail.embeds.map(post => PostView(post, focus, "embed"))}
+      </div>
+  }
 }
 
 const ListFollow = ({ location, match }) => ({follows}, actions) => {
@@ -341,6 +425,7 @@ const ListFollow = ({ location, match }) => ({follows}, actions) => {
     }
     return (a.importance - b.importance) || sortBy
   })
+	let focus = match.params.meta, focusLimit = Number(match.params.limit || 0)
   let impa = Object.keys(imps)
   let imp = match.params.importance || (impa.length > 0 ? Math.min(...impa) : 0)
   viewable = viewable.filter(follow => (follow.importance == imp))
@@ -352,10 +437,11 @@ const ListFollow = ({ location, match }) => ({follows}, actions) => {
   return <div id="follows">
     <div id="tags">
       <ul>
-      {tagTabs.map(t => <li class={timeDarkness(tags[t], now)}><Link to={`/tag/${encodeURIComponent(t)}`} class={t === tag && 'active'}>{t}</Link></li>)}
+      {tagTabs.map(t => <li class={timeDarkness(tags[t], now)}><Link to={`/tag/${encodeURIComponent(t)}`}
+        class={t === tag && 'active'} onclick={e => ToggleShowByEle(e.target, "div")}>{t}</Link></li>)}
       </ul>
-      <a href="#" class="left" oncreate={Nudge(30)}>&lsaquo;</a>
-      <a href="#" class="right" oncreate={Nudge(-30)}>&rsaquo;</a>
+      <h2><button class={timeDarkness(tags[tag], now)} onclick={e => ToggleShow(e, "div")}
+         >{tag}</button></h2>
     </div>
     <div class="sort">
       <a href="#" onclick={e => ToggleShow(e, "div")}>
@@ -392,20 +478,21 @@ const ListFollow = ({ location, match }) => ({follows}, actions) => {
           let lastPostAt = lastPostTime(follow, sortPosts), tags = []
           let ago = timeAgo(lastPostAt, now)
           let dk = timeDarkness(lastPostAt, now)
-          let linkUrl = follow.fetchesContent ? `/view/${follow.id}` : follow.url
           let id = `follow-${follow.id}`
-          return <li key={id} class={dk || 'age-X'}>
+          let viewUrl = `/view/${follow.id}?tag=${encodeURIComponent(tag)}&importance=${encodeURIComponent(imp)}`
+          return <li class={`follow ${dk || 'age-X'} ${match.params.id === follow.id ? 'focus' : ''}`} onclick={e => e.target.name === id && actions.location.go(viewUrl)}>
             <a name={id}></a>
+            <Link to={viewUrl} class="favicon">
+              <img src={Favicon(follow)}
+                onerror={e => e.target.src=new URL('../images/globe.svg', import.meta.url)} width="48" height="48" />
+            </Link>
             <h3>
-              <Link to={linkUrl}>
-                <img class="favicon" src={Favicon(follows.baseHref, follow)}
-                  onerror={e => e.target.src=follows.baseHref + svg['globe']} width="20" height="20" />
-              </Link>
-              <Link class="url" to={linkUrl} target={`${follows.settings['mode-tab'] || "" }`}>{followTitle(follow)}</Link>
+              <Link to={viewUrl} class="url">{followTitle(follow)}</Link>
+              <Link class="ext" to={follow.url} target="_blank"><img src={new URL('../images/link.svg', import.meta.url)} width="16" target="_blank" /></Link>
               {follow.status instanceof Array && follow.status.map(st =>
-                <a class={`status status-${st.type}`} oncreate={ToggleHover} href={st.url || follow.url}
-                  >{st.type === 'live' ? <span><img src={follows.baseHref + svg['rec']} width="12" /> LIVE</span> : <span><img src={follows.baseHref + svg['notepad']} width="16" /></span>}
-                  <div>{st.title || st.text || html2text(st.html)}
+                <a class={`status status-${st.type}`} oncreate={ToggleHover} href={st.url || follow.url} target="_blank"
+                  >{st.type === 'live' ? <span><img src={new URL('../images/rec.svg', import.meta.url)} width="12" /> LIVE</span> : <span><img src={new URL('../images/notepad.svg')} width="16" /></span>}
+                  <div>{st.title || st.text || html2text(st.html || '')}
                     {st[sortPosts] && <span class="ago">{timeAgo(st[sortPosts], now)}</span>}</div>
                 </a>)}
               {ago && <span class="latest">{ago}</span>}
@@ -413,53 +500,87 @@ const ListFollow = ({ location, match }) => ({follows}, actions) => {
                 width="120" height="20" stroke-width="2"
                 oncreate={el => sparkpoints(el, follow.activity)}
                 onupdate={el => sparkpoints(el, follow.activity)}></svg></a>
-              <Link to={`/edit/${follow.id}`} class="edit" title="edit"><img src={follows.baseHref + images['270f']} /></Link>
+              <Link to={`/edit/${follow.id}`} class="edit" title="edit"><img src={new URL('../images/270f.png', import.meta.url)} /></Link>
             </h3>
             <div class={`extra ${follows.settings['mode-expand'] || "trunc"}`}>
-              {follow.posts instanceof Array && follow.posts.length > 0 &&
-                <div class="post">
-                <ol class="title">{(showReposts ? follow.posts : follow.posts.filter(x => !x.author || x.author === follow.author)).
-                  slice(0, follow.limit || 10).map(f => {
-                    let postAge = timeAgo(f[sortPosts], now)
-                    return <li class={timeDarkness(f[sortPosts], now)}>
-                      {f.author && f.author !== follow.author && <span class="author">{f.author}</span>}
-                      {f.url.startsWith('id:') ? <span class="txt">{TitleTrunc(f.title)}</span> : <a href={f.url}>{TitleTrunc(f.title)}</a>}
-                      {!f.index && <span class="ago">{timeAgo(f[sortPosts], now)}</span>}
-                    </li>
-                  })}</ol>
-                  {!follow.fetchesContent && <a class="collapse" href="#"
-                    onclick={e => ToggleShow(e, ".extra", "trunc")}>
-                      <span class="enter">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2">
-                          <line x1="3" y1="3" x2="10" y2="9"></line>
-                          <line x1="3" y1="13" x2="10" y2="7"></line>
-                        </svg>
-                      </span>
-                      <span class="close">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2">
-                          <line x1="0" y1="5" x2="6" y2="13"></line>
-                          <line x1="10" y1="5" x2="4" y2="13"></line>
-                        </svg>
-                      </span>
-                      </a>}
-                </div>}
+              <div class="post">
+                <ol class="title">
+                {follow.posts instanceof Array && follow.posts.length > 0 &&
+                  (showReposts ? follow.posts : follow.posts.filter(x => !x.author || x.author === follow.author)).
+                    slice(0, follow.limit || 10).map(f => {
+                      let postAge = timeAgo(f[sortPosts], now)
+                      return <li class={timeDarkness(f[sortPosts], now)}>
+                        {f.author && f.author !== follow.author && <span class="author">{f.author}</span>}
+                        {f.url.startsWith('id:') ? <span class="txt">{TitleTrunc(f.title)}</span> : <a href={f.url}>{TitleTrunc(f.title)}</a>}
+                        {!f.index && <span class="ago">{timeAgo(f[sortPosts], now)}</span>}
+                      </li>
+                  })}
+                </ol>
+              </div>
             </div>
           </li>
         } catch (e) {
           console.error(e)
           return <li><h3>{followTitle(follow) || follow.id}
-            <Link to={`/edit/${follow.id}`} class="edit" title="edit"><img src={follows.baseHref + images['270f']} /></Link>
+            <Link to={`/edit/${follow.id}`} class="edit" title="edit"><img src={new URL('../images/270f.png', import.meta.url)} /></Link>
           </h3></li>
         }
       })}</ol> :
         <div class="intro">
           <h3>Ready?</h3>
           <p>Let's get Fraidycat going, yeah?</p>
-          <p>Click the <Link to={addLink} class="pink" title="Add a Follow"><img src={follows.baseHref + svg['add']} width="16" /></Link> button to add someone!</p>
-          <p>Or, click the <Link to="/settings" title="Settings"><img src={follows.baseHref + svg['gear']} width="16" /></Link> to import a bunch.</p>
-          <p><em>Hey! Follows added to this <strong>Real-time</strong> page will highlight the tab when there are new posts!</em></p>
+          <p>Click the <Link to={addLink} class="pink" title="Add a Follow"><img src={new URL('../images/add.svg', import.meta.url)} width="16" /></Link> button to add someone!</p>
+          <p>Or, click the <Link to="/settings" title="Settings"><img src={new URL('../images/gear.svg', import.meta.url)} width="16" /></Link> to import a bunch.</p>
+          <p><em>Hey! Follows added to this <strong>Realtime</strong> page will highlight the tab when there are new posts!</em></p>
         </div>}
+    {focus && <div id="pane" oncreate={el => el.style = `width: ${follows.settings['pane-width'] || "50%"}`}>
+      <div class="hide"><Link to={`/tag/${encodeURIComponent(tag)}?importance=${imp}`}>
+        <img src={new URL('../images/hide.svg', import.meta.url)} width="24" /></Link></div>
+      <div class="edge" onmousedown={DragEdge(actions)} />
+      <div class="contents">
+      {focus.posts.slice(focusLimit, focusLimit + 20).map(post => {
+        let detail = focus.details[post.id]
+        if (detail) {
+          return <div id={`post-${post.id}`} class="post">
+            {detail.title && <h4><a href={detail.url} target="_blank">{detail.title}</a>
+              <nobr><a class="ext" href={detail.url} target="_blank">
+                <img src={new URL('../images/link.svg', import.meta.url)} width="16" target="_blank" />
+              </a></nobr>
+              </h4>}
+            {PostView(detail, focus, "main")}
+            <div class={timeDarkness(detail.publishedAt, now)}>
+              {detail.publishedAt && <span class="ago">{timeAgo(detail.publishedAt, now)}</span>}
+              <Link to={detail.url} class="share" target="_blank">
+                <img src={new URL('../images/share.svg', import.meta.url)} width="12" />
+              </Link>
+            </div>
+          </div>
+        }
+      })}
+      {(focus.posts.length > focusLimit + 20) && <div id="nextPage"><p><Link
+        to={`/view/${focus.id}?tag=${encodeURIComponent(tag)}&importance=${encodeURIComponent(imp)}&limit=${focusLimit + 20}`}>View older posts</Link></p>
+        </div>}
+      </div>
+    </div>}
   </div>
+}
+
+const ViewFollowById = ({ location, match, setup }) => ({follows}, actions) => {
+  if (setup) {
+    actions.follows.loadPosts(match.params.id)
+    let contents = u('#pane .contents').first()
+    if (contents) {
+      contents.scrollTop = 0
+    }
+  }
+
+  if (follows.focus) {
+    let tag = follows.focus.tags && follows.focus.tags[0]
+    match.params = Object.assign({meta: follows.focus, tag,
+      importance: follows.focus.importance}, match.params)
+  }
+
+  return ListFollow({ location, match })
 }
 
 const ImportFrom = (format) => {
@@ -471,7 +592,7 @@ const ImportFrom = (format) => {
 const ChangeSettings = ({ match, setup }) => (state, {follows}) => {
   return <div id="settings">
     <div class="about">
-      <a href="https://fraidyc.at/"><img src={state.follows.baseHref + images['flatcat-512']} alt="Fraidycat" title="Fraidycat" /></a>
+      <a href="https://fraidyc.at/"><img src={new URL('../images/flatcat-512.png', import.meta.url)} alt="Fraidycat" title="Fraidycat" /></a>
       <h2><a href="https://fraidyc.at/">fraidyc.at</a></h2>
       <p>Follow the <em>whole</em> Web.</p>
       <p class="report">Report bugs and ideas <a href="https://github.com/kickscondor/fraidycat/issues">here</a>.</p>
@@ -521,10 +642,10 @@ export default (state, actions) => {
   if (!state.follows.started)
     return <div id="scanner">
       <div id="logo">
-        <img src={state.follows.baseHref + images['fc']} />
+        <img src={new URL('../images/fc.png', import.meta.url)} />
       </div>
       <div id="loading">
-        <img src={state.follows.baseHref + webp['catspace']} alt="..." />
+        <img src={new URL('../images/catspace.webp', import.meta.url)} alt="..." />
         <p>LOADING</p>
       </div>
     </div>
@@ -546,6 +667,11 @@ export default (state, actions) => {
   }
 
   // console.log(state.follows.all)
+  let logo = new URL('../images/fc.png', import.meta.url)
+  if (state.follows.settings['mode-theme'] === 'dark') {
+    logo = new URL('../images/fc-cy.png', import.meta.url)
+  }
+
   return <div class={`theme--${state.follows.settings['mode-theme'] || "auto"}`}>
     <article>
       <header>
@@ -558,11 +684,11 @@ export default (state, actions) => {
               </li> :	
               (urgent && <li id="urgent"><p><a href="#" onclick={e => {	
                 e.preventDefault(); urgent.approve()}}>{urgent.note}</a></p></li>)}
-            <li><Link to="/add" class="pink" title="Add a Follow" accesskey="n"><img src={state.follows.baseHref + svg['add']} width="16" /></Link></li>
-            <li><Link to="/settings" title="Settings"><img src={state.follows.baseHref + svg['gear']} width="16" /></Link></li>
+            <li><Link to="/add" class="pink" title="Add a Follow"><img src={new URL('../images/add.svg', import.meta.url)} width="16" /></Link></li>
+            <li><Link to="/settings" title="Settings"><img src={new URL('../images/gear.svg', import.meta.url)} width="16" /></Link></li>
           </ul>}
         </div>
-        <h1><Link to="/"><img src={state.follows.baseHref + images['fc']} alt="Fraidycat" title="Fraidycat" /></Link></h1>
+        <h1><Link to="/"><img src={logo} alt="Fraidycat" title="Fraidycat" /></Link></h1>
       </header>
       <section>
         <Switch>
@@ -570,6 +696,7 @@ export default (state, actions) => {
           <Route path="/add" render={AddFollow} />
           <Route path="/add-feed" render={AddFeed} />
           <Route path="/edit/:id" render={EditFollowById} />
+					<Route path="/view/:id" render={ViewFollowById} />
           <Route path="/tag/:tag" render={ListFollow} />
           <Route render={settings ? ChangeSettings : ListFollow} />
         </Switch>

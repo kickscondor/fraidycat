@@ -10,7 +10,6 @@ import 'regenerator-runtime/runtime'
 
 import follows from './follows'
 import views from './view'
-import images from '../images/*.png'
 import '../css/fraidy.scss'
 
 const {state, actions, view} = hyperload({

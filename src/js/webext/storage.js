@@ -186,7 +186,7 @@ class WebextStorage {
     })
   }
 
-  client(fn) {
+  async client(fn) {
     browser.runtime.onMessage.addListener(async (msg) => {
       fn(this.decode(msg))
       return true

@@ -192,7 +192,7 @@ class ElectronStorage {
   }
 
   update(data, receiver) {
-    this.sendMessage({action: 'updated', data, receiver})
+    port.postMessage(encode({action: 'updated', data}))
   }
 
   backgroundSetup() {

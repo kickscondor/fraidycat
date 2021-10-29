@@ -1,6 +1,9 @@
+$emoji-fonts: "Twemoji Mozilla", "Segoe UI Emoji", "Segoe UI Symbol", "Segoe UI", "Apple Color Emoji", "Noto Color Emoji", "EmojiOne Color", "Android Emoji";
 $themes: (
   light: (
+    pattern: url('../images/fc-light.png'),
     background: #F7F7E7,
+    backmute: #FCFCF3,
     plain: #000000,
     link: #0000EE,
     visited: #AA8844,
@@ -28,9 +31,12 @@ $themes: (
     sparkoldfill: #ACC0CB,
     notice: #997755,
     progress: #DDDDCC,
+    edge: #99999999
   ),
   dark: (
+    pattern: url('../images/fc-dark.png'),
     background: #080818,
+    backmute: #181818,
     plain: #FFEEEE,
     link: #DDFFFF,
     visited: #AAAAAA,
@@ -58,6 +64,7 @@ $themes: (
     sparkoldfill: #2B2C10,
     notice: #7799AA,
     progress: #997755,
+    edge: #000000
   ),
 );
 
@@ -89,6 +96,7 @@ $theme-map: null;
 
 html {
   overflow-y: scroll;
+  font-family: $emoji-fonts;
 }
 
 body {
@@ -105,7 +113,7 @@ body {
 }
 
 h1 {
-  margin: 0;
+  margin: 20px 0;
 
   a {
     text-decoration: none;
@@ -120,11 +128,12 @@ ul {
 article {
   /* max-width: 780px; */
   padding: 20px 40px 60px 40px;
-  font-family: 'Inria Sans';
+  font-family: 'Inria Sans', $emoji-fonts;
   font-size: 1.1rem;
   min-height: 100%;
 
   @include themed() {
+    background: t('pattern') no-repeat;
     color: t('plain');
     background-color: t('background');
 
@@ -132,6 +141,10 @@ article {
       color: t('link');
     }
   }
+}
+
+header {
+  margin-left: 22px;
 }
 
 footer {
@@ -237,40 +250,68 @@ div.intro {
 }
 
 #follows {
-  ol {
+  & > ol {
     list-style: none;
     padding: 0;
-  }
 
-  & > ol > li {
-    position: relative;
+    & > li {
+      position: relative;
+      margin: 12px 0;
+      padding: 2px 12px;
+      cursor: pointer;
 
-    @include themed() {
-      border-bottom: dotted 1px t('rule');
+      @include themed() {
+        background: t('backmute');
+        border-bottom: dotted 1px t('rule');
 
-      a.show > div {
-        display: block !important;
-      }
+        &:hover,
+        &.focus {
+          margin: -4px 4px 13px -4px;
+        }
 
-      a.status > div {
-        position: absolute;
-        left: -32px;
-        bottom: 100%;
-        background: t('paper');
-        color: t('sparkfreshline');
-        border: solid 1px t('sparkfreshline');
-        box-shadow: 4px 3px 0 0 t('progress');
-        margin-bottom: 8px;
-        margin-right: -50vw;
-        max-height: 200px;
-        overflow: hidden;
-        padding: 4px;
-        z-index: 3;
-        display: none;
+        &.focus {
+          border: solid 2px t('spanold');
+          box-shadow: 4px 4px t('spanold');
+        }
 
-        span.ago {
-          color: t('latestfresh');
-          font-size: 0.9rem;
+        div.trunc ol.title:after {
+          background-image: linear-gradient(to right, rgba(t('backmute'), 0), t('backmute') 90%);
+        }
+
+        &:hover {
+          background-color: t('paper') !important;
+          border: solid 2px t('plain') !important;
+          box-shadow: 4px 4px t('plain') !important;
+
+          div.trunc ol.title:after {
+            background-image: linear-gradient(to right, rgba(t('paper'), 0), t('paper') 90%);
+          }
+        }
+
+        a.show > div {
+          display: block !important;
+        }
+
+        a.status > div {
+          position: absolute;
+          left: -32px;
+          bottom: 100%;
+          background: t('paper');
+          color: t('sparkfreshline');
+          border: solid 1px t('sparkfreshline');
+          box-shadow: 4px 3px 0 0 t('progress');
+          margin-bottom: 8px;
+          margin-right: -50vw;
+          max-height: 200px;
+          overflow: hidden;
+          padding: 4px;
+          z-index: 3;
+          display: none;
+
+          span.ago {
+            color: t('latestfresh');
+            font-size: 0.9rem;
+          }
         }
       }
     }
@@ -297,80 +338,113 @@ div.intro {
   #tags {
     position: relative;
     margin-bottom: 12px;
-    overflow-x: hidden;
-    width: 100%;
+    z-index: 4;
 
-    ul {
-      white-space: nowrap;
-      margin-top: 4px;
-      overflow-y: scroll;
-      scrollbar-width: none;
-
-      &::-webkit-scrollbar {
-        display: none;
-      }
-
-      @include themed() {
-        border-bottom: solid 8px t('border');
-      }
+    h2 {
+      position: relative;
+      font-size: 2rem;
+      margin: 0 18px 0 22px;
+      float: left;
     }
 
-    li {
-      font-family: monospace;
-      font-size: 1.7rem;
-      margin-right: 6px;
-      text-align: center;
-
-      @include themed() {
+    @include themed() {
+      button {
         background-color: t('tab');
+        border: solid 1px t('border');
+        border-radius: 4px;
+        font-size: 1.7rem;
+        padding: 1px 6px 4px 6px;
+        cursor: pointer;
 
         &.age-m,
         &.age-h {
-          a {
-            border-top: solid 4px t('tabfresh');
-          }
+          background-color: t('tabfresh');
         }
 
         &.age-d,
         &.age-w {
-          a {
-            border-top: solid 4px t('tabold');
+					background-color: t('tabold');
+        }
+      }
+
+			&.show > h2 > button {
+				box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.3), 0 2px rgba(255, 255, 255, 0.1);
+				background-color: t('progress');
+				padding: 4px 6px 1px 6px;
+			}
+    }
+
+    & > ul {
+      position: absolute;
+      display: none;
+      top: 100%;
+      margin-top: 2.6rem;
+      margin-left: 22px;
+      font-size: 1.5rem;
+
+      @include themed() {
+        border: solid 1px t('progress');
+        background: t('paper');
+      }
+
+      li {
+        position: relative;
+        display: block;
+        padding: 6px 8px 6px 12px;
+
+        &:after {
+          position: absolute;
+          padding-top: 8px;
+          margin-left: -12px;
+          pointer-events: none;
+          color: transparent;
+        }
+
+        @include themed() {
+          &:hover {
+            background-color: t('tab');
+          }
+
+          &.age-m:hover,
+          &.age-h:hover {
+            background-color: t('tabfresh');
+          }
+
+          &.age-d:hover,
+          &.age-w:hover {
+            background-color: t('tabold');
+          }
+
+          &.age-m:after,
+          &.age-h:after {
+            content: "\2726";
+            color: t('latestfresh');
+            text-shadow: -1px -1px 0 t('paper'), 1px -1px 0 t('paper'), -1px 1px 0 t('paper'), 1px 1px 0 t('paper');
+          }
+
+          &.age-d:after,
+          &.age-w:after {
+            content: "\25cf";
+            color: t('latestold');
+            text-shadow: -1px -1px 0 t('paper'), 1px -1px 0 t('paper'), -1px 1px 0 t('paper'), 1px 1px 0 t('paper');
+          }
+
+          span {
+            border: solid 4px t('border');
+            background-color: t('border');
+            border-bottom: 0;
           }
         }
 
         a {
-          padding: 4px 14px;
           text-decoration: none;
-          border-top: solid 4px t('tab');
-          display: block;
         }
-
-        a.active {
-          border: solid 4px t('border');
-          background-color: t('border');
-          border-bottom: 0;
-        }
-      }
+			}
     }
 
-    & > a {
-      display: block;
-      position: absolute;
-      top: 0;
-      padding: 0 8px;
-      height: 100%;
-      font-size: 2rem;
-      text-decoration: none;
-      display: none;
-
-      @include themed() {
-        background-color: t('border');
-        color: t('background');
-      }
-
-      &.right {
-        right: 0;
-      }
+    &.show > ul {
+      display: grid;
+      grid-template-columns: auto auto auto auto auto auto;
     }
   }
 
@@ -443,29 +517,30 @@ div.intro {
     }
   }
 
-  #imps li {
-    font-size: 1.2rem;
-    font-variant: small-caps;
-    font-weight: bold;
-    border-bottom: none;
-    margin-right: 6px;
+  #imps {
+		li {
+			font-size: 1.2rem;
+			font-variant: small-caps;
+			font-weight: bold;
+			border-bottom: none;
+			margin-right: 6px;
 
-    a {
-      @include themed() {
-        color: t('color');
-      }
-    }
+			a {
+				@include themed() {
+					color: t('color');
+				}
+			}
 
-    &.active {
-      font-size: 1.4rem;
-      background: #F09;
-      color: white;
-      padding: 2px 6px;
+			&.active {
+				font-size: 1.4rem;
+				background: #F09;
+				color: white;
+				padding: 7px 12px;
+			}
     }
   }
 
-
-  h3, div.extra {
+  .follow > h3, div.extra {
     position: relative;
     z-index: 2;
     pointer-events: none;
@@ -475,15 +550,15 @@ div.intro {
     }
   }
 
-  h3 {
+  .follow > h3 {
     font-size: 1.1rem;
-    margin: 8px 0 4px 0;
+    margin: 8px 0 4px 64px;
 
     a.url {
       display: inline-block;
       text-decoration: none;
       overflow: hidden;
-      max-width: calc(100% - 40px);
+      max-width: calc(100% - 200px);
       white-space: nowrap;
       margin: 4px 4px -6px 4px;
 
@@ -494,6 +569,10 @@ div.intro {
 
     span, a.url {
       padding: 0 3px;
+    }
+
+    a.ext {
+      margin: 0 8px 0 -4px;
     }
   }
 
@@ -551,24 +630,25 @@ div.intro {
     }
   }
 
-  h3 a.url:hover {
-    text-decoration: underline;
-    color: #FF0099 !important;
-  }
 
-  h3 img.favicon {
-    margin-bottom: -6px;
-    margin-top: 6px;
-    border-radius: 4px;
-    @include themed() {
-      background-color: t('button');
-      border: solid 2px t('button');
+  a.favicon {
+    display: block;
+    float: left;
+    margin: 6px;
+
+    & > img {
+      margin: 6px 6px -6px 0px;
+
+      @include themed() {
+        background-color: t('button');
+        border: solid 2px t('button');
+      }
     }
   }
 
   div.extra {
     font-size: 1.1rem;
-    margin: 6px 0;
+    margin: 6px 0 6px 41px;
     padding-left: 30px;
 
     .enter {
@@ -592,6 +672,12 @@ div.intro {
 
           @include themed() {
             color: t('color');
+          }
+        }
+
+        a:visited {
+          @include themed() {
+            color: t('visited');
           }
         }
 
@@ -683,11 +769,11 @@ div.intro {
 
     ol.title {
       display: inline-block;
-      padding-right: 6px;
+      padding: 0 6px;
       overflow: hidden;
       height: 1.5rem;
       white-space: nowrap;
-      max-width: calc(100% - 50px);
+      max-width: calc(100% - 54px);
 
       &:after {
         content: "";
@@ -698,17 +784,13 @@ div.intro {
         pointer-events: none;
         width: 40px;
         height: 100%;
-
-        @include themed() {
-          background-image: linear-gradient(to right, rgba(t('background'), 0), t('background') 90%);
-        }
       }
 
       li {
         display: inline-block;
 
         &::after {
-          content: " /\0000a0";
+          content: " \002756\0000a0";
 
           @include themed() {
             color: t('button');
@@ -746,25 +828,199 @@ div.intro {
 }
 
 @media only screen and (min-width: 600px) {
-  #follows h3 a {
+  #follows .follow > h3 a {
     max-width: calc(100% - 230px);
   }
 }
 
-#reader {
-  & > ol {
-    list-style: none;
-    margin: 0;
-    padding: 0;
+#pane {
+  position: fixed;
+  top: 0px;
+  right: 0px;
+  height: 100%;
+  z-index: 10;
 
-    & > li {
-      border-bottom: dotted 1px #C77;
-      padding-bottom: 8px;
+  div.hide {
+    position: absolute;
+    left: -36px;
+    top: 18px;
+  }
 
-      .meta {
-        color: #975;
+  div.edge {
+    position: absolute;
+    width: 12px;
+    height: 100%;
+    cursor: col-resize;
+    z-index: 2;
+
+    @include themed() {
+      &.resizing,
+      &:hover {
+        background-color: t('background');
       }
     }
+  }
+
+  div.contents {
+    height: 100%;
+    overflow-y: scroll;
+  }
+
+  div.post, div.embed {
+    & > img, & > video, & > audio {
+      margin-top: 1em;
+    }
+
+    div.main img,
+    div.main video,
+    & > img, & > video {
+      max-width: 100%;
+    }
+
+    div.main iframe, & > iframe {
+      width: 100%;
+      border: none;
+    }
+
+    .wide {
+      margin-left: -24px;
+      max-width: unset !important;
+      width: calc(100% + 48px);
+      height: auto;
+    }
+  }
+
+  div.post {
+    padding: 12px 24px;
+    max-width: 800px;
+    position: relative;
+
+    & > h4 {
+      font-size: 1.2rem;
+      margin: 0.2rem 0;
+    }
+
+    h1, h2, h3 {
+      font-size: 1.1rem;
+      margin-left: 0;
+      margin-right: 0;
+    }
+
+    pre {
+      font-size: 0.9rem;
+      overflow-x: auto;
+    }
+
+    pre,
+    blockquote,
+    div.embed.text {
+      @include themed() {
+        border: solid 2px t('rule');
+        box-shadow: 4px 4px 0 0 t('rule');
+        margin: 0 0 2px 0;
+        padding: 18px 24px;
+      }
+    }
+
+    div.inner > *:first-child,
+    & > *:first-child {
+      margin-top: 0;
+    }
+
+    div.inner > *:last-child,
+    & > *:last-child {
+      margin-bottom: 0;
+    }
+
+    & > ol {
+      list-style: none;
+      padding: 0;
+    }
+
+    li {
+      margin-left: 20px;
+    }
+
+    a.ext {
+      margin: 0 8px;
+    }
+
+    a.share {
+      margin-left: 6px;
+    }
+
+    .expand {
+      display: none;
+    }
+
+    .main.extended {
+      max-height: 600px;
+      overflow-y: hidden;
+
+      .expand {
+        display: block;
+        background: linear-gradient(0deg, #FFF, #FFFC, #FFF0);
+        position: absolute;
+        z-index: 1;
+        bottom: 60px;
+        padding-top: 60px;
+        width: 100%;
+        height: 30px;
+        text-align: center;
+
+        a {
+          padding-right: 40px;
+          color: #999;
+          text-decoration: none;
+          font-weight: bold;
+          font-size: 1rem;
+        }
+      }
+    }
+
+    &:after {
+      display: block;
+      content: "\0025c7";
+      text-align: center;
+      color: #877;
+      font-size: 1.4rem;
+    }
+  }
+
+  @include themed() {
+    box-shadow: -6px 0 6px 0 t('edge');
+    background-color: t('paper');
+
+    h4 a {
+      color: t('plain');
+      text-decoration: none;
+    }
+
+    span.ago {
+      font-size: 0.8rem;
+      color: t('span');
+    }
+
+    div.age-d,
+    div.age-w {
+      span.ago {
+        color: t('spanold');
+        font-weight: bold;
+      }
+    }
+
+    div.age-m,
+    div.age-h {
+      span.ago {
+        color: t('spanfresh');
+        font-weight: bold;
+      }
+    }
+  }
+
+  #nextPage {
+    text-align: center;
+    padding-bottom: 40px;
   }
 }
 
@@ -783,9 +1039,9 @@ div.intro {
   }
 }
 
-#add-feed {
+#add-feed, #edit-feed {
   a.emoji {
-    margin-left: 6px;
+    margin-left: 8px;
   }
 }
 
@@ -823,7 +1079,7 @@ div.intro {
   }
 }
 
-/* general form styles */
+/* general html styles */
 form > div {
   margin-bottom: 22px;
 }
@@ -831,6 +1087,23 @@ form > div {
 div.err {
   color: red;
   margin-bottom: 8px;
+}
+
+span.author {
+  float: left;
+  font-weight: bold;
+
+  @include themed() {
+    color: t('titlefresh');
+  }
+}
+
+span.author::before {
+  content: "@";
+}
+
+span.author::after {
+  content: ":\0000a0";
 }
 
 label {
@@ -850,7 +1123,7 @@ label.optional {
 }
 
 input, textarea, select {
-  font: 1em sans-serif;
+  font-size: 1em;
   box-sizing: border-box;
   border: 1px solid #999;
 
@@ -868,9 +1141,21 @@ input, textarea {
   padding: 4px;
 }
 
+input, textarea, select, button {
+  font-family: "Inria Sans", $emoji-fonts;
+}
+
 input[type="checkbox"] {
   float: left;
   padding-right: 10px;
+}
+
+figure {
+  margin: 0;
+}
+
+blockquote {
+  margin-right: 0;
 }
 
 a.emoji {
@@ -1013,4 +1298,10 @@ button.delete {
   font-display: swap;
   src: local('Inria Sans Bold'), local('InriaSans-Bold'), url("../fonts/inria-700x.woff2") format('woff2');
   unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: "Twemoji Mozilla";
+  src: url("../fonts/Twemoji.ttf");
+  text-decoration: none;
+  font-style: normal;
 }
