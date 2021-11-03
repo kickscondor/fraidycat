@@ -432,6 +432,13 @@
     ]
   },
 
+  "patreon.com:rss": {
+    "match": "^patreon\\.com\\/rss\\/([^?]+)\\?auth=([^?]+)",
+    "arguments": [0, {"var": "creator"}, {"var": "authkey"}],
+    "url": "https://patreon.com/rss/$creator?auth=$authkey",
+    "accept": ["rss"]
+  },
+
   "pinboard.in:rss": {
     "match": "^pinboard\\.in\\/([^?]+)",
     "arguments": [0, {"var": "path"}],
