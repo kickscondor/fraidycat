@@ -71,7 +71,7 @@ class WebextStorage {
           out.posts = out.posts.slice(0, 5)
         }
         return obj
-      })
+      }).catch(error => {return {error}})
   }
 
   async mkdir(dest) {
