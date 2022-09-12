@@ -394,16 +394,17 @@ const ListFollow = ({ location, match }) => ({follows}, actions) => {
           let dk = timeDarkness(lastPostAt, now)
           let linkUrl = follow.fetchesContent ? `/view/${follow.id}` : follow.url
           let id = `follow-${follow.id}`
+          let target = follows.settings['mode-tab'] || ""
           return <li key={id} class={dk || 'age-X'}>
             <a name={id}></a>
             <h3>
-              <Link to={linkUrl}>
+              <Link to={linkUrl} target={target}>
                 <img class="favicon" src={Favicon(follows.baseHref, follow)}
                   onerror={e => e.target.src=follows.baseHref + svg['globe']} width="20" height="20" />
               </Link>
-              <Link class="url" to={linkUrl} target={`${follows.settings['mode-tab'] || "" }`}>{followTitle(follow)}</Link>
+              <Link class="url" to={linkUrl} target={target}>{followTitle(follow)}</Link>
               {follow.status instanceof Array && follow.status.map(st =>
-                <a class={`status status-${st.type}`} oncreate={ToggleHover} href={st.url || follow.url}
+                <a class={`status status-${st.type}`} oncreate={ToggleHover} href={st.url || follow.url} target={target}
                   >{st.type === 'live' ? <span><img src={follows.baseHref + svg['rec']} width="12" /> LIVE</span> : <span><img src={follows.baseHref + svg['notepad']} width="16" /></span>}
                   <div>{st.title || st.text || html2text(st.html)}
                     {st[sortPosts] && <span class="ago">{timeAgo(st[sortPosts], now)}</span>}</div>
@@ -423,7 +424,7 @@ const ListFollow = ({ location, match }) => ({follows}, actions) => {
                     let postAge = timeAgo(f[sortPosts], now)
                     return <li class={timeDarkness(f[sortPosts], now)}>
                       {f.author && f.author !== follow.author && <span class="author">{f.author}</span>}
-                      {f.url.startsWith('id:') ? <span class="txt">{TitleTrunc(f.title)}</span> : <a href={f.url}>{TitleTrunc(f.title)}</a>}
+                      {f.url.startsWith('id:') ? <span class="txt">{TitleTrunc(f.title)}</span> : <a href={f.url} target={target}>{TitleTrunc(f.title)}</a>}
                       {!f.index && <span class="ago">{timeAgo(f[sortPosts], now)}</span>}
                     </li>
                   })}</ol>
