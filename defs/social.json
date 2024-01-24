@@ -1,8 +1,11 @@
 {
   "domains": {
     "api.twitch.tv": {"headers:Client-Id": "vnvcshh0aehfkq0bvu6rzpbtaf25et",
-      "headers:Authorization": "Bearer c0su5k7bzg0nm6sn8zl4z9xjen9o6e"},
-    "api.twitter.com": {"headers:Authorization": "Bearer AAAAAAAAAAAAAAAAAAAAANRILgAAAAAAnNwIzUejRCOuH5E6I8xnZz4puTs=1Zv7ttfk8LF81IUq16cHjhLTvJu4FA33AGWWjCpTnA",
+      "headers:Authorization": "Bearer xb6afgx4nilrrkr58uirmfj2744wfv"},
+    "twitter.com": {"headers:Authorization": "Bearer AAAAAAAAAAAAAAAAAAAAAFQODgEAAAAAVHTp76lzh3rFzcHbmHVvQxYYpTw%3DckAlMINMjmCwxUcaXbAN4XqJVdgMJaHqNOFgPMK0zN1qLqLQCF",
+      "headers:Accept-Language": "en-US,en;q=0.9", "headers:Accept": "*/*",
+      "headers:Referer": "https://twitter.com/$username"},
+    "api.twitter.com": {"headers:Authorization": "Bearer AAAAAAAAAAAAAAAAAAAAAFQODgEAAAAAVHTp76lzh3rFzcHbmHVvQxYYpTw%3DckAlMINMjmCwxUcaXbAN4XqJVdgMJaHqNOFgPMK0zN1qLqLQCF",
       "headers:DNT": "1", "headers:Content-Type": "application/json",
       "headers:X-Twitter-Active-User": "yes", "headers:Authority": "api.twitter.com",
       "headers:Accept-Language": "en-US,en;q=0.9", "headers:Accept": "*/*"},
@@ -649,31 +652,28 @@
   },
 
   "twitter.com:user": {
-    "request": {"query:screen_name": "$username", "headers:X-Guest-Token": "$token"},
-    "url": "https://api.twitter.com/1.1/users/show.json?screen_name=$username",
+    "request": {"headers:X-Guest-Token": "$token"},
+    "url": "https://twitter.com/i/api/graphql/G3KGOASz96M-Qu0nwmGXNg/UserByScreenName?variables={\"screen_name\":\"$username\",\"withSafetyModeUserFields\":true}&features={\"hidden_profile_likes_enabled\":true,\"hidden_profile_subscriptions_enabled\":true,\"responsive_web_graphql_exclude_directive_enabled\":true,\"verified_phone_label_enabled\":false,\"subscriptions_verification_info_is_identity_verified_enabled\":true,\"subscriptions_verification_info_verified_since_enabled\":true,\"highlights_tweets_tab_ui_enabled\":true,\"creator_subscriptions_tweet_preview_api_enabled\":true,\"responsive_web_graphql_skip_user_profile_image_extensions_enabled\":false,\"responsive_web_graphql_timeline_navigation_enabled\":true}&fieldToggles={\"withAuxiliaryUserLabels\":false}",
     "acceptJson": [
-      {"var": "userId",            "op": "$.id_str"},
-      {"var": "out:author",        "op": "$.screen_name", "mod": ["str"]},
-      {"var": "out:title",         "op": "$.name", "mod": ["str"]},
-      {"var": "out:photos:avatar", "op": "$.profile_image_url", "mod": ["url"]},
-      {"var": "out:description",   "op": "$.description", "mod": ["str"]},
-      {"op": "$.entities.*.urls.*", "var": "out:rels", "acceptJson": [
+      {"var": "userId",            "op": "$.data.user.result.rest_id"},
+      {"var": "out:author",        "op": "$.data.user.result.legacy.screen_name", "mod": ["str"]},
+      {"var": "out:title",         "op": "$.data.user.result.legacy.name", "mod": ["str"]},
+      {"var": "out:photos:avatar", "op": "$.data.user.result.legacy.profile_image_url_https", "mod": ["url"]},
+      {"var": "out:description",   "op": "$.data.user.result.legacy.description", "mod": ["str"]},
+      {"op": "$.data.user.result.legacy.entities.*.urls.*", "var": "out:rels", "acceptJson": [
         {"var": "out:url", "op": "$.expanded_url", "mod": ["url"]}
       ]}
     ]
   },
 
   "twitter.com:timeline": {
-    "match": "^twitter\\.com/(.+)",
+    "match": "^(?:twitter|x)\\.com/(.+)",
     "arguments": [0, {"var": "username"}],
     "depends": ["twitter.com:token", "twitter.com:user"],
-    "request": {"headers:X-Guest-Token": "$token",
-      "headers:Referer": "https://twitter.com/$username",
-      "headers:Accept-Language": "en-US,en;q=0.5",
-      "headers:Authorization": "Bearer AAAAAAAAAAAAAAAAAAAAANRILgAAAAAAnNwIzUejRCOuH5E6I8xnZz4puTs=1Zv7ttfk8LF81IUq16cHjhLTvJu4FA33AGWWjCpTnA"},
-    "url": "https://twitter.com/i/api/graphql/LeRJx69CS_6El2rAG0HQ9g/UserTweets?variables={\"userId\":\"$userId\",\"count\":40,\"includePromotedContent\":false,\"withVoice\":false,\"withDownvotePerspective\":false,\"withReactionsMetadata\":false,\"withReactionsPerspective\":false,\"withSuperFollowsTweetFields\":true,\"withSuperFollowsUserFields\":true}&features={\"dont_mention_me_view_api_enabled\":true,\"interactive_text_enabled\":true,\"responsive_web_uc_gql_enabled\":false,\"vibe_tweet_context_enabled\":false,\"responsive_web_edit_tweet_api_enabled\":false,\"standardized_nudges_misinfo\":false,\"responsive_web_enhance_cards_enabled\":false}",
+    "request": {"headers:X-Guest-Token": "$token"},
+    "url": "https://twitter.com/i/api/graphql/VgitpdpNZ-RUIp5D1Z_D-A/UserTweets?variables={\"userId\":\"$userId\",\"count\":40,\"includePromotedContent\":true,\"withQuickPromoteEligibilityTweetFields\":true,\"withVoice\":true,\"withV2Timeline\":true}&features={\"responsive_web_graphql_exclude_directive_enabled\":true,\"verified_phone_label_enabled\":false,\"responsive_web_home_pinned_timelines_enabled\":true,\"creator_subscriptions_tweet_preview_api_enabled\":true,\"responsive_web_graphql_timeline_navigation_enabled\":true,\"responsive_web_graphql_skip_user_profile_image_extensions_enabled\":false,\"c9s_tweet_anatomy_moderator_badge_enabled\":true,\"tweetypie_unmention_optimization_enabled\":true,\"responsive_web_edit_tweet_api_enabled\":true,\"graphql_is_translatable_rweb_tweet_is_translatable_enabled\":true,\"view_counts_everywhere_api_enabled\":true,\"longform_notetweets_consumption_enabled\":true,\"responsive_web_twitter_article_tweet_consumption_enabled\":false,\"tweet_awards_web_tipping_enabled\":false,\"freedom_of_speech_not_reach_fetch_enabled\":true,\"standardized_nudges_misinfo\":true,\"tweet_with_visibility_results_prefer_gql_limited_actions_policy_enabled\":true,\"longform_notetweets_rich_text_read_enabled\":true,\"longform_notetweets_inline_media_enabled\":true,\"responsive_web_media_download_video_enabled\":false,\"responsive_web_enhance_cards_enabled\":false}",
     "acceptJson": [
-      {"op": "$.data.user.result.timeline.timeline.instructions[?(@.type === 'TimelineAddEntries')].entries.*[?(@.entryType === 'TimelineTimelineItem')]", "var": "out:posts", "acceptJson": [
+      {"op": "$.data.user.result.timeline_v2.timeline.instructions[?(@.type === 'TimelineAddEntries')].entries.*[?(@.entryType === 'TimelineTimelineItem')]", "var": "out:posts", "acceptJson": [
         {"op": "$.itemContent.tweet_results.result", "var": "*", "acceptJson": [
           {"var": "id", "op": ["$.legacy.self_thread.id_str", "$.legacy.id_str"]},
           {"var": "author", "op": ["$.legacy.retweeted_status_result.result.core.user_results.result.legacy.screen_name", "$.core.user_results.result.legacy.screen_name"]},
@@ -683,31 +683,31 @@
           {"var": "out:quoted", "op": ["$.legacy.retweeted_status_id_str", "$.legacy.quoted_status_id_str"]},
 
           {"op": ["$.legacy.retweeted_status_result.result.legacy", "$.legacy"], "var": "*", "acceptJson": [
-						{"op": "$.entities.user_mentions.*", "var": "*", "acceptJson": [
-							{"var": "aid", "op": "$.id_str"},
+            {"op": "$.entities.user_mentions.*", "var": "*", "acceptJson": [
+              {"var": "aid", "op": "$.id_str"},
               {"var": "authors:$aid", "op": "$.screen_name"}
-						]},
+            ]},
 
-						{"op": "$.entities.urls.*", "var": "*", "acceptJson": [
-							{"var": "tid", "op": "$.url", "match": "https://t\\.co/(\\w+)"},
-							{"var": "view", "op": "$.display_url"},
-							{"var": "turl", "op": "$.expanded_url", "mod": ["encode-uri"]},
-							{"var": "tco:${tid}", "op": "=<a href=\"$turl\">$view</a>"}
-						]},
+            {"op": "$.entities.urls.*", "var": "*", "acceptJson": [
+              {"var": "tid", "op": "$.url", "match": "https://t\\.co/(\\w+)"},
+              {"var": "view", "op": "$.display_url"},
+              {"var": "turl", "op": "$.expanded_url", "mod": ["encode-uri"]},
+              {"var": "tco:${tid}", "op": "=<a href=\"$turl\">$view</a>"}
+            ]},
 
-						{"var": "d0", "op": "$.display_text_range.0"},
-						{"var": "d1", "op": "$.display_text_range.1"},
-						{"var": "out:html", "op": "$.full_text",
-						 "mod": ["[$d0,$d1]", "s/https:\\/\\/t\\.co\\/(\\w+)/$tco:$1/g", "s/\\n/<br>/g"]},
+            {"var": "d0", "op": "$.display_text_range.0"},
+            {"var": "d1", "op": "$.display_text_range.1"},
+            {"var": "out:html", "op": "$.full_text",
+             "mod": ["[$d0,$d1]", "s/https:\\/\\/t\\.co\\/(\\w+)/$tco:$1/g", "s/\\n/<br>/g"]},
 
-						{"op": ["$.extended_entities.media.*", "$.entities.media.*"],
-						 "var": "out:embeds", "acceptJson": [
-							{"var": "out:url", "op": "$.expanded_url"},
-							{"var": "out:graphic:full", "op": "$.media_url_https"},
-							{"var": "out:video:preview", "op": "$.video_info.variants[?(@.bitrate === 832000)].url"},
-							{"var": "out:video:full", "op": "$.video_info.variants[?(@.bitrate === 1280000 || @.content_type === 'video/mp4')].url"}
-						]}
-					]}
+            {"op": ["$.extended_entities.media.*", "$.entities.media.*"],
+             "var": "out:embeds", "acceptJson": [
+              {"var": "out:url", "op": "$.expanded_url"},
+              {"var": "out:graphic:full", "op": "$.media_url_https"},
+              {"var": "out:video:preview", "op": "$.video_info.variants[?(@.bitrate === 832000)].url"},
+              {"var": "out:video:full", "op": "$.video_info.variants[?(@.bitrate === 1280000 || @.content_type === 'video/mp4')].url"}
+            ]}
+          ]}
         ]}
       ]}
     ]
@@ -749,9 +749,9 @@
     "acceptHtml": [
       {"op": "//script[contains(text(), 'ytInitialData')]", "match": "({.+?});",
         "acceptJson": [
-				{"var": "out:title", "op": "$.microformat.microformatDataRenderer.title"},
-				{"var": "out:photos:avatar", "op": ["$.microformat.microformatDataRenderer.thumbnail.thumbnails[-1:].url"]},
-				{"var": "out:description", "op": "$.microformat.microformatDataRenderer.description"},
+        {"var": "out:title", "op": "$.microformat.microformatDataRenderer.title"},
+        {"var": "out:photos:avatar", "op": ["$.microformat.microformatDataRenderer.thumbnail.thumbnails[-1:].url"]},
+        {"var": "out:description", "op": "$.microformat.microformatDataRenderer.description"},
         {"op": "$.contents.twoColumnBrowseResultsRenderer.tabs[0].tabRenderer.content.sectionListRenderer.contents[0].itemSectionRenderer.contents[0].playlistVideoListRenderer.contents.*",
          "var": "out:posts", "acceptJson": [
           {"var": "videoId",          "op": "$.playlistVideoRenderer.videoId"},
