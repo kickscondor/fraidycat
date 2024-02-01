@@ -317,10 +317,7 @@ module.exports = {
     let feed;
     let err;
 
-    /* */
     if (meta.feed.startsWith("npub") || meta.feed.startsWith("nprofile")) {
-      /* */
-      console.log('meta.feed', meta.feed)
 
       const data = await scrapeNostr(meta.feed)
 

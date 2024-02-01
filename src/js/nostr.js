@@ -16,7 +16,6 @@ export const nip19 = {
       if (!tlv[0]?.[0]) throw new Error('missing TLV 0 for nprofile')
       if (tlv[0][0].length !== 32) throw new Error('TLV 0 should be 32 bytes')
 
-      // uh?
       if (tlv[1] == undefined) {
         return {
           type: 'nprofile',
