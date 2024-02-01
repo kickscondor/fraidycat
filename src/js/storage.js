@@ -70,7 +70,7 @@ function isOutOfDate(follow, fetched) {
 
 
 async function scrapeNostr (nip19encoded) {
-  const defaultRelays = ["wss://nostr.mom", "wss://nostr.bitcoiner.social", "wss://relay.snort.social", "wss://relay.nostr.bg", "wss://nos.lol", "wss://pyramid.fiatjaf.com", "wss://relay.damus.io"]
+  const defaultRelays = ["wss://nostr.mom", "wss://relay.nostr.bg", "wss://nos.lol", "wss://relay.damus.io"]
 
   const nip19data = nip19.decode(nip19encoded);
   

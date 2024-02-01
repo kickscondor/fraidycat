@@ -145,7 +145,7 @@ export function getEvents(relays, filter) {
         if (sub_id == eventsSubId) {
           gotEvents.push(ev)
 
-          shouldWeResolve()
+          tryResolve()
 
           if (sondTimeout == false) {
             sondTimeout = true;
@@ -155,7 +155,7 @@ export function getEvents(relays, filter) {
               } else {
                 resolveAndProcessNullNow()
               }
-            }, 16000)
+            }, 12000)
           }
         }
       })
@@ -164,19 +164,19 @@ export function getEvents(relays, filter) {
         if (sub_id == eventsSubId) {
           relaysEose++;
 
-          shouldWeResolve()
+          tryResolve()
         }
       })
 
       relayCons[relay].on('close', () => {
         relaysEose++;
 
-        shouldWeResolve()
+        tryResolve()
       })
 
     })
 
-    function shouldWeResolve() {
+    function tryResolve() {
       if (relaysEose >= relays.length) {
         if (gotEvents > 0) {
           resolveAndProcessNullNow()
