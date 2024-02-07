@@ -36,6 +36,7 @@ const POSTS_IN_MAIN_INDEX = 10
 const ACTIVITY_IN_MAIN_INDEX = 180
 
 import rules from '../../defs/social.json'
+import { getEvents, nip19 } from './nostr.js'
 
 function ConflictError(message) {
   this.message = message
@@ -64,6 +65,48 @@ function isOutOfDate(follow, fetched) {
   } else {
     // Longer checks are once or twice a day.
     return (12 * 60 * 60 * 1000) - age
+  }
+}
+
+
+async function scrapeNostr (nip19encoded) {
+  const defaultRelays = ["wss://nostr.mom", "wss://relay.nostr.bg", "wss://nos.lol", "wss://relay.damus.io"]
+
+  const nip19data = nip19.decode(nip19encoded);
+  
+  let pubkey;
+  let relays = [];
+
+  if (nip19data.type == 'nprofile') {
+    pubkey = nip19data.data.pubkey
+    if (nip19data.data.relays.length > 0) {
+      relays = nip19data.data.relays
+    }
+  } else if (nip19data.type == 'npub') {
+    pubkey = nip19data.data
+
+    const userRelayEvents = await getEvents(defaultRelays, { limit: 1, kinds: [10002], authors: [pubkey] })
+    if (userRelayEvents[0]) {
+      userRelayEvents[0].tags.forEach(tag => {
+        if (tag[0] == "r") relays.push(tag[1])
+      })
+    }
+  }
+  if (relays.length == 0) relays = defaultRelays
+
+  relays = relays.slice(0, 7) // max 7 relays
+  relays = Array.from(new Set(relays.map(url => url.endsWith('/') ? url : url + '/'))); // normalize
+
+  const userProfileEvents = await getEvents(relays, {limit: 1, kinds: [0], authors: [pubkey]})
+  if (userProfileEvents[0] == undefined) throw new Error("could not find metadata event")
+  const userProfile = JSON.parse(userProfileEvents[0].content)
+  
+  const userEvents = await getEvents(relays, {limit: 512, kinds: [1, 30023], authors: [pubkey]})
+
+  return {
+      relays: relays,
+      profile: userProfile,
+      events: userEvents,
   }
 }
 
@@ -271,7 +314,48 @@ module.exports = {
   },
 
   async scrape(meta, flags) {
-    let {feed, err} = await this.scrapeFeed(meta.feed)
+    let feed;
+    let err;
+
+    if (meta.feed.startsWith("npub") || meta.feed.startsWith("nprofile")) {
+
+      const data = await scrapeNostr(meta.feed)
+
+      let posts = [];
+      data.events.forEach(async event => {
+        const post = {
+          title: `${event.content}`,
+          url: `https://njump.me/${nip19.neventEncode(event)}`,
+          graphic: {},
+          publishedAt: new Date(event.created_at * 1000),
+        }
+        if (event.kind == 30023) {
+          if (event.tags.find(e => e[0] == 'title'))
+            post.title = event.tags.find(e => e[0] == 'title')[1]
+          if (event.tags.find(e => e[0] == 'published_at'))
+            post.publishedAt = event.tags.find(e => e[0] == 'published_at')[1]
+            post.updatedAt = event.created_at
+        } else if (event.kind == 1) {
+          if (event.tags.find(e => e[0] == 'p') && event.tags.find(e => e[0] == 'e')) {
+              return
+          }
+        }
+        posts.push(post)
+      })
+
+      feed = {
+        title: `${data.profile.name} on nostr`,
+        favicon: data.profile.picture,
+        photos: {'avatar': data.profile.picture},
+        url: meta.feed,
+        status: [],
+        etag: Date.now(),
+        posts,
+      }
+
+    } else {
+      ({ feed, err } = await this.scrapeFeed(meta.feed))
+    }
     if (err != null && (flags & FETCH_SILENT) == 0)
       throw err
 
@@ -821,8 +905,10 @@ module.exports = {
   async refresh(follow, flags) {
     let savedId = !!follow.id
     if (!savedId) {
-      if (!follow.url.match(/^\w+:\/\//))
+      if (follow.url.startsWith("npub") || follow.url.startsWith("nprofile")) {
+      } else if (!follow.url.match(/^\w+:\/\//)) {
         follow.url = "http://" + follow.url
+      }
     }
     if (!follow.createdAt) {
       follow.createdAt = follow.editedAt || new Date()
