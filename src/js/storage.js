@@ -337,11 +337,7 @@ module.exports = {
             post.updatedAt = event.created_at
         } else if (event.kind == 1) {
           if (event.tags.find(e => e[0] == 'p') && event.tags.find(e => e[0] == 'e')) {
-           const someEvent = nip19.neventEncode({
-            id: event.tags.find(e => e[0] == 'e')[1],
-            author: event.tags.find(e => e[0] == 'p')[1],
-           })
-           post.title = `in reply to nevent1q...${someEvent.slice(-4)} - ${event.content}`
+              return
           }
         }
         posts.push(post)
